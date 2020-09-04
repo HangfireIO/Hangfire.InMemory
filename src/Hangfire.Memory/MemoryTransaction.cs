@@ -43,7 +43,13 @@ namespace Hangfire.Memory
             };
 
             // TODO: Precondition: jobId exists
-            _actions.Add(memory => memory.JobSetState(memory.JobGetOrThrow(jobId), stateEntry));
+            _actions.Add(memory =>
+            {
+                var backgroundJob = memory.JobGetOrThrow(jobId);
+                backgroundJob.History.Add(stateEntry);
+
+                memory.JobSetState(backgroundJob, stateEntry);
+            });
         }
 
         public override void AddJobState(string jobId, IState state)

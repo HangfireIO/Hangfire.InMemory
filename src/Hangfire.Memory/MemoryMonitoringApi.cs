@@ -77,8 +77,8 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                var result = new List<ServerDto>(state._servers.Count);
-                foreach (var entry in state._servers)
+                var result = new List<ServerDto>(state.Servers.Count);
+                foreach (var entry in state.Servers)
                 {
                     result.Add(new ServerDto
                     {
@@ -141,7 +141,7 @@ namespace Hangfire.Memory
                 Succeeded = GetCountByStateName(SucceededState.StateName, state),
                 Deleted = GetCountByStateName(DeletedState.StateName, state),
                 Queues = state.Queues.Count,
-                Servers = state._servers.Count,
+                Servers = state.Servers.Count,
                 Recurring = state.Sets.TryGetValue("recurring-jobs", out var recurring)
                     ? recurring.Count
                     : 0
@@ -492,7 +492,7 @@ namespace Hangfire.Memory
             }
 
             var keys = dates.Select(x => $"stats:{type}:{x:yyyy-MM-dd-HH}").ToArray();
-            var valuesMap = keys.Select(key => state.CounterTryGet(key, out var entry) ? entry.Value : 0).ToArray();
+            var valuesMap = keys.Select(key => state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
 
             var result = new Dictionary<DateTime, long>();
             for (var i = 0; i < dates.Count; i++)
@@ -517,7 +517,7 @@ namespace Hangfire.Memory
 
             var stringDates = dates.Select(x => x.ToString("yyyy-MM-dd")).ToList();
             var keys = stringDates.Select(x => $"stats:{type}:{x}").ToArray();
-            var valuesMap = keys.Select(key => state.CounterTryGet(key, out var entry) ? entry.Value : 0).ToArray();
+            var valuesMap = keys.Select(key => state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
 
             var result = new Dictionary<DateTime, long>();
             for (var i = 0; i < stringDates.Count; i++)

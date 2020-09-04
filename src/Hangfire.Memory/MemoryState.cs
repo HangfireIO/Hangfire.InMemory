@@ -250,7 +250,7 @@ namespace Hangfire.Memory
         private readonly Dictionary<string, SetEntry> _sets = CreateDictionary<SetEntry>();
         private readonly Dictionary<string, CounterEntry> _counters = CreateDictionary<CounterEntry>();
         private readonly Dictionary<string, BlockingCollection<string>> _queues = CreateDictionary<BlockingCollection<string>>();
-        internal readonly IDictionary<string, ServerEntry> _servers = CreateDictionary<ServerEntry>();
+        private readonly Dictionary<string, ServerEntry> _servers = CreateDictionary<ServerEntry>();
 
         public IReadOnlyDictionary<string, BackgroundJobEntry> Jobs => _jobs;
         public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
@@ -258,6 +258,7 @@ namespace Hangfire.Memory
         public IReadOnlyDictionary<string, SetEntry> Sets => _sets;
         public IReadOnlyDictionary<string, CounterEntry> Counters => _counters;
         public IReadOnlyDictionary<string, BlockingCollection<string>> Queues => _queues;
+        public IReadOnlyDictionary<string, ServerEntry> Servers => _servers;
 
         public BlockingCollection<string> QueueGetOrCreate(string name)
         {
@@ -295,7 +296,6 @@ namespace Hangfire.Memory
             }
 
             job.State = state;
-            job.History.Add(state);
 
             if (!_jobStateIndex.TryGetValue(state.Name, out indexEntry))
             {
@@ -410,11 +410,6 @@ namespace Hangfire.Memory
             return counter;
         }
 
-        public bool CounterTryGet(string key, out CounterEntry entry)
-        {
-            return _counters.TryGetValue(key, out entry);
-        }
-
         public void CounterExpire(CounterEntry counter, TimeSpan? expireIn)
         {
             EntryExpire(counter, _counterIndex, expireIn);
@@ -428,6 +423,16 @@ namespace Hangfire.Memory
             {
                 _counterIndex.Remove(entry);
             }
+        }
+
+        public void ServerAdd(string serverId, ServerEntry entry)
+        {
+            _servers.Add(serverId, entry);
+        }
+
+        public void ServerRemove(string serverId)
+        {
+            _servers.Remove(serverId);
         }
 
         private static void EntryExpire<T>(T entity, ISet<T> index, TimeSpan? expireIn)

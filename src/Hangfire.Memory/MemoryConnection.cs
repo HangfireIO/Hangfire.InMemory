@@ -315,7 +315,7 @@ namespace Hangfire.Memory
                 // TODO: Change with time factory
                 var now = DateTime.UtcNow;
 
-                state._servers.Add(serverId, new ServerEntry
+                state.ServerAdd(serverId, new ServerEntry
                 {
                     Context = new ServerContext { Queues = context.Queues.ToArray(), WorkerCount = context.WorkerCount },
                     StartedAt = now,
@@ -330,7 +330,7 @@ namespace Hangfire.Memory
         {
             _dispatcher.QueryAndWait(state =>
             {
-                state._servers.Remove(serverId);
+                state.ServerRemove(serverId);
                 return true;
             });
         }
@@ -339,7 +339,7 @@ namespace Hangfire.Memory
         {
             _dispatcher.QueryAndWait(state =>
             {
-                if (state._servers.TryGetValue(serverId, out var server))
+                if (state.Servers.TryGetValue(serverId, out var server))
                 {
                     server.HeartbeatAt = DateTime.UtcNow; // TODO: Use a time factory
                 }
@@ -355,7 +355,7 @@ namespace Hangfire.Memory
                 var serversToRemove = new List<string>();
                 var now = DateTime.UtcNow; // TODO: Use a time factory
 
-                foreach (var server in state._servers)
+                foreach (var server in state.Servers)
                 {
                     // TODO: Check this logic
                     if (server.Value.HeartbeatAt + timeOut < now)
@@ -366,7 +366,7 @@ namespace Hangfire.Memory
 
                 foreach (var serverId in serversToRemove)
                 {
-                    state._servers.Remove(serverId);
+                    state.ServerRemove(serverId);
                 }
 
                 return serversToRemove.Count;
@@ -439,7 +439,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state.CounterTryGet(key, out var counter))
+                if (state.Counters.TryGetValue(key, out var counter))
                 {
                     return counter.Value;
                 }
