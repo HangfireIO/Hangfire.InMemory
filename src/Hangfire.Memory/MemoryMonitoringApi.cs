@@ -23,7 +23,7 @@ namespace Hangfire.Memory
             {
                 var result = new List<QueueWithTopEnqueuedJobsDto>();
 
-                foreach (var queueEntry in state._queues)
+                foreach (var queueEntry in state.Queues)
                 {
                     var queueResult = new JobList<EnqueuedJobDto>(Enumerable.Empty<KeyValuePair<string, EnqueuedJobDto>>());
                     var counter = 0;
@@ -140,7 +140,7 @@ namespace Hangfire.Memory
                 Failed = GetCountByStateName(FailedState.StateName, state),
                 Succeeded = GetCountByStateName(SucceededState.StateName, state),
                 Deleted = GetCountByStateName(DeletedState.StateName, state),
-                Queues = state._queues.Count,
+                Queues = state.Queues.Count,
                 Servers = state._servers.Count,
                 Recurring = state.SetTryGet("recurring-jobs", out var recurring)
                     ? recurring.Count
@@ -154,7 +154,7 @@ namespace Hangfire.Memory
             {
                 var result = new JobList<EnqueuedJobDto>(Enumerable.Empty<KeyValuePair<string, EnqueuedJobDto>>());
 
-                if (state._queues.TryGetValue(queueName, out var queue))
+                if (state.Queues.TryGetValue(queueName, out var queue))
                 {
                     var counter = 0;
 
@@ -416,7 +416,7 @@ namespace Hangfire.Memory
 
         public long EnqueuedCount(string queueName)
         {
-            return _dispatcher.QueryAndWait(state => state._queues.TryGetValue(queueName, out var queue) 
+            return _dispatcher.QueryAndWait(state => state.Queues.TryGetValue(queueName, out var queue) 
                 ? queue.Count
                 : 0);
         }

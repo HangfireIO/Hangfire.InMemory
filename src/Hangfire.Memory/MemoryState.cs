@@ -249,8 +249,21 @@ namespace Hangfire.Memory
         private readonly IDictionary<string, ListEntry> _lists = CreateDictionary<ListEntry>();
         private readonly IDictionary<string, SetEntry> _sets = CreateDictionary<SetEntry>();
         private readonly IDictionary<string, CounterEntry> _counters = CreateDictionary<CounterEntry>();
-        internal readonly IDictionary<string, BlockingCollection<string>> _queues = CreateDictionary<BlockingCollection<string>>();
+        private readonly Dictionary<string, BlockingCollection<string>> _queues = CreateDictionary<BlockingCollection<string>>();
         internal readonly IDictionary<string, ServerEntry> _servers = CreateDictionary<ServerEntry>();
+
+        public IReadOnlyDictionary<string, BlockingCollection<string>> Queues => _queues;
+
+        public BlockingCollection<string> QueueGetOrCreate(string name)
+        {
+            if (!_queues.TryGetValue(name, out var queue))
+            {
+                // TODO: Refactor this to unify creation of a queue
+                _queues.Add(name, queue = new BlockingCollection<string>());
+            }
+
+            return queue;
+        }
 
         public BackgroundJobEntry JobGetOrThrow(string jobId)
         {
@@ -452,7 +465,7 @@ namespace Hangfire.Memory
             }
         }
 
-        private static IDictionary<string, T> CreateDictionary<T>()
+        private static Dictionary<string, T> CreateDictionary<T>()
         {
             return new Dictionary<string, T>(StringComparer.Ordinal);
         }

@@ -193,7 +193,7 @@ namespace Hangfire.Memory
                         var entries = new Dictionary<string, BlockingCollection<string>>(queueNames.Length);
                         foreach (var queueName in queueNames)
                         {
-                            if (state._queues.TryGetValue(queueName, out var queue))
+                            if (state.Queues.TryGetValue(queueName, out var queue))
                             {
                                 entries.Add(queueName, queue);
                             }

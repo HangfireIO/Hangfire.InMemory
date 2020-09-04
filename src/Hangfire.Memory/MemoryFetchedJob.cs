@@ -28,13 +28,7 @@ namespace Hangfire.Memory
             // TODO: We can do this as a fire-and-forget operation
             _dispatcher.QueryAndWait(state =>
             {
-                if (!state._queues.TryGetValue(QueueName, out var queue))
-                {
-                    // TODO: Refactor this to unify creation of a queue
-                    state._queues.Add(QueueName, queue = new BlockingCollection<string>());
-                }
-
-                queue.Add(JobId);
+                state.QueueGetOrCreate(QueueName).Add(JobId);
                 return true;
             });
         }

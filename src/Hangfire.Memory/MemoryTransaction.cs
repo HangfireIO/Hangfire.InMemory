@@ -66,15 +66,7 @@ namespace Hangfire.Memory
 
         public override void AddToQueue(string queue, string jobId)
         {
-            _actions.Add(state =>
-            {
-                if (!state._queues.TryGetValue(queue, out var queueObj))
-                {
-                    state._queues.Add(queue, queueObj = new BlockingCollection<string>(new ConcurrentQueue<string>()));
-                }
-
-                queueObj.Add(jobId);
-            });
+            _actions.Add(state => state.QueueGetOrCreate(queue).Add(jobId));
         }
 
         public override void IncrementCounter(string key)
