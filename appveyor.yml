@@ -1,0 +1,74 @@
+# AppVeyor CI build file, https://ci.appveyor.com/project/odinserj/hangfire
+
+# Notes:
+#   - Minimal appveyor.yml file is an empty file. All sections are optional.
+#   - Indent each level of configuration with 2 spaces. Do not use tabs!
+#   - All section names are case-sensitive.
+#   - Section names should be unique on each level.
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+# Don't edit manually! Use `build.bat version` command instead!
+version: 0.1.0-build-0{build}
+
+os: Visual Studio 2019
+
+environment:
+  BuildEnvironment: appveyor
+  hangfire_login:
+    secure: vTUgNUhBXIAnQWCxUwygkQ==
+  hangfire_password:
+    secure: nmO2N410OJ4KdDiZnNXakkgW0JXqRahslGYKYMHl74g=
+
+branches:
+  only:
+    - master
+    - dev
+
+nuget:
+  account_feed: true
+  project_feed: true
+  disable_publish_on_pr: true
+
+shallow_clone: true
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+build_script: build.bat pack
+
+#---------------------------------#
+#       tests configuration       #
+#---------------------------------#
+
+test: off
+
+#---------------------------------#
+#      artifacts configuration    #
+#---------------------------------#
+
+artifacts:
+  - path: 'build\**\*.nupkg'
+  - path: 'build\**\*.zip'
+
+deploy:
+  - provider: GitHub
+    auth_token:
+      secure: Kx+tJBMfq/OK7sMpvQDdigFOIIfzYkVmIHxNQetanQdIA5Mb8zm/VhAkrId4x5zW
+    artifact: /.*\.zip/
+    draft: true
+    on:
+      appveyor_repo_tag: true
+
+  - provider: NuGet
+    server: https://nuget.hangfire.io/nuget/hangfire-pro
+    symbol_server: https://nuget.hangfire.io/nuget/hangfire-pro
+    skip_symbols: false
+    artifact: /.*\.symbols\.nupkg/
+    api_key: 
+      secure: O2eeZTPhagiuNTk43eCj4Lh1vsw8JM24HqwN04JlEs4=
+    on:
+      appveyor_repo_tag: true

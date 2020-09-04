@@ -1,0 +1,27 @@
+# Travis-CI Build for Hangfire
+# see travis-ci.org for details
+
+language: csharp
+matrix:
+  include:
+    - dotnet: 3.0.100
+      mono: none
+      os: linux
+    - dotnet: 3.0.100
+      mono: none
+      os: osx
+    - mono: latest
+      os: linux
+    - mono: latest
+      os: osx
+
+script:
+  - if hash mono 2>/dev/null; 
+    then
+        travis_retry nuget install .nuget/packages.config -OutputDirectory packages;
+        travis_retry nuget restore Hangfire.Memory.sln;
+        msbuild /p:Configuration=Release /verbosity:minimal Hangfire.Memory.sln;
+        mono ./packages/xunit.runner.console.2.3.1/tools/net452/xunit.console.exe ./tests/Hangfire.Memory.Tests/bin/Release/net452/Hangfire.Memory.Tests.dll;
+    else
+        dotnet test -c Release -f netcoreapp3.0 tests/Hangfire.Memory.Tests;
+    fi
