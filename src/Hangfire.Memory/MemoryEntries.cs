@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using Hangfire.Server;
+using Hangfire.Storage;
 
 namespace Hangfire.Memory
 {
