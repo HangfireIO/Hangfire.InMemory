@@ -8,4 +8,9 @@
     <ProjectReference Include="..\..\src\Hangfire.Memory\Hangfire.Memory.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Hangfire.Core" Version="1.7.12" />
+    <PackageReference Include="Hangfire.AspNetCore" Version="1.7.12" />
+  </ItemGroup>
+
 </Project>
