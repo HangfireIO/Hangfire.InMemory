@@ -41,7 +41,7 @@ namespace Hangfire.Memory
                         {
                             try
                             {
-                                job = jobEntry.InvocationData.Deserialize();
+                                job = jobEntry.InvocationData.DeserializeJob();
                             }
                             catch (JobLoadException)
                             {
@@ -107,7 +107,7 @@ namespace Hangfire.Memory
 
                 try
                 {
-                    job = entry.InvocationData.Deserialize();
+                    job = entry.InvocationData.DeserializeJob();
                 }
                 catch (JobLoadException)
                 {
@@ -169,7 +169,7 @@ namespace Hangfire.Memory
                         {
                             try
                             {
-                                job = jobEntry.InvocationData.Deserialize();
+                                job = jobEntry.InvocationData.DeserializeJob();
                             }
                             catch (JobLoadException)
                             {
@@ -215,7 +215,7 @@ namespace Hangfire.Memory
 
                         try
                         {
-                            job = entry.InvocationData.Deserialize();
+                            job = entry.InvocationData.DeserializeJob();
                         }
                         catch (JobLoadException)
                         {
@@ -257,7 +257,7 @@ namespace Hangfire.Memory
                         {
                             try
                             {
-                                job = backgroundJob.InvocationData.Deserialize();
+                                job = backgroundJob.InvocationData.DeserializeJob();
                             }
                             catch (JobLoadException)
                             {
@@ -299,7 +299,7 @@ namespace Hangfire.Memory
 
                         try
                         {
-                            job = entry.InvocationData.Deserialize();
+                            job = entry.InvocationData.DeserializeJob();
                         }
                         catch (JobLoadException)
                         {
@@ -343,7 +343,7 @@ namespace Hangfire.Memory
 
                         try
                         {
-                            job = entry.InvocationData.Deserialize();
+                            job = entry.InvocationData.DeserializeJob();
                         }
                         catch (JobLoadException)
                         {
@@ -387,7 +387,7 @@ namespace Hangfire.Memory
 
                         try
                         {
-                            job = entry.InvocationData.Deserialize();
+                            job = entry.InvocationData.DeserializeJob();
                         }
                         catch (JobLoadException)
                         {

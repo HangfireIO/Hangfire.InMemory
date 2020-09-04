@@ -167,7 +167,7 @@ namespace Hangfire.Memory
             var backgroundJob = new BackgroundJobEntry
             {
                 Key = Guid.NewGuid().ToString(), // TODO: Change with Long type
-                InvocationData = InvocationData.Serialize(job),
+                InvocationData = InvocationData.SerializeJob(job),
                 Parameters = parameters.ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal),
                 CreatedAt = createdAt,
                 ExpireAt = DateTime.UtcNow.Add(expireIn) // TODO: Use time factory
@@ -273,7 +273,7 @@ namespace Hangfire.Memory
 
             try
             {
-                job = result.Item1.Deserialize();
+                job = result.Item1.DeserializeJob();
             }
             catch (JobLoadException ex)
             {

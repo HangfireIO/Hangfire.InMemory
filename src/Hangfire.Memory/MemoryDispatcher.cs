@@ -68,7 +68,6 @@ namespace Hangfire.Memory
 
         private void DoWork()
         {
-            var spinWait = new SpinWait();
             while (true)
             {
                 if (_queries.TryTake(out var next, TimeSpan.FromSeconds(1)))
