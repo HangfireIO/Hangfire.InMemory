@@ -6,6 +6,8 @@ Read and write queries are processed by a single thread to avoid additional sync
 
 Distributed locks (heh, in an in-process storage), queue fetch logic (but only for single queue currently) and transactional queries are implemented as blocking operations, so there is no active polling in these cases. Every data returned by storage can be safely changed without causing underlying storage state to be changed with bypassing required transactional processing logic, so everything is safe (but increase load on GC). Every data structure, including indexes and their records, is removed when empty to avoid memory leaks.
 
+
+
 ### TODO
 
 * Control `OutOfMemoryException` by providing some kind of limits which can be established easily, e.g. total number of jobs.
@@ -14,3 +16,5 @@ Distributed locks (heh, in an in-process storage), queue fetch logic (but only f
 * Add integration (for public API) and unit tests (for internal API).
 * Force expiration when memory pressure is high to avoid `OutOfMemoryException`.
 * Add overridden default for expiration time for jobs and batches?
+* Add fire-and-forget semantics (*release semantics* in memory models) to some commands to avoid waiting when unnecessary.
+* Replace `Guid`-based identifiers with `long` ones.
