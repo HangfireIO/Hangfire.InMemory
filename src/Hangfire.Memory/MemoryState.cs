@@ -66,6 +66,8 @@ namespace Hangfire.Memory
 
     internal sealed class BackgroundJobEntry : IExpirableEntry
     {
+        private const int StateCountForRegularJob = 4; // (Scheduled) -> Enqueued -> Processing -> Succeeded
+
         public string Key { get; set; }
         public InvocationData InvocationData { get; set; }
 
@@ -73,7 +75,7 @@ namespace Hangfire.Memory
         public IDictionary<string, string> Parameters { get; set; }
 
         public StateEntry State { get; set; }
-        public ICollection<StateEntry> History { get; set; } = new List<StateEntry>();
+        public ICollection<StateEntry> History { get; set; } = new List<StateEntry>(StateCountForRegularJob);
         public DateTime CreatedAt { get; set; }
         public DateTime? ExpireAt { get; set; }
     }
