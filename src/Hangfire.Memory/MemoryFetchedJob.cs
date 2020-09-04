@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Hangfire.Storage;
+﻿using Hangfire.Storage;
 
 namespace Hangfire.Memory
 {
@@ -15,6 +14,9 @@ namespace Hangfire.Memory
             JobId = jobId;
         }
 
+        public string QueueName { get; }
+        public string JobId { get; }
+
         public void Dispose()
         {
         }
@@ -25,15 +27,7 @@ namespace Hangfire.Memory
 
         public void Requeue()
         {
-            // TODO: We can do this as a fire-and-forget operation
-            _dispatcher.QueryAndWait(state =>
-            {
-                state.QueueGetOrCreate(QueueName).Add(JobId);
-                return true;
-            });
+            _dispatcher.QueryNoWait(state => state.QueueGetOrCreate(QueueName).Add(JobId));
         }
-
-        public string QueueName { get; }
-        public string JobId { get; }
     }
 }
