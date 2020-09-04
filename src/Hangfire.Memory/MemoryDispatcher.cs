@@ -25,7 +25,11 @@ namespace Hangfire.Memory
 
         public MemoryDispatcher()
         {
-            _thread = new Thread(DoWork);
+            _thread = new Thread(DoWork)
+            {
+                IsBackground = true,
+                Name = "Hangfire:InMemoryDispatcher"
+            };
             _thread.Start();
         }
 
@@ -40,6 +44,7 @@ namespace Hangfire.Memory
             {
                 _queries.Add(callback);
 
+                // TODO: Add timeout here – dispatcher thread can fail, and we shouldn't block user code in this case
                 callback.Ready.Wait();
                 return (T) callback.Result;
             }
