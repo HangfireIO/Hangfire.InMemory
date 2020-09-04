@@ -77,43 +77,37 @@ namespace Hangfire.Memory
                 }
                 else
                 {
-                    //ExpireIndex(_state._counterIndex, _state._counters);
-                    //ExpireIndex(_state._hashIndex, _state._hashes);
-                    //ExpireIndex(_state._listIndex, _state._lists);
-                    //ExpireIndex(_state._setIndex, _state._sets);
-                    //ExpireJobIndex(_state);
+                    var now = DateTime.UtcNow; // TODO: Use time factory instead
+
+                    // TODO: Think how to expire under memory pressure and limit the collection to avoid OOM exceptions
+                    ExpireIndex(now, _state._counterIndex, entry => _state.CounterDelete(entry));
+                    ExpireIndex(now, _state._hashIndex, entry => _state.HashDelete(entry));
+                    ExpireIndex(now, _state._listIndex, entry => _state.ListDelete(entry));
+                    ExpireIndex(now, _state._setIndex, entry => _state.SetDelete(entry));
+                    ExpireJobIndex(now, _state);
                 }
             }
         }
 
-        private static void ExpireIndex<T>(SortedSet<T> index, IDictionary<string, T> collection)
+        private static void ExpireIndex<T>(DateTime now, SortedSet<T> index, Action<T> action)
             where T : IExpirableEntry
         {
-            // TODO: Replace with actual expiration rules
-            while (index.Count > 0 && index.Min.ExpireAt.HasValue)
-            {
-                var entry = index.Min;
+            T entry;
 
-                index.Remove(entry);
-                collection.Remove(entry.Key);
+            while (index.Count > 0 && (entry = index.Min).ExpireAt.HasValue && entry.ExpireAt >= now)
+            {
+                action(entry);
             }
         }
 
-        private static void ExpireJobIndex(MemoryState state)
+        private static void ExpireJobIndex(DateTime now, MemoryState state)
         {
+            BackgroundJobEntry entry;
+
             // TODO: Replace with actual expiration rules
-            while (state._jobIndex.Count > 0 && state._jobIndex.Min.ExpireAt.HasValue)
+            while (state._jobIndex.Count > 0 && (entry = state._jobIndex.Min).ExpireAt.HasValue && entry.ExpireAt >= now)
             {
-                var entry = state._jobIndex.Min;
-
-                state._jobIndex.Remove(entry);
-                state._jobs.Remove(entry.Key);
-
-                if (entry.State?.Name != null && state._jobStateIndex.TryGetValue(entry.State.Name, out var stateIndex))
-                {
-                    stateIndex.Remove(entry);
-                    if (stateIndex.Count == 0) state._jobStateIndex.Remove(entry.State.Name);
-                }
+                state.JobDelete(entry);
             }
         }
     }

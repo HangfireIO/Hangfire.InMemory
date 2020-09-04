@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Hangfire.Server;
@@ -14,14 +15,34 @@ namespace Hangfire.Memory
 
     internal sealed class ListEntry : IExpirableEntry
     {
+        private List<string> _value = new List<string>();
+
         public ListEntry(string id)
         {
             Key = id;
         }
 
         public string Key { get; }
-        public List<string> Value { get; set; } = new List<string>();
         public DateTime? ExpireAt { get; set; }
+
+        public int Count => _value.Count;
+
+        public string this[int index] => _value[Count - index - 1];
+
+        public void Add(string value)
+        {
+            _value.Add(value);
+        }
+
+        public void Remove(string value)
+        {
+            _value.Remove(value);
+        }
+
+        internal void Update(List<string> value)
+        {
+            _value = value;
+        }
     }
 
     internal sealed class HashEntry : IExpirableEntry
@@ -37,19 +58,57 @@ namespace Hangfire.Memory
         public DateTime? ExpireAt { get; set; }
     }
 
-    internal sealed class SetEntry : IExpirableEntry
+    internal sealed class SetEntry : IExpirableEntry, IEnumerable<SortedSetEntry<string>>
     {
+        // TODO: What about case sensitivity here?
+        private readonly IDictionary<string, SortedSetEntry<string>> _hash = new Dictionary<string, SortedSetEntry<string>>();
+        private readonly SortedSet<SortedSetEntry<string>> _value = new SortedSet<SortedSetEntry<string>>(new SortedSetEntryComparer<string>());
+
         public SetEntry(string id)
         {
             Key = id;
         }
 
         public string Key { get; }
-        public SortedSet<SortedSetEntry<string>> Value { get; } = new SortedSet<SortedSetEntry<string>>(new SortedSetEntryComparer<string>());
-
-        // TODO: What about case sensitivity here?
-        public IDictionary<string, SortedSetEntry<string>> Hash { get; } = new Dictionary<string, SortedSetEntry<string>>();
         public DateTime? ExpireAt { get; set; }
+
+        public int Count => _value.Count;
+
+        public void Add(string value, double score)
+        {
+            if (!_hash.TryGetValue(value, out var entry))
+            {
+                entry = new SortedSetEntry<string>(value) { Score = score };
+                _value.Add(entry);
+                _hash.Add(value, entry);
+            }
+            else
+            {
+                // Element already exists, just need to add a score value – re-create it.
+                _value.Remove(entry);
+                entry.Score = score;
+                _value.Add(entry);
+            }
+        }
+
+        public void Remove(string value)
+        {
+            if (_hash.TryGetValue(value, out var entry))
+            {
+                _value.Remove(entry);
+                _hash.Remove(value);
+            }
+        }
+
+        public IEnumerator<SortedSetEntry<string>> GetEnumerator()
+        {
+            return _value.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 
     internal sealed class CounterEntry : IExpirableEntry
@@ -185,13 +244,213 @@ namespace Hangfire.Memory
 
         // TODO: We can remove dictionaries when empty and re-create them when required to always have minimum size
         internal readonly IDictionary<string, LockEntry> _locks = CreateDictionary<LockEntry>();
-        internal readonly IDictionary<string, BackgroundJobEntry> _jobs = CreateDictionary<BackgroundJobEntry>();
-        internal readonly IDictionary<string, HashEntry> _hashes = CreateDictionary<HashEntry>();
-        internal readonly IDictionary<string, ListEntry> _lists = CreateDictionary<ListEntry>();
-        internal readonly IDictionary<string, SetEntry> _sets = CreateDictionary<SetEntry>();
+        private readonly IDictionary<string, BackgroundJobEntry> _jobs = CreateDictionary<BackgroundJobEntry>();
+        private readonly IDictionary<string, HashEntry> _hashes = CreateDictionary<HashEntry>();
+        private readonly IDictionary<string, ListEntry> _lists = CreateDictionary<ListEntry>();
+        private readonly IDictionary<string, SetEntry> _sets = CreateDictionary<SetEntry>();
+        private readonly IDictionary<string, CounterEntry> _counters = CreateDictionary<CounterEntry>();
         internal readonly IDictionary<string, BlockingCollection<string>> _queues = CreateDictionary<BlockingCollection<string>>();
-        internal readonly IDictionary<string, CounterEntry> _counters = CreateDictionary<CounterEntry>();
         internal readonly IDictionary<string, ServerEntry> _servers = CreateDictionary<ServerEntry>();
+
+        public BackgroundJobEntry JobGetOrThrow(string jobId)
+        {
+            if (!_jobs.TryGetValue(jobId, out var backgroundJob))
+            {
+                throw new InvalidOperationException($"Background job with '{jobId}' identifier does not exist.");
+            }
+
+            return backgroundJob;
+        }
+
+        public bool JobTryGet(string jobId, out BackgroundJobEntry entry)
+        {
+            return _jobs.TryGetValue(jobId, out entry);
+        }
+
+        public void JobCreate(BackgroundJobEntry job)
+        {
+            _jobs.Add(job.Key, job);
+            _jobIndex.Add(job);
+        }
+
+        public void JobSetState(BackgroundJobEntry job, StateEntry state)
+        {
+            if (job.State != null && _jobStateIndex.TryGetValue(job.State.Name, out var indexEntry))
+            {
+                indexEntry.Remove(job);
+                if (indexEntry.Count == 0) _jobStateIndex.Remove(job.State.Name);
+            }
+
+            job.State = state;
+            job.History.Add(state);
+
+            if (!_jobStateIndex.TryGetValue(state.Name, out indexEntry))
+            {
+                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<BackgroundJobEntry>(new BackgroundJobStateCreatedAtComparer()));
+            }
+
+            indexEntry.Add(job);
+        }
+
+        public void JobExpire(BackgroundJobEntry job, TimeSpan? expireIn)
+        {
+            EntryExpire(job, _jobIndex, expireIn);
+        }
+
+        public void JobDelete(BackgroundJobEntry entry)
+        {
+            if (entry.ExpireAt.HasValue)
+            {
+                _jobIndex.Remove(entry);
+            }
+
+            _jobs.Remove(entry.Key);
+
+            if (entry.State?.Name != null && _jobStateIndex.TryGetValue(entry.State.Name, out var stateIndex))
+            {
+                stateIndex.Remove(entry);
+                if (stateIndex.Count == 0) _jobStateIndex.Remove(entry.State.Name);
+            }
+        }
+
+        public HashEntry HashGetOrAdd(string key)
+        {
+            if (!_hashes.TryGetValue(key, out var hash))
+            {
+                _hashes.Add(key, hash = new HashEntry(key));
+            }
+
+            return hash;
+        }
+
+        public bool HashTryGet(string key, out HashEntry hash)
+        {
+            return _hashes.TryGetValue(key, out hash);
+        }
+
+        public void HashExpire(HashEntry hash, TimeSpan? expireIn)
+        {
+            EntryExpire(hash, _hashIndex, expireIn);
+        }
+
+        public void HashDelete(HashEntry hash)
+        {
+            _hashes.Remove(hash.Key);
+            if (hash.ExpireAt.HasValue)
+            {
+                _hashIndex.Remove(hash);
+            }
+        }
+
+        public SetEntry SetGetOrAdd(string key)
+        {
+            if (!_sets.TryGetValue(key, out var set))
+            {
+                _sets.Add(key, set = new SetEntry(key));
+            }
+
+            return set;
+        }
+
+        public bool SetTryGet(string key, out SetEntry entry)
+        {
+            return _sets.TryGetValue(key, out entry);
+        }
+
+        public void SetExpire(SetEntry set, TimeSpan? expireIn)
+        {
+            EntryExpire(set, _setIndex, expireIn);
+        }
+
+        public void SetDelete(SetEntry set)
+        {
+            _sets.Remove(set.Key);
+
+            if (set.ExpireAt.HasValue)
+            {
+                _setIndex.Remove(set);
+            }
+        }
+
+        public ListEntry ListGetOrAdd(string key)
+        {
+            if (!_lists.TryGetValue(key, out var list))
+            {
+                _lists.Add(key, list = new ListEntry(key));
+            }
+
+            return list;
+        }
+
+        public bool ListTryGet(string key, out ListEntry entry)
+        {
+            return _lists.TryGetValue(key, out entry);
+        }
+
+        public void ListExpire(ListEntry entry, TimeSpan? expireIn)
+        {
+            EntryExpire(entry, _listIndex, expireIn);
+        }
+
+        public void ListDelete(ListEntry list)
+        {
+            _lists.Remove(list.Key);
+
+            if (list.ExpireAt.HasValue)
+            {
+                _listIndex.Remove(list);
+            }
+        }
+
+        public CounterEntry CounterGetOrAdd(string key)
+        {
+            if (!_counters.TryGetValue(key, out var counter))
+            {
+                _counters.Add(key, counter = new CounterEntry(key));
+            }
+
+            return counter;
+        }
+
+        public bool CounterTryGet(string key, out CounterEntry entry)
+        {
+            return _counters.TryGetValue(key, out entry);
+        }
+
+        public void CounterExpire(CounterEntry counter, TimeSpan? expireIn)
+        {
+            EntryExpire(counter, _counterIndex, expireIn);
+        }
+
+        public void CounterDelete(CounterEntry entry)
+        {
+            _counters.Remove(entry.Key);
+
+            if (entry.ExpireAt.HasValue)
+            {
+                _counterIndex.Remove(entry);
+            }
+        }
+
+        private static void EntryExpire<T>(T entity, ISet<T> index, TimeSpan? expireIn)
+            where T : IExpirableEntry
+        {
+            if (entity.ExpireAt.HasValue)
+            {
+                index.Remove(entity);
+            }
+
+            if (expireIn.HasValue)
+            {
+                // TODO: Replace DateTime.UtcNow everywhere with some time factory
+                entity.ExpireAt = DateTime.UtcNow.Add(expireIn.Value);
+                index.Add(entity);
+            }
+            else
+            {
+                entity.ExpireAt = null;
+            }
+        }
 
         private static IDictionary<string, T> CreateDictionary<T>()
         {

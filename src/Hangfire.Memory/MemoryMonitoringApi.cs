@@ -37,7 +37,7 @@ namespace Hangfire.Memory
 
                         Job job = null;
 
-                        if (state._jobs.TryGetValue(message, out var jobEntry))
+                        if (state.JobTryGet(message, out var jobEntry))
                         {
                             try
                             {
@@ -98,7 +98,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state._jobs.TryGetValue(jobId, out var entry))
+                if (!state.JobTryGet(jobId, out var entry))
                 {
                     return null;
                 }
@@ -142,8 +142,8 @@ namespace Hangfire.Memory
                 Deleted = GetCountByStateName(DeletedState.StateName, state),
                 Queues = state._queues.Count,
                 Servers = state._servers.Count,
-                Recurring = state._sets.TryGetValue("recurring-jobs", out var recurring)
-                    ? recurring.Value.Count
+                Recurring = state.SetTryGet("recurring-jobs", out var recurring)
+                    ? recurring.Count
                     : 0
             });
         }
@@ -165,7 +165,7 @@ namespace Hangfire.Memory
 
                         Job job = null;
 
-                        if (state._jobs.TryGetValue(message, out var jobEntry))
+                        if (state.JobTryGet(message, out var jobEntry))
                         {
                             try
                             {
@@ -243,17 +243,17 @@ namespace Hangfire.Memory
             return _dispatcher.QueryAndWait(state =>
             {
                 var result = new JobList<ScheduledJobDto>(Enumerable.Empty<KeyValuePair<string, ScheduledJobDto>>());
-                if (state._sets.TryGetValue("schedule", out var setEntry))
+                if (state.SetTryGet("schedule", out var setEntry))
                 {
                     var index = 0;
 
-                    foreach (var entry in setEntry.Value)
+                    foreach (var entry in setEntry)
                     {
                         if (index < from) continue;
                         if (index >= from + count) break;
 
                         Job job = null;
-                        if (state._jobs.TryGetValue(entry.Value, out var backgroundJob))
+                        if (state.JobTryGet(entry.Value, out var backgroundJob))
                         {
                             try
                             {
@@ -492,7 +492,7 @@ namespace Hangfire.Memory
             }
 
             var keys = dates.Select(x => $"stats:{type}:{x:yyyy-MM-dd-HH}").ToArray();
-            var valuesMap = keys.Select(key => state._counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
+            var valuesMap = keys.Select(key => state.CounterTryGet(key, out var entry) ? entry.Value : 0).ToArray();
 
             var result = new Dictionary<DateTime, long>();
             for (var i = 0; i < dates.Count; i++)
@@ -517,7 +517,7 @@ namespace Hangfire.Memory
 
             var stringDates = dates.Select(x => x.ToString("yyyy-MM-dd")).ToList();
             var keys = stringDates.Select(x => $"stats:{type}:{x}").ToArray();
-            var valuesMap = keys.Select(key => state._counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
+            var valuesMap = keys.Select(key => state.CounterTryGet(key, out var entry) ? entry.Value : 0).ToArray();
 
             var result = new Dictionary<DateTime, long>();
             for (var i = 0; i < stringDates.Count; i++)

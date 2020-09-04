@@ -173,12 +173,8 @@ namespace Hangfire.Memory
                 ExpireAt = DateTime.UtcNow.Add(expireIn) // TODO: Use time factory
             };
 
-            _dispatcher.QueryNoWait(state =>
-            {
-                // TODO: Precondition: jobId does not exist
-                state._jobs.Add(backgroundJob.Key, backgroundJob);
-                state._jobIndex.Add(backgroundJob);
-            });
+            // TODO: Precondition: jobId does not exist
+            _dispatcher.QueryNoWait(state => state.JobCreate(backgroundJob));
 
             return backgroundJob.Key;
         }
@@ -234,7 +230,7 @@ namespace Hangfire.Memory
         {
             _dispatcher.QueryAndWait(state =>
             {
-                if (state._jobs.TryGetValue(id, out var jobEntry))
+                if (state.JobTryGet(id, out var jobEntry))
                 {
                     jobEntry.Parameters[name] = value;
                 }
@@ -247,7 +243,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state._jobs.TryGetValue(id, out var jobEntry) && jobEntry.Parameters.TryGetValue(name, out var result))
+                if (state.JobTryGet(id, out var jobEntry) && jobEntry.Parameters.TryGetValue(name, out var result))
                 {
                     return result;
                 }
@@ -260,7 +256,7 @@ namespace Hangfire.Memory
         {
             var result = _dispatcher.QueryAndWait(state =>
             {
-                if (!state._jobs.TryGetValue(jobId, out var jobEntry))
+                if (!state.JobTryGet(jobId, out var jobEntry))
                 {
                     return null;
                 }
@@ -297,7 +293,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state._jobs.TryGetValue(jobId, out var jobEntry) || jobEntry.State == null)
+                if (!state.JobTryGet(jobId, out var jobEntry) || jobEntry.State == null)
                 {
                     return null;
                 }
@@ -384,9 +380,9 @@ namespace Hangfire.Memory
                 // TODO: Null or empty when doesn't exists?
                 var result = new HashSet<string>();
 
-                if (state._sets.TryGetValue(key, out var set))
+                if (state.SetTryGet(key, out var set))
                 {
-                    foreach (var entry in set.Value)
+                    foreach (var entry in set)
                     {
                         result.Add(entry.Value);
                     }
@@ -400,8 +396,8 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state._sets.TryGetValue(key, out var set)) return null;
-                foreach (var entry in set.Value)
+                if (!state.SetTryGet(key, out var set)) return null;
+                foreach (var entry in set)
                 {
                     if (entry.Score < fromScore) continue;
                     if (entry.Score > toScore) break;
@@ -417,9 +413,9 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state._sets.TryGetValue(key, out var set))
+                if (state.SetTryGet(key, out var set))
                 {
-                    return set.Value.Count;
+                    return set.Count;
                 }
 
                 return 0;
@@ -430,9 +426,9 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state._lists.TryGetValue(key, out var list))
+                if (state.ListTryGet(key, out var list))
                 {
-                    return list.Value.Count;
+                    return list.Count;
                 }
 
                 return 0;
@@ -443,7 +439,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state._counters.TryGetValue(key, out var counter))
+                if (state.CounterTryGet(key, out var counter))
                 {
                     return counter.Value;
                 }
@@ -456,7 +452,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state._hashes.TryGetValue(key, out var hash))
+                if (state.HashTryGet(key, out var hash))
                 {
                     return hash.Value.Count;
                 }
@@ -469,7 +465,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state._hashes.TryGetValue(key, out var hash) && hash.ExpireAt.HasValue)
+                if (state.HashTryGet(key, out var hash) && hash.ExpireAt.HasValue)
                 {
                     // TODO: Change with time factory
                     return hash.ExpireAt.Value - DateTime.UtcNow;
@@ -485,7 +481,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state._lists.TryGetValue(key, out var list) && list.ExpireAt.HasValue)
+                if (state.ListTryGet(key, out var list) && list.ExpireAt.HasValue)
                 {
                     // TODO: Change with time factory
                     return list.ExpireAt.Value - DateTime.UtcNow;
@@ -500,7 +496,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state._sets.TryGetValue(key, out var set) && set.ExpireAt.HasValue)
+                if (state.SetTryGet(key, out var set) && set.ExpireAt.HasValue)
                 {
                     // TODO: Change with time factory
                     return set.ExpireAt.Value - DateTime.UtcNow;
@@ -517,10 +513,7 @@ namespace Hangfire.Memory
             {
                 // TODO: return when keyValuePairs is empty
 
-                if (!state._hashes.TryGetValue(key, out var hash))
-                {
-                    state._hashes.Add(key, hash = new HashEntry(key));
-                }
+                var hash = state.HashGetOrAdd(key);
 
                 foreach (var valuePair in keyValuePairs)
                 {
@@ -535,7 +528,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state._hashes.TryGetValue(key, out var hash))
+                if (state.HashTryGet(key, out var hash))
                 {
                     return hash.Value.ToDictionary(x => x.Key, x => x.Value);
                 }
@@ -549,7 +542,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state._hashes.TryGetValue(key, out var hash) && hash.Value.TryGetValue(name, out var result))
+                if (state.HashTryGet(key, out var hash) && hash.Value.TryGetValue(name, out var result))
                 {
                     return result;
                 }
@@ -562,19 +555,19 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state._lists.TryGetValue(key, out var list))
+                if (!state.ListTryGet(key, out var list))
                 {
                     // TODO: Or null?
                     return new List<string>(0);
                 }
 
-                var reversed = new List<string>(list.Value.Count);
-                for (var i = list.Value.Count - 1; i >= 0; i--)
+                var result = new List<string>(list.Count);
+                for (var i = 0; i < list.Count; i++)
                 {
-                    reversed.Add(list.Value[i]);
+                    result.Add(list[i]);
                 }
 
-                return reversed;
+                return result;
             });
         }
 
@@ -582,28 +575,23 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state._lists.TryGetValue(key, out var list))
+                if (!state.ListTryGet(key, out var list))
                 {
                     // TODO: Or null?
                     return new List<string>(0);
                 }
 
-                var reversed = new List<string>(list.Value.Count);
-                var index = list.Value.Count - 1;
-                var counter = 0;
+                var result = new List<string>(list.Count);
 
-                while (index >= 0)
+                for (var index = 0; index < list.Count; index++)
                 {
-                    if (counter < startingFrom) continue;
-                    if (counter > endingAt) break;
+                    if (index < startingFrom) continue;
+                    if (index > endingAt) break;
 
-                    reversed.Add(list.Value[index]);
-
-                    index--;
-                    counter++;
+                    result.Add(list[index]);
                 }
 
-                return reversed;
+                return result;
             });
         }
 
@@ -611,16 +599,16 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state._sets.TryGetValue(key, out var set))
+                if (!state.SetTryGet(key, out var set))
                 {
                     // TODO: Or null?
                     return new List<string>(0);
                 }
 
-                var result = new List<string>(set.Value.Count);
+                var result = new List<string>(set.Count);
                 var counter = 0;
 
-                foreach (var entry in set.Value)
+                foreach (var entry in set)
                 {
                     if (counter < startingFrom) continue;
                     if (counter > endingAt) break;
