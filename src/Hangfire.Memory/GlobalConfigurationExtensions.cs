@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using Hangfire.Memory;
-
-[assembly: InternalsVisibleTo("Hangfire.Memory.Tests")]
 
 namespace Hangfire
 {
