@@ -164,25 +164,23 @@ namespace Hangfire.Memory
 
         public override string CreateExpiredJob(Job job, IDictionary<string, string> parameters, DateTime createdAt, TimeSpan expireIn)
         {
-            var jobId = Guid.NewGuid().ToString();
+            var backgroundJob = new BackgroundJobEntry
+            {
+                Key = Guid.NewGuid().ToString(), // TODO: Change with Long type
+                InvocationData = InvocationData.Serialize(job),
+                Parameters = parameters.ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal),
+                CreatedAt = createdAt,
+                ExpireAt = DateTime.UtcNow.Add(expireIn) // TODO: Use time factory
+            };
 
             _dispatcher.QueryNoWait(state =>
             {
                 // TODO: Precondition: jobId does not exist
-                var backgroundJob = new BackgroundJobEntry
-                {
-                    Key = jobId, // TODO: Change with Long type
-                    InvocationData = InvocationData.Serialize(job),
-                    Parameters = parameters.ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal),
-                    CreatedAt = createdAt,
-                    ExpireAt = DateTime.UtcNow.Add(expireIn) // TODO: Use time factory
-                };
-
                 state._jobs.Add(backgroundJob.Key, backgroundJob);
                 state._jobIndex.Add(backgroundJob);
             });
 
-            return jobId;
+            return backgroundJob.Key;
         }
 
         public override IFetchedJob FetchNextJob(string[] queueNames, CancellationToken cancellationToken)
