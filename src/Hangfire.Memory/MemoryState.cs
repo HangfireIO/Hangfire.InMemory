@@ -138,7 +138,7 @@ namespace Hangfire.Memory
             var createdAtComparison = x.State.CreatedAt.CompareTo(y.State.CreatedAt);
             if (createdAtComparison != 0) return createdAtComparison;
 
-            return x.Key.CompareTo(y.Key);
+            return String.Compare(x.Key, y.Key, StringComparison.Ordinal);
         }
     }
 
@@ -166,7 +166,7 @@ namespace Hangfire.Memory
             var expirationCompare = x.ExpireAt.Value.CompareTo(y.ExpireAt.Value);
             if (expirationCompare != 0) return expirationCompare;
 
-            return x.Key.CompareTo(y.Key);
+            return String.Compare(x.Key, y.Key, StringComparison.Ordinal);
         }
     }
 
