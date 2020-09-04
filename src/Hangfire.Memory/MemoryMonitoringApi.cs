@@ -37,7 +37,7 @@ namespace Hangfire.Memory
 
                         Job job = null;
 
-                        if (state.JobTryGet(message, out var jobEntry))
+                        if (state.Jobs.TryGetValue(message, out var jobEntry))
                         {
                             try
                             {
@@ -98,7 +98,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state.JobTryGet(jobId, out var entry))
+                if (!state.Jobs.TryGetValue(jobId, out var entry))
                 {
                     return null;
                 }
@@ -142,7 +142,7 @@ namespace Hangfire.Memory
                 Deleted = GetCountByStateName(DeletedState.StateName, state),
                 Queues = state.Queues.Count,
                 Servers = state._servers.Count,
-                Recurring = state.SetTryGet("recurring-jobs", out var recurring)
+                Recurring = state.Sets.TryGetValue("recurring-jobs", out var recurring)
                     ? recurring.Count
                     : 0
             });
@@ -165,7 +165,7 @@ namespace Hangfire.Memory
 
                         Job job = null;
 
-                        if (state.JobTryGet(message, out var jobEntry))
+                        if (state.Jobs.TryGetValue(message, out var jobEntry))
                         {
                             try
                             {
@@ -243,7 +243,7 @@ namespace Hangfire.Memory
             return _dispatcher.QueryAndWait(state =>
             {
                 var result = new JobList<ScheduledJobDto>(Enumerable.Empty<KeyValuePair<string, ScheduledJobDto>>());
-                if (state.SetTryGet("schedule", out var setEntry))
+                if (state.Sets.TryGetValue("schedule", out var setEntry))
                 {
                     var index = 0;
 
@@ -253,7 +253,7 @@ namespace Hangfire.Memory
                         if (index >= from + count) break;
 
                         Job job = null;
-                        if (state.JobTryGet(entry.Value, out var backgroundJob))
+                        if (state.Jobs.TryGetValue(entry.Value, out var backgroundJob))
                         {
                             try
                             {

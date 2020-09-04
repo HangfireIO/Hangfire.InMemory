@@ -20,7 +20,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (state.JobTryGet(jobId, out var job)) state.JobExpire(job, expireIn);
+                if (state.Jobs.TryGetValue(jobId, out var job)) state.JobExpire(job, expireIn);
             });
         }
 
@@ -28,7 +28,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (state.JobTryGet(jobId, out var job)) state.JobExpire(job, null);
+                if (state.Jobs.TryGetValue(jobId, out var job)) state.JobExpire(job, null);
             });
         }
 
@@ -113,7 +113,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (!state.SetTryGet(key, out var set)) return;
+                if (!state.Sets.TryGetValue(key, out var set)) return;
 
                 set.Remove(value);
 
@@ -148,7 +148,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (!state.ListTryGet(key, out var list)) return;
+                if (!state.Lists.TryGetValue(key, out var list)) return;
 
                 var result = new List<string>(); // TODO: Create only when really necessary
 
@@ -196,7 +196,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (state.HashTryGet(key, out var hash)) state.HashDelete(hash);
+                if (state.Hashes.TryGetValue(key, out var hash)) state.HashDelete(hash);
             });
         }
 
@@ -219,7 +219,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (state.SetTryGet(key, out var set)) state.SetDelete(set);
+                if (state.Sets.TryGetValue(key, out var set)) state.SetDelete(set);
             });
         }
 
@@ -227,7 +227,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (state.HashTryGet(key, out var hash)) state.HashExpire(hash, expireIn);
+                if (state.Hashes.TryGetValue(key, out var hash)) state.HashExpire(hash, expireIn);
             });
         }
 
@@ -235,7 +235,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (state.ListTryGet(key, out var list)) state.ListExpire(list, expireIn);
+                if (state.Lists.TryGetValue(key, out var list)) state.ListExpire(list, expireIn);
             });
         }
 
@@ -243,7 +243,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (state.SetTryGet(key, out var set)) state.SetExpire(set, expireIn);
+                if (state.Sets.TryGetValue(key, out var set)) state.SetExpire(set, expireIn);
             });
         }
 
@@ -251,7 +251,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (state.HashTryGet(key, out var hash)) state.HashExpire(hash, null);
+                if (state.Hashes.TryGetValue(key, out var hash)) state.HashExpire(hash, null);
             });
         }
 
@@ -259,7 +259,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (state.ListTryGet(key, out var list)) state.ListExpire(list, null);
+                if (state.Lists.TryGetValue(key, out var list)) state.ListExpire(list, null);
             });
         }
 
@@ -267,7 +267,7 @@ namespace Hangfire.Memory
         {
             _actions.Add(state =>
             {
-                if (state.SetTryGet(key, out var set)) state.SetExpire(set, null);
+                if (state.Sets.TryGetValue(key, out var set)) state.SetExpire(set, null);
             });
         }
 

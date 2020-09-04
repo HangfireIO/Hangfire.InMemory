@@ -230,7 +230,7 @@ namespace Hangfire.Memory
         {
             _dispatcher.QueryAndWait(state =>
             {
-                if (state.JobTryGet(id, out var jobEntry))
+                if (state.Jobs.TryGetValue(id, out var jobEntry))
                 {
                     jobEntry.Parameters[name] = value;
                 }
@@ -243,7 +243,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state.JobTryGet(id, out var jobEntry) && jobEntry.Parameters.TryGetValue(name, out var result))
+                if (state.Jobs.TryGetValue(id, out var jobEntry) && jobEntry.Parameters.TryGetValue(name, out var result))
                 {
                     return result;
                 }
@@ -256,7 +256,7 @@ namespace Hangfire.Memory
         {
             var result = _dispatcher.QueryAndWait(state =>
             {
-                if (!state.JobTryGet(jobId, out var jobEntry))
+                if (!state.Jobs.TryGetValue(jobId, out var jobEntry))
                 {
                     return null;
                 }
@@ -293,7 +293,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state.JobTryGet(jobId, out var jobEntry) || jobEntry.State == null)
+                if (!state.Jobs.TryGetValue(jobId, out var jobEntry) || jobEntry.State == null)
                 {
                     return null;
                 }
@@ -380,7 +380,7 @@ namespace Hangfire.Memory
                 // TODO: Null or empty when doesn't exists?
                 var result = new HashSet<string>();
 
-                if (state.SetTryGet(key, out var set))
+                if (state.Sets.TryGetValue(key, out var set))
                 {
                     foreach (var entry in set)
                     {
@@ -396,7 +396,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state.SetTryGet(key, out var set)) return null;
+                if (!state.Sets.TryGetValue(key, out var set)) return null;
                 foreach (var entry in set)
                 {
                     if (entry.Score < fromScore) continue;
@@ -413,7 +413,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state.SetTryGet(key, out var set))
+                if (state.Sets.TryGetValue(key, out var set))
                 {
                     return set.Count;
                 }
@@ -426,7 +426,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state.ListTryGet(key, out var list))
+                if (state.Lists.TryGetValue(key, out var list))
                 {
                     return list.Count;
                 }
@@ -452,7 +452,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state.HashTryGet(key, out var hash))
+                if (state.Hashes.TryGetValue(key, out var hash))
                 {
                     return hash.Value.Count;
                 }
@@ -465,7 +465,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state.HashTryGet(key, out var hash) && hash.ExpireAt.HasValue)
+                if (state.Hashes.TryGetValue(key, out var hash) && hash.ExpireAt.HasValue)
                 {
                     // TODO: Change with time factory
                     return hash.ExpireAt.Value - DateTime.UtcNow;
@@ -481,7 +481,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state.ListTryGet(key, out var list) && list.ExpireAt.HasValue)
+                if (state.Lists.TryGetValue(key, out var list) && list.ExpireAt.HasValue)
                 {
                     // TODO: Change with time factory
                     return list.ExpireAt.Value - DateTime.UtcNow;
@@ -496,7 +496,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state.SetTryGet(key, out var set) && set.ExpireAt.HasValue)
+                if (state.Sets.TryGetValue(key, out var set) && set.ExpireAt.HasValue)
                 {
                     // TODO: Change with time factory
                     return set.ExpireAt.Value - DateTime.UtcNow;
@@ -528,7 +528,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state.HashTryGet(key, out var hash))
+                if (state.Hashes.TryGetValue(key, out var hash))
                 {
                     return hash.Value.ToDictionary(x => x.Key, x => x.Value);
                 }
@@ -542,7 +542,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (state.HashTryGet(key, out var hash) && hash.Value.TryGetValue(name, out var result))
+                if (state.Hashes.TryGetValue(key, out var hash) && hash.Value.TryGetValue(name, out var result))
                 {
                     return result;
                 }
@@ -555,7 +555,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state.ListTryGet(key, out var list))
+                if (!state.Lists.TryGetValue(key, out var list))
                 {
                     // TODO: Or null?
                     return new List<string>(0);
@@ -575,7 +575,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state.ListTryGet(key, out var list))
+                if (!state.Lists.TryGetValue(key, out var list))
                 {
                     // TODO: Or null?
                     return new List<string>(0);
@@ -599,7 +599,7 @@ namespace Hangfire.Memory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state.SetTryGet(key, out var set))
+                if (!state.Sets.TryGetValue(key, out var set))
                 {
                     // TODO: Or null?
                     return new List<string>(0);

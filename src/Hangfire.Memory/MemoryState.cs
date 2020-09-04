@@ -244,14 +244,19 @@ namespace Hangfire.Memory
 
         // TODO: We can remove dictionaries when empty and re-create them when required to always have minimum size
         internal readonly IDictionary<string, LockEntry> _locks = CreateDictionary<LockEntry>();
-        private readonly IDictionary<string, BackgroundJobEntry> _jobs = CreateDictionary<BackgroundJobEntry>();
-        private readonly IDictionary<string, HashEntry> _hashes = CreateDictionary<HashEntry>();
-        private readonly IDictionary<string, ListEntry> _lists = CreateDictionary<ListEntry>();
-        private readonly IDictionary<string, SetEntry> _sets = CreateDictionary<SetEntry>();
-        private readonly IDictionary<string, CounterEntry> _counters = CreateDictionary<CounterEntry>();
+        private readonly Dictionary<string, BackgroundJobEntry> _jobs = CreateDictionary<BackgroundJobEntry>();
+        private readonly Dictionary<string, HashEntry> _hashes = CreateDictionary<HashEntry>();
+        private readonly Dictionary<string, ListEntry> _lists = CreateDictionary<ListEntry>();
+        private readonly Dictionary<string, SetEntry> _sets = CreateDictionary<SetEntry>();
+        private readonly Dictionary<string, CounterEntry> _counters = CreateDictionary<CounterEntry>();
         private readonly Dictionary<string, BlockingCollection<string>> _queues = CreateDictionary<BlockingCollection<string>>();
         internal readonly IDictionary<string, ServerEntry> _servers = CreateDictionary<ServerEntry>();
 
+        public IReadOnlyDictionary<string, BackgroundJobEntry> Jobs => _jobs;
+        public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
+        public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
+        public IReadOnlyDictionary<string, SetEntry> Sets => _sets;
+        public IReadOnlyDictionary<string, CounterEntry> Counters => _counters;
         public IReadOnlyDictionary<string, BlockingCollection<string>> Queues => _queues;
 
         public BlockingCollection<string> QueueGetOrCreate(string name)
@@ -273,11 +278,6 @@ namespace Hangfire.Memory
             }
 
             return backgroundJob;
-        }
-
-        public bool JobTryGet(string jobId, out BackgroundJobEntry entry)
-        {
-            return _jobs.TryGetValue(jobId, out entry);
         }
 
         public void JobCreate(BackgroundJobEntry job)
@@ -336,11 +336,6 @@ namespace Hangfire.Memory
             return hash;
         }
 
-        public bool HashTryGet(string key, out HashEntry hash)
-        {
-            return _hashes.TryGetValue(key, out hash);
-        }
-
         public void HashExpire(HashEntry hash, TimeSpan? expireIn)
         {
             EntryExpire(hash, _hashIndex, expireIn);
@@ -363,11 +358,6 @@ namespace Hangfire.Memory
             }
 
             return set;
-        }
-
-        public bool SetTryGet(string key, out SetEntry entry)
-        {
-            return _sets.TryGetValue(key, out entry);
         }
 
         public void SetExpire(SetEntry set, TimeSpan? expireIn)
@@ -393,11 +383,6 @@ namespace Hangfire.Memory
             }
 
             return list;
-        }
-
-        public bool ListTryGet(string key, out ListEntry entry)
-        {
-            return _lists.TryGetValue(key, out entry);
         }
 
         public void ListExpire(ListEntry entry, TimeSpan? expireIn)
