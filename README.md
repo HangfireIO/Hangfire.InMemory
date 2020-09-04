@@ -17,4 +17,3 @@ Distributed locks (heh, in an in-process storage), queue fetch logic (but only f
 * Force expiration when memory pressure is high to avoid `OutOfMemoryException`.
 * Add overridden default for expiration time for jobs and batches?
 * Add fire-and-forget semantics (*release semantics* in memory models) to some commands to avoid waiting when unnecessary.
-* Replace `Guid`-based identifiers with `long` ones.
