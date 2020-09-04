@@ -26,7 +26,7 @@ namespace Hangfire.Memory
         public override IDisposable AcquireDistributedLock(string resource, TimeSpan timeout)
         {
             // TODO: Track acquired lock at a connection level and release them on dispose
-            var (entry, acquired, owned) = _dispatcher.QueryAndWait(state =>
+            var tuple = _dispatcher.QueryAndWait(state =>
             {
                 var acq = false;
                 var ownd = false;
@@ -46,12 +46,12 @@ namespace Hangfire.Memory
                     lockEntry.ReferenceCount++;
                 }
 
-                return (lockEntry, acq, ownd);
+                return Tuple.Create(lockEntry, acq, ownd);
             });
 
-            if (acquired || owned)
+            if (tuple.Item2 || tuple.Item3)
             {
-                return new LockDisposable(_dispatcher, this, resource, entry);
+                return new LockDisposable(_dispatcher, this, resource, tuple.Item1);
             }
 
             var timeoutMs = (int)timeout.TotalMilliseconds;
@@ -59,9 +59,9 @@ namespace Hangfire.Memory
 
             try
             {
-                lock (entry)
+                lock (tuple.Item1)
                 {
-                    while (entry.Owner != null)
+                    while (tuple.Item1.Owner != null)
                     {
                         var remaining = timeoutMs - unchecked(Environment.TickCount - started);
                         if (remaining < 0)
@@ -69,12 +69,12 @@ namespace Hangfire.Memory
                             throw new DistributedLockTimeoutException(resource);
                         }
 
-                        Monitor.Wait(entry, remaining);
+                        Monitor.Wait(tuple.Item1, remaining);
                     }
 
-                    entry.Owner = this;
-                    entry.Level = 1;
-                    return new LockDisposable(_dispatcher, this, resource, entry);
+                    tuple.Item1.Owner = this;
+                    tuple.Item1.Level = 1;
+                    return new LockDisposable(_dispatcher, this, resource, tuple.Item1);
                 }
             }
             catch (DistributedLockTimeoutException)
@@ -83,14 +83,14 @@ namespace Hangfire.Memory
                 _dispatcher.QueryAndWait(state =>
                 {
                     if (!state._locks.TryGetValue(resource, out var current2) ||
-                        !ReferenceEquals(current2, entry))
+                        !ReferenceEquals(current2, tuple.Item1))
                     {
                         throw new InvalidOperationException("Precondition failed when decrementing a lock");
                     }
 
-                    entry.ReferenceCount--;
+                    tuple.Item1.ReferenceCount--;
 
-                    if (entry.ReferenceCount == 0)
+                    if (tuple.Item1.ReferenceCount == 0)
                     {
                         state._locks.Remove(resource);
                     }

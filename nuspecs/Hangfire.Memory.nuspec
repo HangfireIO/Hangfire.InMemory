@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Hangfire.Memory</id>
+    <version>0.0.0</version>
+    <title>Hangfire Memory Storage</title>
+    <authors>Sergey Odinokov</authors>
+    <owners>odinserj</owners>
+    <projectUrl>https://www.hangfire.io/</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://www.hangfire.io/licenses.html</licenseUrl>
+    <description>In-memory job storage for Hangfire with transactional implementation.</description>
+    <copyright>Copyright © 2020 Sergey Odinokov</copyright>
+    <tags>Hangfire Storage In-Memory</tags>
+    <releaseNotes>https://www.hangfire.io/blog/releases.html
+0.1.0 – Initial release
+</releaseNotes>
+    <dependencies>
+      <group targetFramework="net45">
+        <dependency id="Hangfire.Core" version="1.7.0" />
+      </group>
+      <group targetFramework="netstandard2.0">
+        <dependency id="Hangfire.Core" version="1.7.0" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="net45\Hangfire.Memory.dll" target="lib\net45" />
+    <file src="net45\Hangfire.Memory.pdb" target="lib\net45" />
+
+    <file src="netstandard2.0\Hangfire.Memory.dll" target="lib\netstandard2.0" />
+    <file src="netstandard2.0\Hangfire.Memory.pdb" target="lib\netstandard2.0" />
+
+    <file src="LICENSE" />
+    <file src="LICENSE_STANDARD" />
+    <file src="LICENSE_ROYALTYFREE" />
+    
+    <file src="..\src\Hangfire.Memory\**\*.cs" target="src" exclude="**\obj*\**\*.cs" />
+  </files>
+</package>
