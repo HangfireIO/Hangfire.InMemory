@@ -94,7 +94,7 @@ namespace Hangfire.Memory
         {
             T entry;
 
-            while (index.Count > 0 && (entry = index.Min).ExpireAt.HasValue && entry.ExpireAt >= now)
+            while (index.Count > 0 && (entry = index.Min).ExpireAt.HasValue && now >= entry.ExpireAt)
             {
                 action(entry);
             }
@@ -105,7 +105,7 @@ namespace Hangfire.Memory
             BackgroundJobEntry entry;
 
             // TODO: Replace with actual expiration rules
-            while (state._jobIndex.Count > 0 && (entry = state._jobIndex.Min).ExpireAt.HasValue && entry.ExpireAt >= now)
+            while (state._jobIndex.Count > 0 && (entry = state._jobIndex.Min).ExpireAt.HasValue && now >= entry.ExpireAt)
             {
                 state.JobDelete(entry);
             }
