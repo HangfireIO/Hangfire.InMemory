@@ -19,12 +19,14 @@ namespace Hangfire.Memory
             }
         }
 
-        private readonly MemoryState _state = new MemoryState();
         private readonly BlockingCollection<MemoryCallback> _queries = new BlockingCollection<MemoryCallback>();
+        private readonly MemoryState _state;
         private readonly Thread _thread;
 
-        public MemoryDispatcher()
+        public MemoryDispatcher(MemoryState state)
         {
+            _state = state ?? throw new ArgumentNullException(nameof(state));
+
             _thread = new Thread(DoWork)
             {
                 IsBackground = true,

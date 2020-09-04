@@ -4,7 +4,7 @@ namespace Hangfire.Memory
 {
     public sealed class MemoryStorage : JobStorage
     {
-        private readonly IMemoryDispatcher _dispatcher = new MemoryDispatcher();
+        private readonly IMemoryDispatcher _dispatcher = new MemoryDispatcher(new MemoryState());
 
         public override IMonitoringApi GetMonitoringApi()
         {
