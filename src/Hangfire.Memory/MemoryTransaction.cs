@@ -18,12 +18,12 @@ namespace Hangfire.Memory
 
         public override void ExpireJob(string jobId, TimeSpan expireIn)
         {
-            _actions.Add(state => EntityExpire(state._jobs, state._jobIndex, jobId, expireIn));
+            _actions.Add(state => EntityFindAndExpire(state._jobs, state._jobIndex, jobId, expireIn));
         }
 
         public override void PersistJob(string jobId)
         {
-            _actions.Add(state => EntityExpire(state._jobs, state._jobIndex, jobId, null));
+            _actions.Add(state => EntityFindAndExpire(state._jobs, state._jobIndex, jobId, null));
         }
 
         public override void SetJobState(string jobId, IState state)
@@ -225,7 +225,7 @@ namespace Hangfire.Memory
 
             if (counter.Value != 0)
             {
-                EntityExpire(state._counters, state._counterIndex, key, expireIn);
+                EntityExpire(counter, state._counters, state._counterIndex, key, expireIn);
             }
             else
             {
@@ -234,7 +234,7 @@ namespace Hangfire.Memory
             }
         }
 
-        private static void EntityExpire<T>(
+        private static void EntityFindAndExpire<T>(
             IDictionary<string, T> collection,
             ISet<T> index,
             string key,
@@ -246,6 +246,17 @@ namespace Hangfire.Memory
                 return;
             }
 
+            EntityExpire(entity, collection, index, key, expireIn);
+        }
+
+        private static void EntityExpire<T>(
+            T entity,
+            IDictionary<string, T> collection,
+            ISet<T> index,
+            string key,
+            TimeSpan? expireIn)
+            where T : IExpirableEntry
+        {
             if (entity.ExpireAt.HasValue)
             {
                 index.Remove(entity);
@@ -348,7 +359,7 @@ namespace Hangfire.Memory
 
         private static void SetExpire(MemoryState state, string key, TimeSpan? expireIn)
         {
-            EntityExpire(state._sets, state._setIndex, key, expireIn);
+            EntityFindAndExpire(state._sets, state._setIndex, key, expireIn);
         }
 
         private static void ListInsert(MemoryState state, string key, string value)
@@ -426,7 +437,7 @@ namespace Hangfire.Memory
 
         private static void ListExpire(MemoryState state, string key, TimeSpan? expireIn)
         {
-            EntityExpire(state._lists, state._listIndex, key, expireIn);
+            EntityFindAndExpire(state._lists, state._listIndex, key, expireIn);
         }
 
         private static void HashSet(MemoryState state, string key, IEnumerable<KeyValuePair<string, string>> values)
@@ -467,7 +478,7 @@ namespace Hangfire.Memory
         
         private static void HashExpire(MemoryState state, string key, TimeSpan? expireIn)
         {
-            EntityExpire(state._hashes, state._hashIndex, key, expireIn);
+            EntityFindAndExpire(state._hashes, state._hashIndex, key, expireIn);
         }
     }
 }
