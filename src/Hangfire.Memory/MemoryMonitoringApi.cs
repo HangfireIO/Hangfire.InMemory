@@ -138,8 +138,8 @@ namespace Hangfire.Memory
                 Scheduled = GetCountByStateName(ScheduledState.StateName, state),
                 Processing = GetCountByStateName(ProcessingState.StateName, state),
                 Failed = GetCountByStateName(FailedState.StateName, state),
-                Succeeded = GetCountByStateName(SucceededState.StateName, state),
-                Deleted = GetCountByStateName(DeletedState.StateName, state),
+                Succeeded = state.Counters.TryGetValue("stats:succeeded", out var succeeded) ? succeeded.Value : 0,
+                Deleted = state.Counters.TryGetValue("stats:deleted", out var deleted) ? deleted.Value : 0,
                 Queues = state.Queues.Count,
                 Servers = state.Servers.Count,
                 Recurring = state.Sets.TryGetValue("recurring-jobs", out var recurring)
