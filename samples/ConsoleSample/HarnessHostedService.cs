@@ -23,7 +23,7 @@ namespace ConsoleSample
         {
             var sw = Stopwatch.StartNew();
 
-            Parallel.For(0, 500_000, i =>
+            Parallel.For(0, 500_000, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },  i =>
             {
                 _backgroundJobs.Enqueue(() => Empty());
             });
