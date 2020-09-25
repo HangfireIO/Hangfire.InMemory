@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Hangfire.Annotations;
 using Hangfire.Common;
@@ -22,9 +23,12 @@ namespace Hangfire.Memory
             }
         }
 
-        private readonly BlockingCollection<MemoryCallback> _queries = new BlockingCollection<MemoryCallback>();
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
+        private readonly ConcurrentQueue<MemoryCallback> _queries = new ConcurrentQueue<MemoryCallback>();
         private readonly MemoryState _state;
         private readonly Thread _thread;
+
+        private PaddedInt64 _outstandingRequests;
 
         public MemoryDispatcher(MemoryState state)
         {
@@ -181,7 +185,15 @@ namespace Hangfire.Memory
                 }
             })
             {
-                _queries.Add(callback);
+                _queries.Enqueue(callback);
+
+                if (Volatile.Read(ref _outstandingRequests.Value) == 0)
+                {
+                    if (Interlocked.Exchange(ref _outstandingRequests.Value, 1) == 0)
+                    {
+                        _semaphore.Release();
+                    }
+                }
 
                 // TODO: Add timeout here – dispatcher thread can fail, and we shouldn't block user code in this case
                 callback.Ready.Wait();
@@ -202,9 +214,14 @@ namespace Hangfire.Memory
         {
             while (true)
             {
-                if (_queries.TryTake(out var next, TimeSpan.FromSeconds(1)))
+                if (_semaphore.Wait(TimeSpan.FromSeconds(1)))
                 {
-                    next.Callback(next, _state);
+                    Interlocked.Exchange(ref _outstandingRequests.Value, 0);
+
+                    while (_queries.TryDequeue(out var next))
+                    {
+                        next.Callback(next, _state);
+                    }
                 }
                 else
                 {
@@ -240,6 +257,15 @@ namespace Hangfire.Memory
             {
                 state.JobDelete(entry);
             }
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = 2 * CACHE_LINE_SIZE)]
+        internal struct PaddedInt64
+        {
+            internal const int CACHE_LINE_SIZE = 128;
+
+            [FieldOffset(CACHE_LINE_SIZE)]
+            internal long Value;
         }
     }
 }
