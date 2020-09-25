@@ -98,7 +98,7 @@ namespace Hangfire.Memory
             };
 
             // TODO: Precondition: jobId does not exist
-            _dispatcher.QueryNoWait(state => state.JobCreate(backgroundJob));
+            _dispatcher.QueryAndWait(state => state.JobCreate(backgroundJob));
 
             return backgroundJob.Key;
         }

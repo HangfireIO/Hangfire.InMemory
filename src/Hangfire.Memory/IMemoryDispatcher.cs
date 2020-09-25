@@ -17,6 +17,6 @@ namespace Hangfire.Memory
         void ReleaseLockEntry(MemoryConnection connection, string resource, LockEntry entry);
 
         T QueryAndWait<T>(Func<MemoryState, T> query);
-        void QueryNoWait(Action<MemoryState> query);
+        void QueryAndWait(Action<MemoryState> query);
     }
 }

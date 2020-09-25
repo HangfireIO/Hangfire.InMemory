@@ -189,18 +189,13 @@ namespace Hangfire.Memory
             }
         }
 
-        public void QueryNoWait(Action<MemoryState> query)
+        public void QueryAndWait(Action<MemoryState> query)
         {
-            using (var callback = new MemoryCallback
+            QueryAndWait(state =>
             {
-                Callback = (obj, state) =>
-                {
-                    query(state);
-                }
-            })
-            {
-                _queries.Add(callback);
-            }
+                query(state);
+                return true;
+            });
         }
 
         private void DoWork()

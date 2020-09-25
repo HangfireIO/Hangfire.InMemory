@@ -279,7 +279,7 @@ namespace Hangfire.Memory
 
         public override void Commit()
         {
-            _dispatcher.QueryNoWait(state =>
+            _dispatcher.QueryAndWait(state =>
             {
                 // TODO: Check all the preconditions (for example if locks are still held)
                 foreach (var action in _actions)
