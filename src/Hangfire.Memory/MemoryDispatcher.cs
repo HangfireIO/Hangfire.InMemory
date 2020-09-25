@@ -11,20 +11,8 @@ namespace Hangfire.Memory
 {
     internal sealed class MemoryDispatcher : IMemoryDispatcher
     {
-        private sealed class MemoryCallback : IDisposable
-        {
-            public object Result;
-            public ManualResetEventSlim Ready = new ManualResetEventSlim(false);
-            public Action<MemoryCallback, MemoryState> Callback;
-
-            public void Dispose()
-            {
-                Ready?.Dispose();
-            }
-        }
-
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
-        private readonly ConcurrentQueue<MemoryCallback> _queries = new ConcurrentQueue<MemoryCallback>();
+        private readonly ConcurrentQueue<MemoryDispatcherCallback> _queries = new ConcurrentQueue<MemoryDispatcherCallback>();
         private readonly MemoryState _state;
         private readonly Thread _thread;
 
@@ -178,12 +166,7 @@ namespace Hangfire.Memory
 
         public T QueryAndWait<T>(Func<MemoryState, T> query)
         {
-            using (var callback = new MemoryCallback {Callback = (obj, state) =>
-                {
-                    obj.Result = query(state);
-                    obj.Ready.Set();
-                }
-            })
+            using (var callback = new MemoryDispatcherCallback(state => query(state)))
             {
                 _queries.Enqueue(callback);
 
@@ -220,7 +203,8 @@ namespace Hangfire.Memory
 
                     while (_queries.TryDequeue(out var next))
                     {
-                        next.Callback(next, _state);
+                        next.Result = next.Callback(_state);
+                        next.Ready.Set();
                     }
                 }
                 else
