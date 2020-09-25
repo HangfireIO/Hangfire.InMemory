@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Hangfire.Annotations;
-using Hangfire.Common;
-using Hangfire.Storage;
 
 namespace Hangfire.Memory
 {
@@ -46,34 +44,10 @@ namespace Hangfire.Memory
             return entries;
         }
 
-        public JobData GetJobData([NotNull] string jobId)
+        public bool TryGetJobData([NotNull] string jobId, out BackgroundJobEntry entry)
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
-
-            if (!_state.Jobs.TryGetValue(jobId, out var jobEntry))
-            {
-                return null;
-            }
-
-            Job job = null;
-            JobLoadException loadException = null;
-
-            try
-            {
-                job = jobEntry.InvocationData.DeserializeJob();
-            }
-            catch (JobLoadException ex)
-            {
-                loadException = ex;
-            }
-
-            return new JobData
-            {
-                Job = job,
-                LoadException = loadException,
-                CreatedAt = jobEntry.CreatedAt,
-                State = jobEntry.State?.Name
-            };
+            return _state.Jobs.TryGetValue(jobId, out entry);
         }
 
         public string GetJobParameter([NotNull] string jobId, [NotNull] string name)

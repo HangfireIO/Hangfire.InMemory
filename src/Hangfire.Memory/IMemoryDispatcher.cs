@@ -2,14 +2,13 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Hangfire.Annotations;
-using Hangfire.Storage;
 
 namespace Hangfire.Memory
 {
     internal interface IMemoryDispatcher
     {
         IReadOnlyDictionary<string, BlockingCollection<string>> TryGetQueues([NotNull] IReadOnlyCollection<string> queueNames);
-        JobData GetJobData([NotNull] string jobId);
+        bool TryGetJobData([NotNull] string jobId, out BackgroundJobEntry entry);
         string GetJobParameter([NotNull] string jobId, [NotNull] string name);
 
         bool TryAcquireLockEntry(MemoryConnection connection, string resource, out LockEntry entry);

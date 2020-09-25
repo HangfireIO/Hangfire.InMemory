@@ -158,7 +158,30 @@ namespace Hangfire.Memory
 
         public override JobData GetJobData(string jobId)
         {
-            return _dispatcher.GetJobData(jobId);
+            if (!_dispatcher.TryGetJobData(jobId, out var entry))
+            {
+                return null;
+            }
+
+            Job job = null;
+            JobLoadException loadException = null;
+
+            try
+            {
+                job = entry.InvocationData.DeserializeJob();
+            }
+            catch (JobLoadException ex)
+            {
+                loadException = ex;
+            }
+
+            return new JobData
+            {
+                Job = job,
+                LoadException = loadException,
+                CreatedAt = entry.CreatedAt,
+                State = entry.State?.Name
+            };
         }
 
         public override StateData GetStateData(string jobId)
