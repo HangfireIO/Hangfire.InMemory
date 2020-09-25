@@ -161,7 +161,7 @@ namespace Hangfire.Memory
             {
                 Key = Guid.NewGuid().ToString(), // TODO: Change with Long type
                 InvocationData = InvocationData.SerializeJob(job),
-                Parameters = parameters.ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal),
+                Parameters = new ConcurrentDictionary<string, string>(parameters, StringComparer.Ordinal),
                 CreatedAt = createdAt,
                 ExpireAt = DateTime.UtcNow.Add(expireIn) // TODO: Use time factory
             };
@@ -222,15 +222,7 @@ namespace Hangfire.Memory
 
         public override string GetJobParameter(string id, string name)
         {
-            return _dispatcher.QueryAndWait(state =>
-            {
-                if (state.Jobs.TryGetValue(id, out var jobEntry) && jobEntry.Parameters.TryGetValue(name, out var result))
-                {
-                    return result;
-                }
-
-                return null;
-            });
+            return _dispatcher.GetJobParameter(id, name);
         }
 
         public override JobData GetJobData(string jobId)

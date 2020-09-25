@@ -84,6 +84,19 @@ namespace Hangfire.Memory
             };
         }
 
+        public string GetJobParameter([NotNull] string jobId, [NotNull] string name)
+        {
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
+            if (name == null) throw new ArgumentNullException(nameof(name));
+
+            if (_state.Jobs.TryGetValue(jobId, out var jobEntry) && jobEntry.Parameters.TryGetValue(name, out var result))
+            {
+                return result;
+            }
+
+            return null;
+        }
+
         public T QueryAndWait<T>(Func<MemoryState, T> query)
         {
             using (var callback = new MemoryCallback {Callback = (obj, state) =>

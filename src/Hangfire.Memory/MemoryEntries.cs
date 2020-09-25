@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Hangfire.Server;
 using Hangfire.Storage;
@@ -130,7 +131,7 @@ namespace Hangfire.Memory
         public InvocationData InvocationData { get; set; }
 
         // TODO What case sensitivity to use here?
-        public IDictionary<string, string> Parameters { get; set; }
+        public ConcurrentDictionary<string, string> Parameters { get; set; }
 
         public StateEntry State { get; set; }
         public ICollection<StateEntry> History { get; set; } = new List<StateEntry>(StateCountForRegularJob);

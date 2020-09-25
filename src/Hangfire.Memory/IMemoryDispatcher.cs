@@ -10,6 +10,7 @@ namespace Hangfire.Memory
     {
         IReadOnlyDictionary<string, BlockingCollection<string>> TryGetQueues([NotNull] IReadOnlyCollection<string> queueNames);
         JobData GetJobData([NotNull] string jobId);
+        string GetJobParameter([NotNull] string jobId, [NotNull] string name);
 
         T QueryAndWait<T>(Func<MemoryState, T> query);
         void QueryNoWait(Action<MemoryState> query);
