@@ -28,28 +28,24 @@ namespace Hangfire.Memory
             // TODO: Track acquired lock at a connection level and release them on dispose
             var tuple = _dispatcher.QueryAndWait(state =>
             {
-                var acq = false;
-                var ownd = false;
+                var acquired = false;
 
                 if (!state._locks.TryGetValue(resource, out var lockEntry))
                 {
                     state._locks.Add(resource, lockEntry = new LockEntry { Owner = this, ReferenceCount = 1, Level = 1 });
-                    acq = true;
+                    acquired = true;
                 }
                 else if (lockEntry.Owner == this)
                 {
-                    ownd = true;
                     lockEntry.Level++;
-                }
-                else
-                {
-                    lockEntry.ReferenceCount++;
+                    acquired = true;
                 }
 
-                return Tuple.Create(lockEntry, acq, ownd);
+                lockEntry.ReferenceCount++;
+                return Tuple.Create(lockEntry, acquired);
             });
 
-            if (tuple.Item2 || tuple.Item3)
+            if (tuple.Item2)
             {
                 return new LockDisposable(_dispatcher, this, resource, tuple.Item1);
             }
