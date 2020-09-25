@@ -32,7 +32,7 @@ namespace Hangfire.Memory
 
                     foreach (var message in queueEntry.Value)
                     {
-                        if (counter < from) continue;
+                        if (counter < from) { counter++; continue; }
                         if (counter >= from + perPage) break;
 
                         Job job = null;
@@ -160,7 +160,7 @@ namespace Hangfire.Memory
 
                     foreach (var message in queue)
                     {
-                        if (counter < from) continue;
+                        if (counter < from) { counter++; continue; }
                         if (counter >= from + perPage) break;
 
                         Job job = null;
@@ -208,7 +208,7 @@ namespace Hangfire.Memory
 
                     foreach (var entry in indexEntry)
                     {
-                        if (index < from) continue;
+                        if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
                         Job job = null;
@@ -249,7 +249,7 @@ namespace Hangfire.Memory
 
                     foreach (var entry in setEntry)
                     {
-                        if (index < from) continue;
+                        if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
                         Job job = null;
@@ -292,7 +292,7 @@ namespace Hangfire.Memory
 
                     foreach (var entry in indexEntry)
                     {
-                        if (index < from) continue;
+                        if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
                         Job job = null;
@@ -336,7 +336,7 @@ namespace Hangfire.Memory
 
                     foreach (var entry in indexEntry)
                     {
-                        if (index < from) continue;
+                        if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
                         Job job = null;
@@ -380,7 +380,7 @@ namespace Hangfire.Memory
 
                     foreach (var entry in indexEntry)
                     {
-                        if (index < from) continue;
+                        if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
                         Job job = null;

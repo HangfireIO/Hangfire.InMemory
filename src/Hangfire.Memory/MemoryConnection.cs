@@ -505,7 +505,7 @@ namespace Hangfire.Memory
 
                 foreach (var entry in set)
                 {
-                    if (counter < startingFrom) continue;
+                    if (counter < startingFrom) { counter++; continue; }
                     if (counter > endingAt) break;
 
                     result.Add(entry.Value);
