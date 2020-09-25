@@ -35,6 +35,22 @@ namespace Hangfire.Memory
             _thread.Start();
         }
 
+        public IReadOnlyDictionary<string, BlockingCollection<string>> TryGetQueues(IReadOnlyCollection<string> queueNames)
+        {
+            if (queueNames == null) throw new ArgumentNullException(nameof(queueNames));
+
+            var entries = new Dictionary<string, BlockingCollection<string>>(queueNames.Count);
+            foreach (var queueName in queueNames)
+            {
+                if (_state.Queues.TryGetValue(queueName, out var queue))
+                {
+                    entries.Add(queueName, queue);
+                }
+            }
+
+            return entries;
+        }
+
         public T QueryAndWait<T>(Func<MemoryState, T> query)
         {
             using (var callback = new MemoryCallback {Callback = (obj, state) =>

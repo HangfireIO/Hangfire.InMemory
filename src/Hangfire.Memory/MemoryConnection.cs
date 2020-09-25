@@ -180,20 +180,8 @@ namespace Hangfire.Memory
                 {
                     // TODO: Simplify this by adding a special method to dispatcher
                     // DONE: Try to read queues on each failed fetch iteration.
-                    var queues = _dispatcher.QueryAndWait(state =>
-                    {
-                        // TODO: Ensure duplicate queue names do not fail everything
-                        var entries = new Dictionary<string, BlockingCollection<string>>(queueNames.Length);
-                        foreach (var queueName in queueNames)
-                        {
-                            if (state.Queues.TryGetValue(queueName, out var queue))
-                            {
-                                entries.Add(queueName, queue);
-                            }
-                        }
-
-                        return entries;
-                    });
+                    // TODO: Ensure duplicate queue names do not fail everything
+                    var queues = _dispatcher.TryGetQueues(queueNames);
 
                     if (queues.Count == 1)
                     {

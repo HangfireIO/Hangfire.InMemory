@@ -22,7 +22,7 @@ namespace Hangfire.Memory
         private readonly Dictionary<string, ListEntry> _lists = CreateDictionary<ListEntry>();
         private readonly Dictionary<string, SetEntry> _sets = CreateDictionary<SetEntry>();
         private readonly Dictionary<string, CounterEntry> _counters = CreateDictionary<CounterEntry>();
-        private readonly Dictionary<string, BlockingCollection<string>> _queues = CreateDictionary<BlockingCollection<string>>();
+        private readonly ConcurrentDictionary<string, BlockingCollection<string>> _queues = CreateConcurrentDictionary<BlockingCollection<string>>();
         private readonly Dictionary<string, ServerEntry> _servers = CreateDictionary<ServerEntry>();
 
         public IReadOnlyDictionary<string, BackgroundJobEntry> Jobs => _jobs;
@@ -30,7 +30,7 @@ namespace Hangfire.Memory
         public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
         public IReadOnlyDictionary<string, SetEntry> Sets => _sets;
         public IReadOnlyDictionary<string, CounterEntry> Counters => _counters;
-        public IReadOnlyDictionary<string, BlockingCollection<string>> Queues => _queues;
+        public ConcurrentDictionary<string, BlockingCollection<string>> Queues => _queues; // net45 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
         public IReadOnlyDictionary<string, ServerEntry> Servers => _servers;
 
         public BlockingCollection<string> QueueGetOrCreate(string name)
@@ -38,7 +38,7 @@ namespace Hangfire.Memory
             if (!_queues.TryGetValue(name, out var queue))
             {
                 // TODO: Refactor this to unify creation of a queue
-                _queues.Add(name, queue = new BlockingCollection<string>());
+                _queues.GetOrAdd(name, _ => queue = new BlockingCollection<string>());
             }
 
             return queue;
@@ -231,6 +231,11 @@ namespace Hangfire.Memory
         private static Dictionary<string, T> CreateDictionary<T>()
         {
             return new Dictionary<string, T>(StringComparer.Ordinal);
+        }
+
+        private static ConcurrentDictionary<string, T> CreateConcurrentDictionary<T>()
+        {
+            return new ConcurrentDictionary<string, T>(StringComparer.Ordinal);
         }
     }
 }
