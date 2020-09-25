@@ -16,4 +16,4 @@ Distributed locks (heh, in an in-process storage), queue fetch logic (but only f
 * Add integration (for public API) and unit tests (for internal API).
 * Force expiration when memory pressure is high to avoid `OutOfMemoryException`.
 * Add overridden default for expiration time for jobs and batches?
-* Add fire-and-forget semantics (*release semantics* in memory models) to some commands to avoid waiting when unnecessary.
+* Can avoid synchronization in some read-only methods in the `MemoryConnection`class.
