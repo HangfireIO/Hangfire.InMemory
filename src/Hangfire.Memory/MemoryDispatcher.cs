@@ -97,6 +97,81 @@ namespace Hangfire.Memory
             return null;
         }
 
+        public bool TryAcquireLockEntry(MemoryConnection connection, string resource, out LockEntry entry)
+        {
+            var acquired = false;
+
+            lock (_state._locks)
+            {
+                if (!_state._locks.TryGetValue(resource, out entry))
+                {
+                    _state._locks.Add(resource, entry = new LockEntry {Owner = connection, ReferenceCount = 1, Level = 1});
+                    acquired = true;
+                }
+                else if (entry.Owner == connection)
+                {
+                    entry.Level++;
+                    acquired = true;
+                }
+
+                // TODO: Ensure ReferenceCount is updated only under _state._locks
+                entry.ReferenceCount++;
+            }
+
+            return acquired;
+        }
+
+        public void CancelLockEntry(string resource, LockEntry entry)
+        {
+            lock (_state._locks)
+            {
+                if (!_state._locks.TryGetValue(resource, out var current2) || !ReferenceEquals(current2, entry))
+                {
+                    throw new InvalidOperationException("Precondition failed when decrementing a lock");
+                }
+
+                entry.ReferenceCount--;
+
+                if (entry.ReferenceCount == 0)
+                {
+                    _state._locks.Remove(resource);
+                }
+            }
+        }
+
+        public void ReleaseLockEntry(MemoryConnection connection, string resource, LockEntry entry)
+        {
+            // TODO: Ensure lock ordering to avoid deadlocks
+            lock (_state._locks)
+            {
+                if (!_state._locks.TryGetValue(resource, out var current)) throw new InvalidOperationException("Does not contain a lock");
+                if (!ReferenceEquals(current, entry)) throw new InvalidOperationException("Does not contain a correct lock entry");
+
+                lock (entry)
+                {
+                    if (!ReferenceEquals(entry.Owner, connection)) throw new InvalidOperationException("Wrong entry owner");
+                    if (entry.Level <= 0) throw new InvalidOperationException("Wrong level");
+
+                    entry.Level--;
+
+                    if (entry.Level == 0)
+                    {
+                        entry.Owner = null;
+                        entry.ReferenceCount--;
+
+                        if (entry.ReferenceCount == 0)
+                        {
+                            _state._locks.Remove(resource);
+                        }
+                        else
+                        {
+                            Monitor.Pulse(entry);
+                        }
+                    }
+                }
+            }
+        }
+
         public T QueryAndWait<T>(Func<MemoryState, T> query)
         {
             using (var callback = new MemoryCallback {Callback = (obj, state) =>

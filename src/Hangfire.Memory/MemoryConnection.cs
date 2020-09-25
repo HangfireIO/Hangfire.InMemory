@@ -26,28 +26,9 @@ namespace Hangfire.Memory
         public override IDisposable AcquireDistributedLock(string resource, TimeSpan timeout)
         {
             // TODO: Track acquired lock at a connection level and release them on dispose
-            var tuple = _dispatcher.QueryAndWait(state =>
+            if (_dispatcher.TryAcquireLockEntry(this, resource, out var entry))
             {
-                var acquired = false;
-
-                if (!state._locks.TryGetValue(resource, out var lockEntry))
-                {
-                    state._locks.Add(resource, lockEntry = new LockEntry { Owner = this, ReferenceCount = 1, Level = 1 });
-                    acquired = true;
-                }
-                else if (lockEntry.Owner == this)
-                {
-                    lockEntry.Level++;
-                    acquired = true;
-                }
-
-                lockEntry.ReferenceCount++;
-                return Tuple.Create(lockEntry, acquired);
-            });
-
-            if (tuple.Item2)
-            {
-                return new LockDisposable(_dispatcher, this, resource, tuple.Item1);
+                return new LockDisposable(_dispatcher, this, resource, entry);
             }
 
             var timeoutMs = (int)timeout.TotalMilliseconds;
@@ -55,9 +36,9 @@ namespace Hangfire.Memory
 
             try
             {
-                lock (tuple.Item1)
+                lock (entry)
                 {
-                    while (tuple.Item1.Owner != null)
+                    while (entry.Owner != null)
                     {
                         var remaining = timeoutMs - unchecked(Environment.TickCount - started);
                         if (remaining < 0)
@@ -65,35 +46,17 @@ namespace Hangfire.Memory
                             throw new DistributedLockTimeoutException(resource);
                         }
 
-                        Monitor.Wait(tuple.Item1, remaining);
+                        Monitor.Wait(entry, remaining);
                     }
 
-                    tuple.Item1.Owner = this;
-                    tuple.Item1.Level = 1;
-                    return new LockDisposable(_dispatcher, this, resource, tuple.Item1);
+                    entry.Owner = this;
+                    entry.Level = 1;
+                    return new LockDisposable(_dispatcher, this, resource, entry);
                 }
             }
             catch (DistributedLockTimeoutException)
             {
-                // TODO: Can implement this as a fire-and-forget operation
-                _dispatcher.QueryAndWait(state =>
-                {
-                    if (!state._locks.TryGetValue(resource, out var current2) ||
-                        !ReferenceEquals(current2, tuple.Item1))
-                    {
-                        throw new InvalidOperationException("Precondition failed when decrementing a lock");
-                    }
-
-                    tuple.Item1.ReferenceCount--;
-
-                    if (tuple.Item1.ReferenceCount == 0)
-                    {
-                        state._locks.Remove(resource);
-                    }
-
-                    return true;
-                });
-
+                _dispatcher.CancelLockEntry(resource, entry);
                 throw;
             }
         }
@@ -119,35 +82,7 @@ namespace Hangfire.Memory
                 if (_disposed) return;
                 _disposed = true;
 
-                // TODO: Can implement this as a fire-and-forget operation, but ensure Monitor.Pulse is called after it (inside dispatcher) in this case
-                _dispatcher.QueryNoWait(state =>
-                {
-                    if (!state._locks.TryGetValue(_resource, out var current)) throw new InvalidOperationException("Does not contain a lock");
-                    if (!ReferenceEquals(current, _entry)) throw new InvalidOperationException("Does not contain a correct lock entry");
-
-                    lock (_entry)
-                    {
-                        if (!ReferenceEquals(_entry.Owner, _reference)) throw new InvalidOperationException("Wrong entry owner");
-                        if (_entry.Level <= 0) throw new InvalidOperationException("Wrong level");
-
-                        _entry.Level--;
-
-                        if (_entry.Level == 0)
-                        {
-                            _entry.Owner = null;
-                            _entry.ReferenceCount--;
-
-                            if (_entry.ReferenceCount == 0)
-                            {
-                                state._locks.Remove(_resource);
-                            }
-                            else
-                            {
-                                Monitor.Pulse(_entry);
-                            }
-                        }
-                    }
-                });
+                _dispatcher.ReleaseLockEntry(_reference, _resource, _entry);
             }
         }
 

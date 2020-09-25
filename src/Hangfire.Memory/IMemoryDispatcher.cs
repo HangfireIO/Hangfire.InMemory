@@ -12,6 +12,10 @@ namespace Hangfire.Memory
         JobData GetJobData([NotNull] string jobId);
         string GetJobParameter([NotNull] string jobId, [NotNull] string name);
 
+        bool TryAcquireLockEntry(MemoryConnection connection, string resource, out LockEntry entry);
+        void CancelLockEntry(string resource, LockEntry entry);
+        void ReleaseLockEntry(MemoryConnection connection, string resource, LockEntry entry);
+
         T QueryAndWait<T>(Func<MemoryState, T> query);
         void QueryNoWait(Action<MemoryState> query);
     }
