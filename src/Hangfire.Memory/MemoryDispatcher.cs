@@ -2,6 +2,9 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using Hangfire.Annotations;
+using Hangfire.Common;
+using Hangfire.Storage;
 
 namespace Hangfire.Memory
 {
@@ -35,7 +38,7 @@ namespace Hangfire.Memory
             _thread.Start();
         }
 
-        public IReadOnlyDictionary<string, BlockingCollection<string>> TryGetQueues(IReadOnlyCollection<string> queueNames)
+        public IReadOnlyDictionary<string, BlockingCollection<string>> TryGetQueues([NotNull] IReadOnlyCollection<string> queueNames)
         {
             if (queueNames == null) throw new ArgumentNullException(nameof(queueNames));
 
@@ -49,6 +52,36 @@ namespace Hangfire.Memory
             }
 
             return entries;
+        }
+
+        public JobData GetJobData([NotNull] string jobId)
+        {
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
+
+            if (!_state.Jobs.TryGetValue(jobId, out var jobEntry))
+            {
+                return null;
+            }
+
+            Job job = null;
+            JobLoadException loadException = null;
+
+            try
+            {
+                job = jobEntry.InvocationData.DeserializeJob();
+            }
+            catch (JobLoadException ex)
+            {
+                loadException = ex;
+            }
+
+            return new JobData
+            {
+                Job = job,
+                LoadException = loadException,
+                CreatedAt = jobEntry.CreatedAt,
+                State = jobEntry.State?.Name
+            };
         }
 
         public T QueryAndWait<T>(Func<MemoryState, T> query)

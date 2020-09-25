@@ -17,7 +17,7 @@ namespace Hangfire.Memory
 
         // TODO: We can remove dictionaries when empty and re-create them when required to always have minimum size
         internal readonly IDictionary<string, LockEntry> _locks = CreateDictionary<LockEntry>();
-        private readonly Dictionary<string, BackgroundJobEntry> _jobs = CreateDictionary<BackgroundJobEntry>();
+        private readonly ConcurrentDictionary<string, BackgroundJobEntry> _jobs = CreateConcurrentDictionary<BackgroundJobEntry>();
         private readonly Dictionary<string, HashEntry> _hashes = CreateDictionary<HashEntry>();
         private readonly Dictionary<string, ListEntry> _lists = CreateDictionary<ListEntry>();
         private readonly Dictionary<string, SetEntry> _sets = CreateDictionary<SetEntry>();
@@ -25,7 +25,7 @@ namespace Hangfire.Memory
         private readonly ConcurrentDictionary<string, BlockingCollection<string>> _queues = CreateConcurrentDictionary<BlockingCollection<string>>();
         private readonly Dictionary<string, ServerEntry> _servers = CreateDictionary<ServerEntry>();
 
-        public IReadOnlyDictionary<string, BackgroundJobEntry> Jobs => _jobs;
+        public ConcurrentDictionary<string, BackgroundJobEntry> Jobs => _jobs; // TODO Implement workaround for net45 to return IReadOnlyDictionary (and the same for _queues)
         public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
         public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
         public IReadOnlyDictionary<string, SetEntry> Sets => _sets;
@@ -56,7 +56,11 @@ namespace Hangfire.Memory
 
         public void JobCreate(BackgroundJobEntry job)
         {
-            _jobs.Add(job.Key, job);
+            if (!_jobs.TryAdd(job.Key, job))
+            {
+                // TODO: Panic
+            }
+
             _jobIndex.Add(job);
         }
 
@@ -90,7 +94,7 @@ namespace Hangfire.Memory
                 _jobIndex.Remove(entry);
             }
 
-            _jobs.Remove(entry.Key);
+            _jobs.TryRemove(entry.Key, out _);
 
             if (entry.State?.Name != null && _jobStateIndex.TryGetValue(entry.State.Name, out var stateIndex))
             {
