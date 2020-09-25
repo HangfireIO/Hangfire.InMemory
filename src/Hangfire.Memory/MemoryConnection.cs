@@ -124,7 +124,7 @@ namespace Hangfire.Memory
                 _disposed = true;
 
                 // TODO: Can implement this as a fire-and-forget operation, but ensure Monitor.Pulse is called after it (inside dispatcher) in this case
-                var lockRemoved = _dispatcher.QueryAndWait(state =>
+                _dispatcher.QueryNoWait(state =>
                 {
                     if (!state._locks.TryGetValue(_resource, out var current)) throw new InvalidOperationException("Does not contain a lock");
                     if (!ReferenceEquals(current, _entry)) throw new InvalidOperationException("Does not contain a correct lock entry");
@@ -144,21 +144,14 @@ namespace Hangfire.Memory
                             if (_entry.ReferenceCount == 0)
                             {
                                 state._locks.Remove(_resource);
-                                return true;
+                            }
+                            else
+                            {
+                                Monitor.Pulse(_entry);
                             }
                         }
                     }
-
-                    return false;
                 });
-
-                if (!lockRemoved)
-                {
-                    lock (_entry)
-                    {
-                        Monitor.Pulse(_entry);
-                    }
-                }
             }
         }
 
