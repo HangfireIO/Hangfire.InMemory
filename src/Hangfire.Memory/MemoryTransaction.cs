@@ -10,6 +10,7 @@ namespace Hangfire.Memory
     {
         private readonly List<Action<MemoryState>> _actions = new List<Action<MemoryState>>();
         private readonly IMemoryDispatcher _dispatcher;
+        private bool _enqueued;
 
         public MemoryTransaction(IMemoryDispatcher dispatcher)
         {
@@ -72,7 +73,8 @@ namespace Hangfire.Memory
 
         public override void AddToQueue(string queue, string jobId)
         {
-            _actions.Add(state => state.QueueGetOrCreate(queue).Add(jobId));
+            _actions.Add(state => state.QueueGetOrCreate(queue).Enqueue(jobId));
+            _enqueued = true;
         }
 
         public override void IncrementCounter(string key)
@@ -287,6 +289,8 @@ namespace Hangfire.Memory
                     action(state);
                 }
             });
+
+            if (_enqueued) _dispatcher.SignalOneQueueWaitNode();
         }
 
         private static void CounterIncrement(MemoryState state, string key, int value, TimeSpan? expireIn)

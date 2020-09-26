@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Hangfire.Annotations;
@@ -9,12 +10,15 @@ namespace Hangfire.Memory
 {
     internal sealed class MemoryDispatcher : IMemoryDispatcher
     {
+        private static readonly MemoryQueueWaitNode Tombstone = new MemoryQueueWaitNode(null);
+
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
         private readonly ConcurrentQueue<MemoryDispatcherCallback> _queries = new ConcurrentQueue<MemoryDispatcherCallback>();
         private readonly MemoryState _state;
         private readonly Thread _thread;
 
         private PaddedInt64 _outstandingRequests;
+        private readonly MemoryQueueWaitNode _waitHead = new MemoryQueueWaitNode(null);
 
         public MemoryDispatcher(MemoryState state)
         {
@@ -28,11 +32,11 @@ namespace Hangfire.Memory
             _thread.Start();
         }
 
-        public IReadOnlyDictionary<string, BlockingCollection<string>> TryGetQueues([NotNull] IReadOnlyCollection<string> queueNames)
+        public IReadOnlyDictionary<string, ConcurrentQueue<string>> TryGetQueues([NotNull] IReadOnlyCollection<string> queueNames)
         {
             if (queueNames == null) throw new ArgumentNullException(nameof(queueNames));
 
-            var entries = new Dictionary<string, BlockingCollection<string>>(queueNames.Count);
+            var entries = new Dictionary<string, ConcurrentQueue<string>>(queueNames.Count);
             foreach (var queueName in queueNames)
             {
                 if (_state.Queues.TryGetValue(queueName, out var queue))
@@ -136,6 +140,49 @@ namespace Hangfire.Memory
                     }
                 }
             }
+        }
+
+        public void AddQueueWaitNode(MemoryQueueWaitNode node)
+        {
+            var headNext = node.Next = null;
+            var spinWait = new SpinWait();
+
+            while (true)
+            {
+                var newNext = Interlocked.CompareExchange(ref _waitHead.Next, node, headNext);
+                if (newNext == headNext) break;
+
+                headNext = node.Next = newNext;
+                spinWait.SpinOnce();
+            }
+        }
+
+        public void SignalOneQueueWaitNode()
+        {
+            if (Volatile.Read(ref _waitHead.Next) == null) return;
+            SignalOneQueueWaitNodeSlow();
+        }
+
+        private void SignalOneQueueWaitNodeSlow()
+        {
+            var node = Interlocked.Exchange(ref _waitHead.Next, null);
+            if (node == null) return;
+
+            var tailNode = Interlocked.Exchange(ref node.Next, Tombstone);
+            if (tailNode != null)
+            {
+                var waitHead = _waitHead;
+                do
+                {
+                    waitHead = Interlocked.CompareExchange(ref waitHead.Next, tailNode, null);
+                    if (ReferenceEquals(waitHead, Tombstone))
+                    {
+                        waitHead = _waitHead;
+                    }
+                } while (waitHead != null);
+            }
+
+            node.Value.Release();
         }
 
         public T QueryAndWait<T>(Func<MemoryState, T> query)

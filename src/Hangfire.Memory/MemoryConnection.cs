@@ -105,32 +105,34 @@ namespace Hangfire.Memory
 
         public override IFetchedJob FetchNextJob(string[] queueNames, CancellationToken cancellationToken)
         {
-            using (var waiter = new ManualResetEventSlim(false))
+            using (var ready = new SemaphoreSlim(0, 1))
             {
+                var waitNode = new MemoryQueueWaitNode(ready);
+                var waitAdded = false;
+
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    // TODO: Simplify this by adding a special method to dispatcher
-                    // DONE: Try to read queues on each failed fetch iteration.
                     // TODO: Ensure duplicate queue names do not fail everything
                     var queues = _dispatcher.TryGetQueues(queueNames);
 
-                    if (queues.Count == 1)
-                    {
-                        var queue = queues.First();
-                        var jobId = queue.Value.Take(cancellationToken);
-                        return new MemoryFetchedJob(_dispatcher, queue.Key, jobId);
-                    }
-
                     foreach (var queue in queues)
                     {
-                        if (queue.Value.TryTake(out var jobId))
+                        if (queue.Value.TryDequeue(out var jobId))
                         {
+                            _dispatcher.SignalOneQueueWaitNode();
                             return new MemoryFetchedJob(_dispatcher, queue.Key, jobId);
                         }
                     }
 
-                    // TODO: Improve waiting
-                    waiter.Wait(TimeSpan.FromSeconds(1), cancellationToken);
+                    if (!waitAdded)
+                    {
+                        _dispatcher.AddQueueWaitNode(waitNode);
+                        waitAdded = true;
+                        continue;
+                    }
+
+                    ready.Wait(cancellationToken);
+                    waitAdded = false;
                 }
             }
 

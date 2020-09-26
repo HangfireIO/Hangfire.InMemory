@@ -22,7 +22,7 @@ namespace Hangfire.Memory
         private readonly Dictionary<string, ListEntry> _lists = CreateDictionary<ListEntry>();
         private readonly Dictionary<string, SetEntry> _sets = CreateDictionary<SetEntry>();
         private readonly Dictionary<string, CounterEntry> _counters = CreateDictionary<CounterEntry>();
-        private readonly ConcurrentDictionary<string, BlockingCollection<string>> _queues = CreateConcurrentDictionary<BlockingCollection<string>>();
+        private readonly ConcurrentDictionary<string, ConcurrentQueue<string>> _queues = CreateConcurrentDictionary<ConcurrentQueue<string>>();
         private readonly Dictionary<string, ServerEntry> _servers = CreateDictionary<ServerEntry>();
 
         public ConcurrentDictionary<string, BackgroundJobEntry> Jobs => _jobs; // TODO Implement workaround for net45 to return IReadOnlyDictionary (and the same for _queues)
@@ -30,15 +30,15 @@ namespace Hangfire.Memory
         public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
         public IReadOnlyDictionary<string, SetEntry> Sets => _sets;
         public IReadOnlyDictionary<string, CounterEntry> Counters => _counters;
-        public ConcurrentDictionary<string, BlockingCollection<string>> Queues => _queues; // net45 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
+        public ConcurrentDictionary<string, ConcurrentQueue<string>> Queues => _queues; // net45 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
         public IReadOnlyDictionary<string, ServerEntry> Servers => _servers;
 
-        public BlockingCollection<string> QueueGetOrCreate(string name)
+        public ConcurrentQueue<string> QueueGetOrCreate(string name)
         {
             if (!_queues.TryGetValue(name, out var queue))
             {
                 // TODO: Refactor this to unify creation of a queue
-                _queues.GetOrAdd(name, _ => queue = new BlockingCollection<string>());
+                _queues.GetOrAdd(name, _ => queue = new ConcurrentQueue<string>());
             }
 
             return queue;
