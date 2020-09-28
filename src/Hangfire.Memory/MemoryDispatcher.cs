@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Hangfire.Annotations;
@@ -31,17 +30,14 @@ namespace Hangfire.Memory
             _thread.Start();
         }
 
-        public IReadOnlyDictionary<string, ConcurrentQueue<string>> TryGetQueues([NotNull] IReadOnlyCollection<string> queueNames)
+        public IReadOnlyDictionary<string, QueueEntry> GetOrAddQueues([NotNull] IReadOnlyCollection<string> queueNames)
         {
             if (queueNames == null) throw new ArgumentNullException(nameof(queueNames));
 
-            var entries = new Dictionary<string, ConcurrentQueue<string>>(queueNames.Count);
+            var entries = new Dictionary<string, QueueEntry>(queueNames.Count);
             foreach (var queueName in queueNames)
             {
-                if (_state.Queues.TryGetValue(queueName, out var queue))
-                {
-                    entries.Add(queueName, queue.Queue);
-                }
+                entries.Add(queueName, _state.QueueGetOrCreate(queueName));
             }
 
             return entries;
@@ -141,12 +137,10 @@ namespace Hangfire.Memory
             }
         }
 
-        public void AddQueueWaitNode(string queue, MemoryQueueWaitNode node)
+        public void AddQueueWaitNode(QueueEntry entry, MemoryQueueWaitNode node)
         {
             var headNext = node.Next = null;
             var spinWait = new SpinWait();
-
-            var entry = _state.Queues.GetOrAdd(queue, _ => new QueueEntry());
 
             while (true)
             {
@@ -158,10 +152,8 @@ namespace Hangfire.Memory
             }
         }
 
-        public void SignalOneQueueWaitNode(string queue)
+        public void SignalOneQueueWaitNode(QueueEntry entry)
         {
-            var entry = _state.Queues.GetOrAdd(queue, _ => new QueueEntry());
-
             if (Volatile.Read(ref entry.WaitHead.Next) == null) return;
 
             var node = Interlocked.Exchange(ref entry.WaitHead.Next, null);

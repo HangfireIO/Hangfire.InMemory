@@ -113,22 +113,22 @@ namespace Hangfire.Memory
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     // TODO: Ensure duplicate queue names do not fail everything
-                    var queues = _dispatcher.TryGetQueues(queueNames);
+                    var entries = _dispatcher.GetOrAddQueues(queueNames);
 
-                    foreach (var queue in queues)
+                    foreach (var entry in entries)
                     {
-                        if (queue.Value.TryDequeue(out var jobId))
+                        if (entry.Value.Queue.TryDequeue(out var jobId))
                         {
-                            _dispatcher.SignalOneQueueWaitNode(queue.Key);
-                            return new MemoryFetchedJob(_dispatcher, queue.Key, jobId);
+                            _dispatcher.SignalOneQueueWaitNode(entry.Value);
+                            return new MemoryFetchedJob(_dispatcher, entry.Key, jobId);
                         }
                     }
 
                     if (!waitAdded && ready.CurrentCount == 0)
                     {
-                        foreach (var queueName in queueNames)
+                        foreach (var entry in entries)
                         {
-                            _dispatcher.AddQueueWaitNode(queueName, waitNode);
+                            _dispatcher.AddQueueWaitNode(entry.Value, waitNode);
                         }
 
                         waitAdded = true;

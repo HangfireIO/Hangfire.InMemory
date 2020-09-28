@@ -8,7 +8,7 @@ namespace Hangfire.Memory
     internal sealed class MemoryTransaction : JobStorageTransaction
     {
         private readonly List<Action<MemoryState>> _actions = new List<Action<MemoryState>>();
-        private readonly HashSet<string> _enqueued = new HashSet<string>();
+        private readonly HashSet<QueueEntry> _enqueued = new HashSet<QueueEntry>();
         private readonly IMemoryDispatcher _dispatcher;
 
         public MemoryTransaction(IMemoryDispatcher dispatcher)
@@ -72,8 +72,13 @@ namespace Hangfire.Memory
 
         public override void AddToQueue(string queue, string jobId)
         {
-            _actions.Add(state => state.QueueGetOrCreate(queue).Enqueue(jobId));
-            _enqueued.Add(queue);
+            _actions.Add(state =>
+            {
+                var entry = state.QueueGetOrCreate(queue);
+                entry.Queue.Enqueue(jobId);
+
+                _enqueued.Add(entry);
+            });
         }
 
         public override void IncrementCounter(string key)

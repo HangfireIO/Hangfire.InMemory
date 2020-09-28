@@ -33,7 +33,7 @@ namespace Hangfire.Memory
         public ConcurrentDictionary<string, QueueEntry> Queues => _queues; // net45 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
         public IReadOnlyDictionary<string, ServerEntry> Servers => _servers;
 
-        public ConcurrentQueue<string> QueueGetOrCreate(string name)
+        public QueueEntry QueueGetOrCreate(string name)
         {
             if (!_queues.TryGetValue(name, out var entry))
             {
@@ -41,7 +41,7 @@ namespace Hangfire.Memory
                 _queues.GetOrAdd(name, _ => entry = new QueueEntry());
             }
 
-            return entry.Queue;
+            return entry;
         }
 
         public BackgroundJobEntry JobGetOrThrow(string jobId)

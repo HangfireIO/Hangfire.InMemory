@@ -7,7 +7,7 @@ namespace Hangfire.Memory
 {
     internal interface IMemoryDispatcher
     {
-        IReadOnlyDictionary<string, ConcurrentQueue<string>> TryGetQueues([NotNull] IReadOnlyCollection<string> queueNames);
+        IReadOnlyDictionary<string, QueueEntry> GetOrAddQueues([NotNull] IReadOnlyCollection<string> queueNames);
         bool TryGetJobData([NotNull] string jobId, out BackgroundJobEntry entry);
         string GetJobParameter([NotNull] string jobId, [NotNull] string name);
 
@@ -15,8 +15,8 @@ namespace Hangfire.Memory
         void CancelLockEntry(string resource, LockEntry entry);
         void ReleaseLockEntry(MemoryConnection connection, string resource, LockEntry entry);
 
-        void AddQueueWaitNode(string queue, MemoryQueueWaitNode node);
-        void SignalOneQueueWaitNode(string queue);
+        void AddQueueWaitNode(QueueEntry entry, MemoryQueueWaitNode node);
+        void SignalOneQueueWaitNode(QueueEntry entry);
 
         T QueryAndWait<T>(Func<MemoryState, T> query);
         void QueryAndWait(Action<MemoryState> query);
