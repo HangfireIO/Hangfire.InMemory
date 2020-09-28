@@ -30,7 +30,7 @@ namespace Hangfire.Memory
                     var from = 0;
                     var perPage = 5;
 
-                    foreach (var message in queueEntry.Value)
+                    foreach (var message in queueEntry.Value.Queue)
                     {
                         if (counter < from) { counter++; continue; }
                         if (counter >= from + perPage) break;
@@ -63,7 +63,7 @@ namespace Hangfire.Memory
                     result.Add(new QueueWithTopEnqueuedJobsDto
                     {
                         Fetched = 0,
-                        Length = queueEntry.Value.Count,
+                        Length = queueEntry.Value.Queue.Count,
                         Name = queueEntry.Key,
                         FirstJobs = queueResult
                     });
@@ -158,7 +158,7 @@ namespace Hangfire.Memory
                 {
                     var counter = 0;
 
-                    foreach (var message in queue)
+                    foreach (var message in queue.Queue)
                     {
                         if (counter < from) { counter++; continue; }
                         if (counter >= from + perPage) break;
@@ -417,7 +417,7 @@ namespace Hangfire.Memory
         public long EnqueuedCount(string queueName)
         {
             return _dispatcher.QueryAndWait(state => state.Queues.TryGetValue(queueName, out var queue) 
-                ? queue.Count
+                ? queue.Queue.Count
                 : 0);
         }
 

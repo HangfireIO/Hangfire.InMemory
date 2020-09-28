@@ -15,8 +15,8 @@ namespace Hangfire.Memory
         void CancelLockEntry(string resource, LockEntry entry);
         void ReleaseLockEntry(MemoryConnection connection, string resource, LockEntry entry);
 
-        void AddQueueWaitNode(MemoryQueueWaitNode node);
-        void SignalOneQueueWaitNode();
+        void AddQueueWaitNode(string queue, MemoryQueueWaitNode node);
+        void SignalOneQueueWaitNode(string queue);
 
         T QueryAndWait<T>(Func<MemoryState, T> query);
         void QueryAndWait(Action<MemoryState> query);

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Hangfire.States;
 using Hangfire.Storage;
@@ -9,8 +8,8 @@ namespace Hangfire.Memory
     internal sealed class MemoryTransaction : JobStorageTransaction
     {
         private readonly List<Action<MemoryState>> _actions = new List<Action<MemoryState>>();
+        private readonly HashSet<string> _enqueued = new HashSet<string>();
         private readonly IMemoryDispatcher _dispatcher;
-        private bool _enqueued;
 
         public MemoryTransaction(IMemoryDispatcher dispatcher)
         {
@@ -74,7 +73,7 @@ namespace Hangfire.Memory
         public override void AddToQueue(string queue, string jobId)
         {
             _actions.Add(state => state.QueueGetOrCreate(queue).Enqueue(jobId));
-            _enqueued = true;
+            _enqueued.Add(queue);
         }
 
         public override void IncrementCounter(string key)
@@ -290,7 +289,10 @@ namespace Hangfire.Memory
                 }
             });
 
-            if (_enqueued) _dispatcher.SignalOneQueueWaitNode();
+            foreach (var queue in _enqueued)
+            {
+                _dispatcher.SignalOneQueueWaitNode(queue);
+            }
         }
 
         private static void CounterIncrement(MemoryState state, string key, int value, TimeSpan? expireIn)

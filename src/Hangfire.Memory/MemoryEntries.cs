@@ -153,6 +153,12 @@ namespace Hangfire.Memory
         public int Level { get; set; }
     }
 
+    internal sealed class QueueEntry
+    {
+        public ConcurrentQueue<string> Queue = new ConcurrentQueue<string>();
+        public MemoryQueueWaitNode WaitHead = new MemoryQueueWaitNode(null);
+    }
+
     internal sealed class SortedSetEntry<T>
     {
         public SortedSetEntry(T value)

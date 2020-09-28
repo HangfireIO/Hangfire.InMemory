@@ -28,7 +28,7 @@ namespace Hangfire.Memory
         public void Requeue()
         {
             _dispatcher.QueryAndWait(state => state.QueueGetOrCreate(QueueName).Enqueue(JobId));
-            _dispatcher.SignalOneQueueWaitNode();
+            _dispatcher.SignalOneQueueWaitNode(QueueName);
         }
     }
 }

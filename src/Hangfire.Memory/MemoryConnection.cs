@@ -119,14 +119,18 @@ namespace Hangfire.Memory
                     {
                         if (queue.Value.TryDequeue(out var jobId))
                         {
-                            _dispatcher.SignalOneQueueWaitNode();
+                            _dispatcher.SignalOneQueueWaitNode(queue.Key);
                             return new MemoryFetchedJob(_dispatcher, queue.Key, jobId);
                         }
                     }
 
-                    if (!waitAdded)
+                    if (!waitAdded && ready.CurrentCount == 0)
                     {
-                        _dispatcher.AddQueueWaitNode(waitNode);
+                        foreach (var queueName in queueNames)
+                        {
+                            _dispatcher.AddQueueWaitNode(queueName, waitNode);
+                        }
+
                         waitAdded = true;
                         continue;
                     }

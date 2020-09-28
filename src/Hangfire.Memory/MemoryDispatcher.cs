@@ -18,7 +18,6 @@ namespace Hangfire.Memory
         private readonly Thread _thread;
 
         private PaddedInt64 _outstandingRequests;
-        private readonly MemoryQueueWaitNode _waitHead = new MemoryQueueWaitNode(null);
 
         public MemoryDispatcher(MemoryState state)
         {
@@ -41,7 +40,7 @@ namespace Hangfire.Memory
             {
                 if (_state.Queues.TryGetValue(queueName, out var queue))
                 {
-                    entries.Add(queueName, queue);
+                    entries.Add(queueName, queue.Queue);
                 }
             }
 
@@ -142,14 +141,16 @@ namespace Hangfire.Memory
             }
         }
 
-        public void AddQueueWaitNode(MemoryQueueWaitNode node)
+        public void AddQueueWaitNode(string queue, MemoryQueueWaitNode node)
         {
             var headNext = node.Next = null;
             var spinWait = new SpinWait();
 
+            var entry = _state.Queues.GetOrAdd(queue, _ => new QueueEntry());
+
             while (true)
             {
-                var newNext = Interlocked.CompareExchange(ref _waitHead.Next, node, headNext);
+                var newNext = Interlocked.CompareExchange(ref entry.WaitHead.Next, node, headNext);
                 if (newNext == headNext) break;
 
                 headNext = node.Next = newNext;
@@ -157,27 +158,25 @@ namespace Hangfire.Memory
             }
         }
 
-        public void SignalOneQueueWaitNode()
+        public void SignalOneQueueWaitNode(string queue)
         {
-            if (Volatile.Read(ref _waitHead.Next) == null) return;
-            SignalOneQueueWaitNodeSlow();
-        }
+            var entry = _state.Queues.GetOrAdd(queue, _ => new QueueEntry());
 
-        private void SignalOneQueueWaitNodeSlow()
-        {
-            var node = Interlocked.Exchange(ref _waitHead.Next, null);
+            if (Volatile.Read(ref entry.WaitHead.Next) == null) return;
+
+            var node = Interlocked.Exchange(ref entry.WaitHead.Next, null);
             if (node == null) return;
 
             var tailNode = Interlocked.Exchange(ref node.Next, Tombstone);
             if (tailNode != null)
             {
-                var waitHead = _waitHead;
+                var waitHead = entry.WaitHead;
                 do
                 {
                     waitHead = Interlocked.CompareExchange(ref waitHead.Next, tailNode, null);
                     if (ReferenceEquals(waitHead, Tombstone))
                     {
-                        waitHead = _waitHead;
+                        waitHead = entry.WaitHead;
                     }
                 } while (waitHead != null);
             }
