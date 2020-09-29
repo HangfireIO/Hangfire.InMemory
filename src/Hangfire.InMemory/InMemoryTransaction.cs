@@ -30,54 +30,71 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override void PersistJob(string jobId)
+        public override void PersistJob([NotNull] string jobId)
         {
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
+
             _actions.Add(state =>
             {
-                if (state.Jobs.TryGetValue(jobId, out var job)) state.JobExpire(job, null);
+                if (state.Jobs.TryGetValue(jobId, out var job))
+                {
+                    state.JobExpire(job, null);
+                }
             });
         }
 
-        public override void SetJobState(string jobId, IState state)
+        public override void SetJobState([NotNull] string jobId, [NotNull] IState state)
         {
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            if (state.Name == null) throw new ArgumentException("Name property must not return null.", nameof(state));
+
             var stateEntry = new StateEntry
             {
                 Name = state.Name,
                 Reason = state.Reason,
-                Data = state.SerializeData(),
-                CreatedAt = DateTime.UtcNow // TODO Replace with time factory
+                Data = state.SerializeData()
             };
 
-            // TODO: Precondition: jobId exists
             _actions.Add(memory =>
             {
-                var backgroundJob = memory.JobGetOrThrow(jobId);
-                backgroundJob.History.Add(stateEntry);
+                if (memory.Jobs.TryGetValue(jobId, out var job))
+                {
+                    stateEntry.CreatedAt = memory.TimeResolver();
 
-                memory.JobSetState(backgroundJob, stateEntry);
+                    job.History.Add(stateEntry);
+                    memory.JobSetState(job, stateEntry);
+                }
             });
         }
 
-        public override void AddJobState(string jobId, IState state)
+        public override void AddJobState([NotNull] string jobId, [NotNull] IState state)
         {
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
+            if (state == null) throw new ArgumentNullException(nameof(state));
+
             var stateEntry = new StateEntry
             {
                 Name = state.Name,
                 Reason = state.Reason,
-                Data = state.SerializeData(),
-                CreatedAt = DateTime.UtcNow // TODO Replace with time factory
+                Data = state.SerializeData()
             };
 
             _actions.Add(memory =>
             {
-                // TODO: Precondition: jobId exists
-                var backgroundJob = memory.JobGetOrThrow(jobId);
-                backgroundJob.History.Add(stateEntry);
+                if (memory.Jobs.TryGetValue(jobId, out var job))
+                {
+                    stateEntry.CreatedAt = memory.TimeResolver();
+                    job.History.Add(stateEntry);
+                }
             });
         }
 
-        public override void AddToQueue(string queue, string jobId)
+        public override void AddToQueue([NotNull] string queue, [NotNull] string jobId)
         {
+            if (queue == null) throw new ArgumentNullException(nameof(queue));
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
+
             _actions.Add(state =>
             {
                 var entry = state.QueueGetOrCreate(queue);
