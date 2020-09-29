@@ -93,12 +93,15 @@ namespace Hangfire.InMemory
                 Key = Guid.NewGuid().ToString(), // TODO: Change with Long type
                 InvocationData = InvocationData.SerializeJob(job),
                 Parameters = new ConcurrentDictionary<string, string>(parameters, StringComparer.Ordinal),
-                CreatedAt = createdAt,
-                ExpireAt = DateTime.UtcNow.Add(expireIn) // TODO: Use time factory
+                CreatedAt = createdAt
             };
 
             // TODO: Precondition: jobId does not exist
-            _dispatcher.QueryAndWait(state => state.JobCreate(backgroundJob));
+            _dispatcher.QueryAndWait(state =>
+            {
+                backgroundJob.ExpireAt = state.TimeResolver().Add(expireIn);
+                state.JobCreate(backgroundJob);
+            });
 
             return backgroundJob.Key;
         }
@@ -213,8 +216,7 @@ namespace Hangfire.InMemory
             _dispatcher.QueryAndWait(state =>
             {
                 // TODO: What if we add a duplicate server?
-                // TODO: Change with time factory
-                var now = DateTime.UtcNow;
+                var now = state.TimeResolver();
 
                 state.ServerAdd(serverId, new ServerEntry
                 {
@@ -242,7 +244,7 @@ namespace Hangfire.InMemory
             {
                 if (state.Servers.TryGetValue(serverId, out var server))
                 {
-                    server.HeartbeatAt = DateTime.UtcNow; // TODO: Use a time factory
+                    server.HeartbeatAt = state.TimeResolver();
                 }
 
                 return true;
@@ -254,7 +256,7 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryAndWait(state =>
             {
                 var serversToRemove = new List<string>();
-                var now = DateTime.UtcNow; // TODO: Use a time factory
+                var now = state.TimeResolver();
 
                 foreach (var server in state.Servers)
                 {
@@ -368,8 +370,7 @@ namespace Hangfire.InMemory
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.ExpireAt.HasValue)
                 {
-                    // TODO: Change with time factory
-                    return hash.ExpireAt.Value - DateTime.UtcNow;
+                    return hash.ExpireAt.Value - state.TimeResolver();
                 }
 
                 // TODO: Really?
@@ -384,8 +385,7 @@ namespace Hangfire.InMemory
             {
                 if (state.Lists.TryGetValue(key, out var list) && list.ExpireAt.HasValue)
                 {
-                    // TODO: Change with time factory
-                    return list.ExpireAt.Value - DateTime.UtcNow;
+                    return list.ExpireAt.Value - state.TimeResolver();
                 }
 
                 // TODO: Really?
@@ -399,8 +399,7 @@ namespace Hangfire.InMemory
             {
                 if (state.Sets.TryGetValue(key, out var set) && set.ExpireAt.HasValue)
                 {
-                    // TODO: Change with time factory
-                    return set.ExpireAt.Value - DateTime.UtcNow;
+                    return set.ExpireAt.Value - state.TimeResolver();
                 }
 
                 // TODO: Really?

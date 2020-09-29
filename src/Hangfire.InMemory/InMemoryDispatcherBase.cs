@@ -181,8 +181,10 @@ namespace Hangfire.InMemory
             });
         }
 
-        protected void ExpireEntries(DateTime now)
+        protected void ExpireEntries()
         {
+            var now = _state.TimeResolver();
+
             // TODO: Think how to expire under memory pressure and limit the collection to avoid OOM exceptions
             ExpireIndex(now, _state._counterIndex, entry => _state.CounterDelete(entry));
             ExpireIndex(now, _state._hashIndex, entry => _state.HashDelete(entry));

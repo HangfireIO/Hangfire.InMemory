@@ -59,8 +59,7 @@ namespace Hangfire.InMemory
                 }
                 else
                 {
-                    var now = DateTime.UtcNow; // TODO: Use time factory instead
-                    ExpireEntries(now);
+                    ExpireEntries();
                 }
             }
         }

@@ -483,7 +483,7 @@ namespace Hangfire.InMemory
 
         private Dictionary<DateTime, long> GetHourlyTimelineStats(InMemoryState state, string type)
         {
-            var endDate = DateTime.UtcNow;
+            var endDate = state.TimeResolver();
             var dates = new List<DateTime>();
             for (var i = 0; i < 24; i++)
             {
@@ -505,7 +505,7 @@ namespace Hangfire.InMemory
 
         private Dictionary<DateTime, long> GetTimelineStats(InMemoryState state, string type)
         {
-            var endDate = DateTime.UtcNow.Date;
+            var endDate = state.TimeResolver().Date;
             var startDate = endDate.AddDays(-7);
             var dates = new List<DateTime>();
 
