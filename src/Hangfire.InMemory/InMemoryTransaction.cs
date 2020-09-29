@@ -23,7 +23,10 @@ namespace Hangfire.InMemory
 
             _actions.Add(state =>
             {
-                if (state.Jobs.TryGetValue(jobId, out var job)) state.JobExpire(job, expireIn);
+                if (state.Jobs.TryGetValue(jobId, out var job))
+                {
+                    state.JobExpire(job, expireIn);
+                }
             });
         }
 

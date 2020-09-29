@@ -25,6 +25,13 @@ namespace Hangfire.InMemory
         private readonly ConcurrentDictionary<string, QueueEntry> _queues = CreateConcurrentDictionary<QueueEntry>();
         private readonly Dictionary<string, ServerEntry> _servers = CreateDictionary<ServerEntry>();
 
+        public InMemoryState(Func<DateTime> timeResolver)
+        {
+            TimeResolver = timeResolver;
+        }
+
+        public Func<DateTime> TimeResolver { get; }
+
         public ConcurrentDictionary<string, BackgroundJobEntry> Jobs => _jobs; // TODO Implement workaround for net45 to return IReadOnlyDictionary (and the same for _queues)
         public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
         public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
@@ -212,7 +219,7 @@ namespace Hangfire.InMemory
             _servers.Remove(serverId);
         }
 
-        private static void EntryExpire<T>(T entity, ISet<T> index, TimeSpan? expireIn)
+        private void EntryExpire<T>(T entity, ISet<T> index, TimeSpan? expireIn)
             where T : IExpirableEntry
         {
             if (entity.ExpireAt.HasValue)
@@ -222,8 +229,7 @@ namespace Hangfire.InMemory
 
             if (expireIn.HasValue)
             {
-                // TODO: Replace DateTime.UtcNow everywhere with some time factory
-                entity.ExpireAt = DateTime.UtcNow.Add(expireIn.Value);
+                entity.ExpireAt = TimeResolver().Add(expireIn.Value);
                 index.Add(entity);
             }
             else

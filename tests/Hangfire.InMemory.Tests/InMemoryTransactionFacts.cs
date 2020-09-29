@@ -8,11 +8,13 @@ namespace Hangfire.InMemory.Tests
     {
         private readonly Mock<InMemoryDispatcherBase> _dispatcher;
         private readonly InMemoryState _state;
+        private readonly DateTime _now;
 
         public InMemoryTransactionFacts()
         {
             _dispatcher = new Mock<InMemoryDispatcherBase>();
-            _state = new InMemoryState();
+            _now = new DateTime(2020, 09, 29, 08, 05, 30, DateTimeKind.Utc);
+            _state = new InMemoryState(() => _now);
         }
 
         [Fact]
@@ -38,17 +40,18 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
-        public void ExpireJob_SetsExpirationTime_ForAJob()
+        public void ExpireJob_SetsExpirationTime_ForAJob_ToAnExpectedValue()
         {
             // Arrange
             _state.Jobs.TryAdd("myjob", new BackgroundJobEntry());
 
             // Act
-            Commit(x => x.ExpireJob("myjob", TimeSpan.Zero));
+            Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
 
             // Assert
             var expireAt = _state.Jobs["myjob"].ExpireAt;
             Assert.NotNull(expireAt);
+            Assert.Equal(_now.AddMinutes(30), expireAt.Value);
         }
 
         private void Commit(Action<InMemoryTransaction> action)
