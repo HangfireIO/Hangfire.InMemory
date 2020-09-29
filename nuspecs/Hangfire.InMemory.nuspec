@@ -31,10 +31,12 @@
     <file src="netstandard2.0\Hangfire.InMemory.dll" target="lib\netstandard2.0" />
     <file src="netstandard2.0\Hangfire.InMemory.pdb" target="lib\netstandard2.0" />
 
-    <file src="LICENSE" />
+    <file src="LICENSE.md" />
     <file src="LICENSE_STANDARD" />
     <file src="LICENSE_ROYALTYFREE" />
-    
+    <file src="COPYING" />
+    <file src="COPYING.LESSER" />
+
     <file src="..\src\Hangfire.InMemory\**\*.cs" target="src" exclude="**\obj*\**\*.cs" />
   </files>
 </package>

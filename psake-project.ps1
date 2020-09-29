@@ -16,6 +16,8 @@ Task Collect -Depends Test -Description "Copy all artifacts to the build folder.
     Collect-Assembly "Hangfire.InMemory" "netstandard2.0"
     Collect-File "LICENSE_ROYALTYFREE"
     Collect-File "LICENSE_STANDARD"
+    Collect-File "COPYING.LESSER"
+    Collect-File "COPYING"
     Collect-File "LICENSE.md"
 }
 
