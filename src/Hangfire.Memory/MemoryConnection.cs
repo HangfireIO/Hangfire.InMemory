@@ -105,7 +105,7 @@ namespace Hangfire.Memory
 
         public override IFetchedJob FetchNextJob(string[] queueNames, CancellationToken cancellationToken)
         {
-            using (var ready = new SemaphoreSlim(0, 1))
+            using (var ready = new SemaphoreSlim(0, queueNames.Length))
             {
                 var waitNode = new MemoryQueueWaitNode(ready);
                 var waitAdded = false;
