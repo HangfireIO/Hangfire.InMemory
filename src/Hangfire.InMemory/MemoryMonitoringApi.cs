@@ -6,7 +6,7 @@ using Hangfire.States;
 using Hangfire.Storage;
 using Hangfire.Storage.Monitoring;
 
-namespace Hangfire.Memory
+namespace Hangfire.InMemory
 {
     internal sealed class MemoryMonitoringApi : IMonitoringApi
     {

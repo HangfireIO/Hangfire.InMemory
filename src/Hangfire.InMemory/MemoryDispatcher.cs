@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Hangfire.Annotations;
 
-namespace Hangfire.Memory
+namespace Hangfire.InMemory
 {
     internal sealed class MemoryDispatcher : IMemoryDispatcher
     {

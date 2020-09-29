@@ -1,6 +1,6 @@
 using System.Threading;
 
-namespace Hangfire.Memory
+namespace Hangfire.InMemory
 {
     internal sealed class MemoryQueueWaitNode
     {

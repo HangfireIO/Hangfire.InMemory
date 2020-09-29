@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Hangfire.Server;
 using Hangfire.Storage;
 
-namespace Hangfire.Memory
+namespace Hangfire.InMemory
 {
     internal interface IExpirableEntry
     {

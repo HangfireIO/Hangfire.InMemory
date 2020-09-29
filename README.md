@@ -1,4 +1,4 @@
-# Hangfire.Memory
+# Hangfire.InMemory
 
 This is an attempt to create an efficient transactional in-memory storage for Hangfire with data structures close to their optimal representation. The result of this attempt should enable production-ready usage of this storage implementation and handle particular properties of in-memory processing like avoiding `OutOfMemoryException` at any cost and moderate load on garbage collection. Of course we can't avoid them entirely, but at least can control them somehow.
 

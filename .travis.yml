@@ -17,9 +17,9 @@ script:
   - if hash mono 2>/dev/null; 
     then
         travis_retry nuget install .nuget/packages.config -OutputDirectory packages;
-        travis_retry nuget restore Hangfire.Memory.sln;
-        msbuild /p:Configuration=Release /verbosity:minimal Hangfire.Memory.sln;
-        mono ./packages/xunit.runner.console.2.3.1/tools/net452/xunit.console.exe ./tests/Hangfire.Memory.Tests/bin/Release/net452/Hangfire.Memory.Tests.dll;
+        travis_retry nuget restore Hangfire.InMemory.sln;
+        msbuild /p:Configuration=Release /verbosity:minimal Hangfire.InMemory.sln;
+        mono ./packages/xunit.runner.console.2.3.1/tools/net452/xunit.console.exe ./tests/Hangfire.InMemory.Tests/bin/Release/net452/Hangfire.InMemory.Tests.dll;
     else
-        dotnet test -c Release -f netcoreapp3.1 tests/Hangfire.Memory.Tests;
+        dotnet test -c Release -f netcoreapp3.1 tests/Hangfire.InMemory.Tests;
     fi

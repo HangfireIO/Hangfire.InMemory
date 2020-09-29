@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Hangfire.Annotations;
 
-namespace Hangfire.Memory
+namespace Hangfire.InMemory
 {
     internal interface IMemoryDispatcher
     {

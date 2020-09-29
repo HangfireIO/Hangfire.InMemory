@@ -1,6 +1,6 @@
 ﻿using Hangfire.Storage;
 
-namespace Hangfire.Memory
+namespace Hangfire.InMemory
 {
     public sealed class MemoryStorage : JobStorage
     {

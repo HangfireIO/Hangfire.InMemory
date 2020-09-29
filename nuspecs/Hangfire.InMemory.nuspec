@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>Hangfire.Memory</id>
+    <id>Hangfire.InMemory</id>
     <version>0.0.0</version>
-    <title>Hangfire Memory Storage</title>
+    <title>Hangfire In-Memory Storage</title>
     <authors>Sergey Odinokov</authors>
     <owners>odinserj</owners>
     <projectUrl>https://www.hangfire.io/</projectUrl>
@@ -25,16 +25,16 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="net45\Hangfire.Memory.dll" target="lib\net45" />
-    <file src="net45\Hangfire.Memory.pdb" target="lib\net45" />
+    <file src="net45\Hangfire.InMemory.dll" target="lib\net45" />
+    <file src="net45\Hangfire.InMemory.pdb" target="lib\net45" />
 
-    <file src="netstandard2.0\Hangfire.Memory.dll" target="lib\netstandard2.0" />
-    <file src="netstandard2.0\Hangfire.Memory.pdb" target="lib\netstandard2.0" />
+    <file src="netstandard2.0\Hangfire.InMemory.dll" target="lib\netstandard2.0" />
+    <file src="netstandard2.0\Hangfire.InMemory.pdb" target="lib\netstandard2.0" />
 
     <file src="LICENSE" />
     <file src="LICENSE_STANDARD" />
     <file src="LICENSE_ROYALTYFREE" />
     
-    <file src="..\src\Hangfire.Memory\**\*.cs" target="src" exclude="**\obj*\**\*.cs" />
+    <file src="..\src\Hangfire.InMemory\**\*.cs" target="src" exclude="**\obj*\**\*.cs" />
   </files>
 </package>

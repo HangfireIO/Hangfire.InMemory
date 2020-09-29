@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace Hangfire.Memory
+namespace Hangfire.InMemory
 {
     internal sealed class MemoryState
     {

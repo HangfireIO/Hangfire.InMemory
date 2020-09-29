@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Hangfire.States;
 using Hangfire.Storage;
 
-namespace Hangfire.Memory
+namespace Hangfire.InMemory
 {
     internal sealed class MemoryTransaction : JobStorageTransaction
     {

@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Hangfire.Memory\Hangfire.Memory.csproj" />
+    <ProjectReference Include="..\..\src\Hangfire.InMemory\Hangfire.InMemory.csproj" />
   </ItemGroup>
 
 </Project>

@@ -7,7 +7,7 @@ using Hangfire.Common;
 using Hangfire.Server;
 using Hangfire.Storage;
 
-namespace Hangfire.Memory
+namespace Hangfire.InMemory
 {
     internal sealed class MemoryConnection : JobStorageConnection
     {

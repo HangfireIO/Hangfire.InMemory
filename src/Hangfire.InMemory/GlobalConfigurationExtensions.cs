@@ -1,5 +1,5 @@
 ﻿using System;
-using Hangfire.Memory;
+using Hangfire.InMemory;
 
 namespace Hangfire
 {

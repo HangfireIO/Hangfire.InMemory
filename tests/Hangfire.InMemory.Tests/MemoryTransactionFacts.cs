@@ -1,7 +1,7 @@
 ﻿using System;
 using Xunit;
 
-namespace Hangfire.Memory.Tests
+namespace Hangfire.InMemory.Tests
 {
     public class MemoryTransactionFacts
     {

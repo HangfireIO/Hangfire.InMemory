@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyProduct("Hangfire Pro")]
+[assembly: AssemblyProduct("Hangfire.InMemory")]
 [assembly: AssemblyCompany("Sergey Odinokov")]
 [assembly: AssemblyCopyright("Copyright © 2020 Sergey Odinokov")]
 [assembly: AssemblyCulture("")]
