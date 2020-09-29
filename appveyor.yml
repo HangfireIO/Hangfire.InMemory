@@ -17,10 +17,6 @@ os: Visual Studio 2019
 
 environment:
   BuildEnvironment: appveyor
-  hangfire_login:
-    secure: vTUgNUhBXIAnQWCxUwygkQ==
-  hangfire_password:
-    secure: nmO2N410OJ4KdDiZnNXakkgW0JXqRahslGYKYMHl74g=
 
 branches:
   only:

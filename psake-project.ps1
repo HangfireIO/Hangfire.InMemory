@@ -16,7 +16,7 @@ Task Collect -Depends Test -Description "Copy all artifacts to the build folder.
     Collect-Assembly "Hangfire.InMemory" "netstandard2.0"
     Collect-File "LICENSE_ROYALTYFREE"
     Collect-File "LICENSE_STANDARD"
-    Collect-File "LICENSE"
+    Collect-File "LICENSE.md"
 }
 
 Task Pack -Depends Collect -Description "Create NuGet packages and archive files." {
