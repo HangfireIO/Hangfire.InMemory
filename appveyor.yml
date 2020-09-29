@@ -64,11 +64,8 @@ deploy:
       appveyor_repo_tag: true
 
   - provider: NuGet
-    server: https://nuget.hangfire.io/nuget/hangfire-pro
-    symbol_server: https://nuget.hangfire.io/nuget/hangfire-pro
-    skip_symbols: false
-    artifact: /.*\.symbols\.nupkg/
+    skip_symbols: true
     api_key: 
-      secure: O2eeZTPhagiuNTk43eCj4Lh1vsw8JM24HqwN04JlEs4=
+      secure: 8BQmcR1hP9MoxvrmXJKMtlRyX6LI36H9ZTU8fSEetvzMGCl1PUlXKZRUGq+GVMja
     on:
       appveyor_repo_tag: true
