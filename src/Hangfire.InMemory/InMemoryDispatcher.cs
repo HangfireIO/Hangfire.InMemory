@@ -7,18 +7,18 @@ using Hangfire.Annotations;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class MemoryDispatcher : IMemoryDispatcher
+    internal sealed class InMemoryDispatcher : IInMemoryDispatcher
     {
-        private static readonly MemoryQueueWaitNode Tombstone = new MemoryQueueWaitNode(null);
+        private static readonly InMemoryQueueWaitNode Tombstone = new InMemoryQueueWaitNode(null);
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
-        private readonly ConcurrentQueue<MemoryDispatcherCallback> _queries = new ConcurrentQueue<MemoryDispatcherCallback>();
-        private readonly MemoryState _state;
+        private readonly ConcurrentQueue<InMemoryDispatcherCallback> _queries = new ConcurrentQueue<InMemoryDispatcherCallback>();
+        private readonly InMemoryState _state;
         private readonly Thread _thread;
 
         private PaddedInt64 _outstandingRequests;
 
-        public MemoryDispatcher(MemoryState state)
+        public InMemoryDispatcher(InMemoryState state)
         {
             _state = state ?? throw new ArgumentNullException(nameof(state));
 
@@ -62,7 +62,7 @@ namespace Hangfire.InMemory
             return null;
         }
 
-        public bool TryAcquireLockEntry(MemoryConnection connection, string resource, out LockEntry entry)
+        public bool TryAcquireLockEntry(InMemoryConnection connection, string resource, out LockEntry entry)
         {
             var acquired = false;
 
@@ -104,7 +104,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        public void ReleaseLockEntry(MemoryConnection connection, string resource, LockEntry entry)
+        public void ReleaseLockEntry(InMemoryConnection connection, string resource, LockEntry entry)
         {
             // TODO: Ensure lock ordering to avoid deadlocks
             lock (_state._locks)
@@ -137,7 +137,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        public void AddQueueWaitNode(QueueEntry entry, MemoryQueueWaitNode node)
+        public void AddQueueWaitNode(QueueEntry entry, InMemoryQueueWaitNode node)
         {
             var headNext = node.Next = null;
             var spinWait = new SpinWait();
@@ -176,9 +176,9 @@ namespace Hangfire.InMemory
             node.Value.Release();
         }
 
-        public T QueryAndWait<T>(Func<MemoryState, T> query)
+        public T QueryAndWait<T>(Func<InMemoryState, T> query)
         {
-            using (var callback = new MemoryDispatcherCallback(state => query(state)))
+            using (var callback = new InMemoryDispatcherCallback(state => query(state)))
             {
                 _queries.Enqueue(callback);
 
@@ -196,7 +196,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        public void QueryAndWait(Action<MemoryState> query)
+        public void QueryAndWait(Action<InMemoryState> query)
         {
             QueryAndWait(state =>
             {
@@ -244,7 +244,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        private static void ExpireJobIndex(DateTime now, MemoryState state)
+        private static void ExpireJobIndex(DateTime now, InMemoryState state)
         {
             BackgroundJobEntry entry;
 

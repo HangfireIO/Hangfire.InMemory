@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class MemoryState
+    internal sealed class InMemoryState
     {
         // TODO: We can remove indexes when empty and re-create them when required to always have minimum size 
         internal readonly SortedSet<BackgroundJobEntry> _jobIndex = new SortedSet<BackgroundJobEntry>(new ExpirableEntryComparer());

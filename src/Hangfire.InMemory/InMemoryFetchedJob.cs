@@ -2,11 +2,11 @@
 
 namespace Hangfire.InMemory
 {
-    internal class MemoryFetchedJob : IFetchedJob
+    internal class InMemoryFetchedJob : IFetchedJob
     {
-        private readonly IMemoryDispatcher _dispatcher;
+        private readonly IInMemoryDispatcher _dispatcher;
 
-        public MemoryFetchedJob(IMemoryDispatcher dispatcher, string queueName, string jobId)
+        public InMemoryFetchedJob(IInMemoryDispatcher dispatcher, string queueName, string jobId)
         {
             _dispatcher = dispatcher;
 

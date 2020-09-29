@@ -12,7 +12,7 @@ namespace ConsoleSample
         {
             services.AddHangfire(config => config
                 .UseIgnoredAssemblyVersionTypeResolver()
-                .UseMemoryStorage());
+                .UseInMemoryStorage());
 
             services.AddHostedService<HarnessHostedService>();
         }

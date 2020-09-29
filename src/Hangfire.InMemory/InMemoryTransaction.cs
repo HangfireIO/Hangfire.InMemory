@@ -5,13 +5,13 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class MemoryTransaction : JobStorageTransaction
+    internal sealed class InMemoryTransaction : JobStorageTransaction
     {
-        private readonly List<Action<MemoryState>> _actions = new List<Action<MemoryState>>();
+        private readonly List<Action<InMemoryState>> _actions = new List<Action<InMemoryState>>();
         private readonly HashSet<QueueEntry> _enqueued = new HashSet<QueueEntry>();
-        private readonly IMemoryDispatcher _dispatcher;
+        private readonly IInMemoryDispatcher _dispatcher;
 
-        public MemoryTransaction(IMemoryDispatcher dispatcher)
+        public InMemoryTransaction(IInMemoryDispatcher dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
@@ -300,7 +300,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        private static void CounterIncrement(MemoryState state, string key, int value, TimeSpan? expireIn)
+        private static void CounterIncrement(InMemoryState state, string key, int value, TimeSpan? expireIn)
         {
             var counter = state.CounterGetOrAdd(key);
             counter.Value += value;

@@ -5,10 +5,10 @@ namespace Hangfire
 {
     public static class GlobalConfigurationExtensions
     {
-        public static IGlobalConfiguration<MemoryStorage> UseMemoryStorage(this IGlobalConfiguration configuration)
+        public static IGlobalConfiguration<InMemoryStorage> UseInMemoryStorage(this IGlobalConfiguration configuration)
         {
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
-            return configuration.UseStorage(new MemoryStorage());
+            return configuration.UseStorage(new InMemoryStorage());
         }
     }
 }

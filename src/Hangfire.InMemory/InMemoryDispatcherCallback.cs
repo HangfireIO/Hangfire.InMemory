@@ -3,16 +3,16 @@ using System.Threading;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class MemoryDispatcherCallback : IDisposable
+    internal sealed class InMemoryDispatcherCallback : IDisposable
     {
         private volatile object _result;
 
-        public MemoryDispatcherCallback(Func<MemoryState, object> callback)
+        public InMemoryDispatcherCallback(Func<InMemoryState, object> callback)
         {
             Callback = callback ?? throw new ArgumentNullException(nameof(callback));
         }
 
-        public Func<MemoryState, object> Callback { get; }
+        public Func<InMemoryState, object> Callback { get; }
         public ManualResetEventSlim Ready { get; } = new ManualResetEventSlim(false);
 
         public object Result

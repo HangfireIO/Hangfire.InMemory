@@ -9,18 +9,18 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class MemoryConnection : JobStorageConnection
+    internal sealed class InMemoryConnection : JobStorageConnection
     {
-        private readonly IMemoryDispatcher _dispatcher;
+        private readonly IInMemoryDispatcher _dispatcher;
 
-        public MemoryConnection(IMemoryDispatcher dispatcher)
+        public InMemoryConnection(IInMemoryDispatcher dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
 
         public override IWriteOnlyTransaction CreateWriteTransaction()
         {
-            return new MemoryTransaction(_dispatcher);
+            return new InMemoryTransaction(_dispatcher);
         }
 
         public override IDisposable AcquireDistributedLock(string resource, TimeSpan timeout)
@@ -63,13 +63,13 @@ namespace Hangfire.InMemory
 
         private sealed class LockDisposable : IDisposable
         {
-            private readonly IMemoryDispatcher _dispatcher;
-            private readonly MemoryConnection _reference;
+            private readonly IInMemoryDispatcher _dispatcher;
+            private readonly InMemoryConnection _reference;
             private readonly string _resource;
             private readonly LockEntry _entry;
             private bool _disposed;
 
-            public LockDisposable(IMemoryDispatcher dispatcher, MemoryConnection reference, string resource, LockEntry entry)
+            public LockDisposable(IInMemoryDispatcher dispatcher, InMemoryConnection reference, string resource, LockEntry entry)
             {
                 _dispatcher = dispatcher;
                 _reference = reference;
@@ -107,7 +107,7 @@ namespace Hangfire.InMemory
         {
             using (var ready = new SemaphoreSlim(0, queueNames.Length))
             {
-                var waitNode = new MemoryQueueWaitNode(ready);
+                var waitNode = new InMemoryQueueWaitNode(ready);
                 var waitAdded = false;
 
                 while (!cancellationToken.IsCancellationRequested)
@@ -120,7 +120,7 @@ namespace Hangfire.InMemory
                         if (entry.Value.Queue.TryDequeue(out var jobId))
                         {
                             _dispatcher.SignalOneQueueWaitNode(entry.Value);
-                            return new MemoryFetchedJob(_dispatcher, entry.Key, jobId);
+                            return new InMemoryFetchedJob(_dispatcher, entry.Key, jobId);
                         }
                     }
 

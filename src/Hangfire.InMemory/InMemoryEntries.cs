@@ -148,7 +148,7 @@ namespace Hangfire.InMemory
 
     internal sealed class LockEntry
     {
-        public MemoryConnection Owner { get; set; }
+        public InMemoryConnection Owner { get; set; }
         public int ReferenceCount { get; set; }
         public int Level { get; set; }
     }
@@ -156,7 +156,7 @@ namespace Hangfire.InMemory
     internal sealed class QueueEntry
     {
         public ConcurrentQueue<string> Queue = new ConcurrentQueue<string>();
-        public MemoryQueueWaitNode WaitHead = new MemoryQueueWaitNode(null);
+        public InMemoryQueueWaitNode WaitHead = new InMemoryQueueWaitNode(null);
     }
 
     internal sealed class SortedSetEntry<T>

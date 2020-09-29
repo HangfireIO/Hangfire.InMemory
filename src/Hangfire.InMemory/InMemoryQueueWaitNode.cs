@@ -2,14 +2,14 @@ using System.Threading;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class MemoryQueueWaitNode
+    internal sealed class InMemoryQueueWaitNode
     {
-        public MemoryQueueWaitNode(SemaphoreSlim value)
+        public InMemoryQueueWaitNode(SemaphoreSlim value)
         {
             Value = value;
         }
 
         public readonly SemaphoreSlim Value;
-        public MemoryQueueWaitNode Next;
+        public InMemoryQueueWaitNode Next;
     }
 }

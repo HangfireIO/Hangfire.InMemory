@@ -8,11 +8,11 @@ using Hangfire.Storage.Monitoring;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class MemoryMonitoringApi : IMonitoringApi
+    internal sealed class InMemoryMonitoringApi : IMonitoringApi
     {
-        private readonly IMemoryDispatcher _dispatcher;
+        private readonly IInMemoryDispatcher _dispatcher;
 
-        public MemoryMonitoringApi(IMemoryDispatcher dispatcher)
+        public InMemoryMonitoringApi(IInMemoryDispatcher dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
@@ -471,7 +471,7 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryAndWait(state => GetCountByStateName(stateName, state));
         }
 
-        private static int GetCountByStateName(string stateName, MemoryState state)
+        private static int GetCountByStateName(string stateName, InMemoryState state)
         {
             if (state._jobStateIndex.TryGetValue(stateName, out var index))
             {
@@ -481,7 +481,7 @@ namespace Hangfire.InMemory
             return 0;
         }
 
-        private Dictionary<DateTime, long> GetHourlyTimelineStats(MemoryState state, string type)
+        private Dictionary<DateTime, long> GetHourlyTimelineStats(InMemoryState state, string type)
         {
             var endDate = DateTime.UtcNow;
             var dates = new List<DateTime>();
@@ -503,7 +503,7 @@ namespace Hangfire.InMemory
             return result;
         }
 
-        private Dictionary<DateTime, long> GetTimelineStats(MemoryState state, string type)
+        private Dictionary<DateTime, long> GetTimelineStats(InMemoryState state, string type)
         {
             var endDate = DateTime.UtcNow.Date;
             var startDate = endDate.AddDays(-7);
