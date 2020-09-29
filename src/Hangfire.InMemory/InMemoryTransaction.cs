@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Hangfire.Annotations;
 using Hangfire.States;
 using Hangfire.Storage;
 
@@ -9,15 +10,17 @@ namespace Hangfire.InMemory
     {
         private readonly List<Action<InMemoryState>> _actions = new List<Action<InMemoryState>>();
         private readonly HashSet<QueueEntry> _enqueued = new HashSet<QueueEntry>();
-        private readonly IInMemoryDispatcher _dispatcher;
+        private readonly InMemoryDispatcherBase _dispatcher;
 
-        public InMemoryTransaction(IInMemoryDispatcher dispatcher)
+        public InMemoryTransaction(InMemoryDispatcherBase dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
 
-        public override void ExpireJob(string jobId, TimeSpan expireIn)
+        public override void ExpireJob([NotNull] string jobId, TimeSpan expireIn)
         {
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
+
             _actions.Add(state =>
             {
                 if (state.Jobs.TryGetValue(jobId, out var job)) state.JobExpire(job, expireIn);

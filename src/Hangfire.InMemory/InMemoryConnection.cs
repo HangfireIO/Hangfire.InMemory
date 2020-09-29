@@ -11,9 +11,9 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryConnection : JobStorageConnection
     {
-        private readonly IInMemoryDispatcher _dispatcher;
+        private readonly InMemoryDispatcherBase _dispatcher;
 
-        public InMemoryConnection(IInMemoryDispatcher dispatcher)
+        public InMemoryConnection(InMemoryDispatcherBase dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
@@ -63,13 +63,13 @@ namespace Hangfire.InMemory
 
         private sealed class LockDisposable : IDisposable
         {
-            private readonly IInMemoryDispatcher _dispatcher;
+            private readonly InMemoryDispatcherBase _dispatcher;
             private readonly InMemoryConnection _reference;
             private readonly string _resource;
             private readonly LockEntry _entry;
             private bool _disposed;
 
-            public LockDisposable(IInMemoryDispatcher dispatcher, InMemoryConnection reference, string resource, LockEntry entry)
+            public LockDisposable(InMemoryDispatcherBase dispatcher, InMemoryConnection reference, string resource, LockEntry entry)
             {
                 _dispatcher = dispatcher;
                 _reference = reference;

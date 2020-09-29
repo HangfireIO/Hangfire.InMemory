@@ -10,9 +10,9 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryMonitoringApi : IMonitoringApi
     {
-        private readonly IInMemoryDispatcher _dispatcher;
+        private readonly InMemoryDispatcherBase _dispatcher;
 
-        public InMemoryMonitoringApi(IInMemoryDispatcher dispatcher)
+        public InMemoryMonitoringApi(InMemoryDispatcherBase dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }

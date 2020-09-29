@@ -4,9 +4,9 @@ namespace Hangfire.InMemory
 {
     internal class InMemoryFetchedJob : IFetchedJob
     {
-        private readonly IInMemoryDispatcher _dispatcher;
+        private readonly InMemoryDispatcherBase _dispatcher;
 
-        public InMemoryFetchedJob(IInMemoryDispatcher dispatcher, string queueName, string jobId)
+        public InMemoryFetchedJob(InMemoryDispatcherBase dispatcher, string queueName, string jobId)
         {
             _dispatcher = dispatcher;
 
