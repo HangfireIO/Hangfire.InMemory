@@ -311,6 +311,82 @@ namespace Hangfire.InMemory.Tests
             }
         }
 
+        [Fact]
+        public void IncrementCounter_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.IncrementCounter(null)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void IncrementCounter_IncrementsNonExistingCounterValue_WithoutSettingExpirationTime()
+        {
+            Commit(x => x.IncrementCounter("mycounter"));
+
+            Assert.Equal(1, _state.Counters["mycounter"].Value);
+            Assert.Null(_state.Counters["mycounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void IncrementCounter_IncrementsExistingCounterValue_WithoutSettingExpirationTime()
+        {
+            Commit(x => x.IncrementCounter("mycounter"));
+
+            Commit(x => x.IncrementCounter("mycounter"));
+
+            Assert.Equal(2, _state.Counters["mycounter"].Value);
+            Assert.Null(_state.Counters["mycounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void IncrementCounter_IncrementExistingExpiringCounterValue_AndDoesNotResetItsExpirationTime()
+        {
+            // TODO: Make this behavior undefined?
+            Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(30)));
+
+            Commit(x => x.IncrementCounter("somecounter"));
+
+            Assert.Equal(2, _state.Counters["somecounter"].Value);
+            Assert.NotNull(_state.Counters["somecounter"]);
+            Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void IncrementCounter_WithExpiry_IncrementsNonExistingCounterValue_AndSetsItsExpirationTime()
+        {
+            Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(30)));
+
+            Assert.Equal(1, _state.Counters["somecounter"].Value);
+            Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
+            Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void IncrementCounter_WithExpiry_IncrementsExistingCounterValue_AndUpdatesItsExpirationTime()
+        {
+            Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(30)));
+
+            Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromHours(1)));
+
+            Assert.Equal(2, _state.Counters["somecounter"].Value);
+            Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
+            Assert.Equal(_now.AddHours(1), _state.Counters["somecounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void IncrementCounter_WithExpiry_IncrementsExistingCounterValue_AndSetsExpirationTime_WhenItWasUnset()
+        {
+            Commit(x => x.IncrementCounter("mycounter"));
+
+            Commit(x => x.IncrementCounter("mycounter", TimeSpan.FromMinutes(30)));
+
+            Assert.Equal(2, _state.Counters["mycounter"].Value);
+            Assert.NotNull(_state.Counters["mycounter"].ExpireAt);
+            Assert.Equal(_now.AddMinutes(30), _state.Counters["mycounter"].ExpireAt);
+        }
+
         private void Commit(Action<InMemoryTransaction> action)
         {
             var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state));
