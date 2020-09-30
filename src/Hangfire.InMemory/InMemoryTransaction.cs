@@ -107,22 +107,24 @@ namespace Hangfire.InMemory
         public override void IncrementCounter([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
-
             _actions.Add(state => CounterIncrement(state, key, 1, null));
         }
 
-        public override void IncrementCounter(string key, TimeSpan expireIn)
+        public override void IncrementCounter([NotNull] string key, TimeSpan expireIn)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
             _actions.Add(state => CounterIncrement(state, key, 1, expireIn));
         }
 
-        public override void DecrementCounter(string key)
+        public override void DecrementCounter([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
             _actions.Add(state => CounterIncrement(state, key, -1, null));
         }
 
-        public override void DecrementCounter(string key, TimeSpan expireIn)
+        public override void DecrementCounter([NotNull] string key, TimeSpan expireIn)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
             _actions.Add(state => CounterIncrement(state, key, -1, expireIn));
         }
 

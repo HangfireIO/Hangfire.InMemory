@@ -354,6 +354,35 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void IncrementCounter_RemovesCounterEntry_WhenIncrementingTheMinusOneValue_WithNoExpirationTimeSet()
+        {
+            Commit(x => x.DecrementCounter("somecounter"));
+
+            Commit(x => x.IncrementCounter("somecounter"));
+
+            Assert.DoesNotContain("somecounter", _state.Counters);
+        }
+
+        [Fact]
+        public void IncrementCounter_RemovesCounterEntry_WhenIncrementingTheMinusOneValue_WithExpirationTimeSet()
+        {
+            Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(5)));
+
+            Commit(x => x.IncrementCounter("somecounter"));
+
+            Assert.DoesNotContain("somecounter", _state.Counters);
+        }
+
+        [Fact]
+        public void IncrementCounter_WithExpiry_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.IncrementCounter(null, TimeSpan.FromMinutes(5))));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
         public void IncrementCounter_WithExpiry_IncrementsNonExistingCounterValue_AndSetsItsExpirationTime()
         {
             Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(30)));
@@ -385,6 +414,151 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(2, _state.Counters["mycounter"].Value);
             Assert.NotNull(_state.Counters["mycounter"].ExpireAt);
             Assert.Equal(_now.AddMinutes(30), _state.Counters["mycounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void IncrementCounter_WithExpiry_RemovesCounterEntry_WhenIncrementingTheMinusOneValue_WithNoExpirationTimeSet()
+        {
+            Commit(x => x.DecrementCounter("somecounter"));
+
+            Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(10)));
+
+            Assert.DoesNotContain("somecounter", _state.Counters);
+        }
+
+        [Fact]
+        public void IncrementCounter_WithExpiry_RemovesCounterEntry_WhenIncrementingTheMinusOneValue_WithExpirationTimeSet()
+        {
+            Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(5)));
+
+            Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(10)));
+
+            Assert.DoesNotContain("somecounter", _state.Counters);
+        }
+
+        [Fact]
+        public void DecrementCounter_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.DecrementCounter(null)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void DecrementCounter_DecrementsNonExistingCounterValue_WithoutSettingExpirationTime()
+        {
+            Commit(x => x.DecrementCounter("mycounter"));
+
+            Assert.Equal(-1, _state.Counters["mycounter"].Value);
+            Assert.Null(_state.Counters["mycounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void DecrementCounter_DecrementsExistingCounterValue_WithoutSettingExpirationTime()
+        {
+            Commit(x => x.DecrementCounter("mycounter"));
+
+            Commit(x => x.DecrementCounter("mycounter"));
+
+            Assert.Equal(-2, _state.Counters["mycounter"].Value);
+            Assert.Null(_state.Counters["mycounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void DecrementCounter_DecrementExistingExpiringCounterValue_AndDoesNotResetItsExpirationTime()
+        {
+            // TODO: Make this behavior undefined?
+            Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(30)));
+
+            Commit(x => x.DecrementCounter("somecounter"));
+
+            Assert.Equal(-2, _state.Counters["somecounter"].Value);
+            Assert.NotNull(_state.Counters["somecounter"]);
+            Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void DecrementCounter_RemovesCounterEntry_WhenDecrementingThePlusOneValue_WithNoExpirationTimeSet()
+        {
+            Commit(x => x.IncrementCounter("somecounter"));
+
+            Commit(x => x.DecrementCounter("somecounter"));
+
+            Assert.DoesNotContain("somecounter", _state.Counters);
+        }
+
+        [Fact]
+        public void DecrementCounter_RemovesCounterEntry_WhenDecrementingThePlusOneValue_WithExpirationTimeSet()
+        {
+            Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(5)));
+
+            Commit(x => x.DecrementCounter("somecounter"));
+
+            Assert.DoesNotContain("somecounter", _state.Counters);
+        }
+
+        [Fact]
+        public void DecrementCounter_WithExpiry_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.DecrementCounter(null, TimeSpan.FromMinutes(5))));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void DecrementCounter_WithExpiry_DecrementsNonExistingCounterValue_AndSetsItsExpirationTime()
+        {
+            Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(30)));
+
+            Assert.Equal(-1, _state.Counters["somecounter"].Value);
+            Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
+            Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void DecrementCounter_WithExpiry_DecrementsExistingCounterValue_AndUpdatesItsExpirationTime()
+        {
+            Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(30)));
+
+            Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromHours(1)));
+
+            Assert.Equal(-2, _state.Counters["somecounter"].Value);
+            Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
+            Assert.Equal(_now.AddHours(1), _state.Counters["somecounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void DecrementCounter_WithExpiry_DecrementsExistingCounterValue_AndSetsExpirationTime_WhenItWasUnset()
+        {
+            Commit(x => x.DecrementCounter("mycounter"));
+
+            Commit(x => x.DecrementCounter("mycounter", TimeSpan.FromMinutes(30)));
+
+            Assert.Equal(-2, _state.Counters["mycounter"].Value);
+            Assert.NotNull(_state.Counters["mycounter"].ExpireAt);
+            Assert.Equal(_now.AddMinutes(30), _state.Counters["mycounter"].ExpireAt);
+        }
+
+        [Fact]
+        public void DecrementCounter_WithExpiry_RemovesCounterEntry_WhenDecrementingThePlusOneValue_WithNoExpirationTimeSet()
+        {
+            Commit(x => x.IncrementCounter("somecounter"));
+
+            Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(10)));
+
+            Assert.DoesNotContain("somecounter", _state.Counters);
+        }
+
+        [Fact]
+        public void DecrementCounter_WithExpiry_RemovesCounterEntry_WhenDecrementingThePlusOneValue_WithExpirationTimeSet()
+        {
+            Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(5)));
+
+            Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(10)));
+
+            Assert.DoesNotContain("somecounter", _state.Counters);
         }
 
         private void Commit(Action<InMemoryTransaction> action)
