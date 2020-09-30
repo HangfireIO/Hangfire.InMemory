@@ -128,24 +128,17 @@ namespace Hangfire.InMemory
             _actions.Add(state => CounterIncrement(state, key, -1, expireIn));
         }
 
-        public override void AddToSet(string key, string value)
+        public override void AddToSet([NotNull] string key, [NotNull] string value)
         {
-            _actions.Add(state =>
-            {
-                var set = state.SetGetOrAdd(key);
-                // TODO: What about null values?
-                set.Add(value, 0.0D);
-            });
+            AddToSet(key, value, 0.0D);
         }
 
-        public override void AddToSet(string key, string value, double score)
+        public override void AddToSet([NotNull] string key, [NotNull] string value, double score)
         {
-            _actions.Add(state =>
-            {
-                var set = state.SetGetOrAdd(key);
-                // TODO: What about null values?
-                set.Add(value, score);
-            });
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
+            _actions.Add(state => { state.SetGetOrAdd(key).Add(value, score); });
         }
 
         public override void RemoveFromSet(string key, string value)

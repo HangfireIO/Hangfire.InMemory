@@ -561,6 +561,107 @@ namespace Hangfire.InMemory.Tests
             Assert.DoesNotContain("somecounter", _state.Counters);
         }
 
+        // TODO: Case sensitivity tests, may be for different modes – SQL Server and Redis compatibility
+        // TODO: Expiration index checks for Increment/DecrementCounter
+        // TODO: Add checks for key lengths for SQL Server compatibility mode
+
+        [Fact]
+        public void AddToSet_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.AddToSet(null, "value")));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void AddToSet_ThrowsAnException_WhenValueIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.AddToSet("key", null)));
+
+            Assert.Equal("value", exception.ParamName);
+        }
+
+        [Fact]
+        public void AddToSet_AddsElementWithZeroScore_ToTheGivenSet()
+        {
+            Commit(x => x.AddToSet("key", "value"));
+
+            Assert.Equal(0.0D, _state.Sets["key"].Single().Score, 3);
+        }
+
+        [Fact]
+        public void AddToSet_WithScore_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.AddToSet(null, "value", 1.2D)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void AddToSet_WithScore_ThrowsAnException_WhenValueIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.AddToSet("key", null, 1.2D)));
+
+            Assert.Equal("value", exception.ParamName);
+        }
+
+        [Fact]
+        public void AddToSet_WithScore_AddsElementWithTheGivenScore_ToTheGivenSet()
+        {
+            Commit(x => x.AddToSet("key", "value", 1.2D));
+
+            Assert.Equal(1.2D, _state.Sets["key"].Single().Score, 3);
+        }
+
+        [Fact]
+        public void AddToSet_WithScore_AddsElementWithTheGivenScore_ToAnExistingSet()
+        {
+            Commit(x => x.AddToSet("key", "value1", 1.111D));
+
+            Commit(x => x.AddToSet("key", "value2", 2.222D));
+
+            Assert.Equal(2, _state.Sets["key"].Count);
+            Assert.Equal(1.111D, _state.Sets["key"].Single(x => x.Value == "value1").Score, 4);
+            Assert.Equal(2.222D, _state.Sets["key"].Single(x => x.Value == "value2").Score, 4);
+        }
+
+        [Fact]
+        public void AddToSet_WithScore_UpdatesScore_WhenValueAlreadyExists()
+        {
+            Commit(x => x.AddToSet("key", "value", 1.0D));
+
+            Commit(x => x.AddToSet("key", "value", 2000.0D));
+
+            Assert.Equal(2000.0D, _state.Sets["key"].Single().Score);
+        }
+
+        [Fact]
+        public void AddToSet_WithScore_StoresElements_InDifferentSets()
+        {
+            Commit(x => x.AddToSet("key1", "value", 1.2D));
+            Commit(x => x.AddToSet("key2", "value", 2.3D));
+
+            Assert.Equal(2, _state.Sets.Count);
+            Assert.Equal(1.2D, _state.Sets["key1"].Single().Score, 2);
+            Assert.Equal(2.3D, _state.Sets["key2"].Single().Score, 2);
+        }
+
+        [Fact]
+        public void AddToSet_InsertsElementsIntoASortedSet()
+        {
+            Commit(x => x.AddToSet("key", "value1", 43.0D));
+            Commit(x => x.AddToSet("key", "value2", 5.0D));
+            Commit(x => x.AddToSet("key", "value3", 743.0D));
+            Commit(x => x.AddToSet("key", "value4", -30.0D));
+
+            var results = _state.Sets["key"].Select(x => x.Value).ToArray();
+            Assert.Equal(new [] { "value4", "value2", "value1", "value3" }, results);
+        }
+
         private void Commit(Action<InMemoryTransaction> action)
         {
             var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state));
