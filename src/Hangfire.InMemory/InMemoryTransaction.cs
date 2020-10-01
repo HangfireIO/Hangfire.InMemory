@@ -138,7 +138,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            _actions.Add(state => { state.SetGetOrAdd(key).Add(value, score); });
+            _actions.Add(state => state.SetGetOrAdd(key).Add(value, score));
         }
 
         public override void RemoveFromSet([NotNull] string key, [NotNull] string value)
@@ -156,14 +156,12 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override void InsertToList(string key, string value)
+        public override void InsertToList([NotNull] string key, [NotNull] string value)
         {
-            _actions.Add(state =>
-            {
-                // TODO: Possible that value is null?
-                var list = state.ListGetOrAdd(key);
-                list.Add(value);
-            });
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
+            _actions.Add(state => state.ListGetOrAdd(key).Add(value));
         }
 
         public override void RemoveFromList(string key, string value)

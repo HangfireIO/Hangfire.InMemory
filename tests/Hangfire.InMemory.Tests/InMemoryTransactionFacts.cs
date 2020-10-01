@@ -724,6 +724,45 @@ namespace Hangfire.InMemory.Tests
             Assert.True (_state.Sets.ContainsKey("key3"));
         }
 
+        [Fact]
+        public void InsertToList_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.InsertToList(null, "value")));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void InsertToList_ThrowsAnException_WhenValueIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.InsertToList("key", null)));
+
+            Assert.Equal("value", exception.ParamName);
+        }
+
+        [Fact]
+        public void InsertToList_InsertsANewElement_EvenWhenTargetListDoesNotYetExist()
+        {
+            Commit(x => x.InsertToList("key", "value"));
+
+            Assert.True(_state.Lists.ContainsKey("key"));
+            Assert.Equal(1, _state.Lists["key"].Count);
+            Assert.Equal("value", _state.Lists["key"][0]);
+        }
+
+        [Fact]
+        public void InsertToList_PrependsAnExistingList_WithTheGivenElement()
+        {
+            Commit(x => x.InsertToList("key", "value1"));
+            Commit(x => x.InsertToList("key", "value2"));
+
+            Assert.Equal(2, _state.Lists["key"].Count);
+            Assert.Equal("value2", _state.Lists["key"][0]);
+            Assert.Equal("value1", _state.Lists["key"][1]);
+        }
+
         private void Commit(Action<InMemoryTransaction> action)
         {
             var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state));
