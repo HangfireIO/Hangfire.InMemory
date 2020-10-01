@@ -662,6 +662,68 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(new [] { "value4", "value2", "value1", "value3" }, results);
         }
 
+        [Fact]
+        public void RemoveFromSet_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.RemoveFromSet(null, "value")));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void RemoveFromSet_ThrowsAnException_WhenValueIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.RemoveFromSet("key", null)));
+
+            Assert.Equal("value", exception.ParamName);
+        }
+
+        [Fact]
+        public void RemoveFromSet_DoesNotThrow_WhenTargetSetDoesNotExist()
+        {
+            Commit(x => x.RemoveFromSet("some-set", "value"));
+        }
+
+        [Fact]
+        public void RemoveFromSet_RemovesTheGivenElement_FromTheTargetSet()
+        {
+            Commit(x => x.AddToSet("key", "1", 1.0D));
+            Commit(x => x.AddToSet("key", "2", 2.0D));
+            Commit(x => x.AddToSet("key", "3", 3.0D));
+
+            Commit(x => x.RemoveFromSet("key", "2"));
+
+            Assert.Equal(
+                new [] { "1", "3" },
+                _state.Sets["key"].Select(x => x.Value).ToArray());
+        }
+
+        [Fact]
+        public void RemoveFromSet_RemovesTargetSetEntirely_WhenLastElementIsRemoved()
+        {
+            Commit(x => x.AddToSet("key", "value"));
+
+            Commit(x => x.RemoveFromSet("key", "value"));
+
+            Assert.False(_state.Sets.ContainsKey("key"));
+        }
+
+        [Fact]
+        public void RemoveFromSet_DoesNotRemove_TheSameValue_FromOtherSets()
+        {
+            Commit(x => x.AddToSet("key1", "value"));
+            Commit(x => x.AddToSet("key2", "value"));
+            Commit(x => x.AddToSet("key3", "value"));
+
+            Commit(x => x.RemoveFromSet("key2", "value"));
+
+            Assert.True (_state.Sets.ContainsKey("key1"));
+            Assert.False(_state.Sets.ContainsKey("key2"));
+            Assert.True (_state.Sets.ContainsKey("key3"));
+        }
+
         private void Commit(Action<InMemoryTransaction> action)
         {
             var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state));

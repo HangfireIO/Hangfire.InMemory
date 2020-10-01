@@ -141,8 +141,11 @@ namespace Hangfire.InMemory
             _actions.Add(state => { state.SetGetOrAdd(key).Add(value, score); });
         }
 
-        public override void RemoveFromSet(string key, string value)
+        public override void RemoveFromSet([NotNull] string key, [NotNull] string value)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
             _actions.Add(state =>
             {
                 if (!state.Sets.TryGetValue(key, out var set)) return;
