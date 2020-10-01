@@ -34,9 +34,10 @@ namespace Hangfire.InMemory
             _value.Add(value);
         }
 
-        public void Remove(string value)
+        public void RemoveAll(string value)
         {
-            _value.Remove(value);
+            // TODO: SQL Server implementation is key insensitive here, Redis one is sensitive
+            _value.RemoveAll(val => val.Equals(value, StringComparison.Ordinal));
         }
 
         internal void Update(List<string> value)

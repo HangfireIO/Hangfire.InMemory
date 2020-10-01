@@ -763,6 +763,76 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal("value1", _state.Lists["key"][1]);
         }
 
+        [Fact]
+        public void InsertToList_IsAbleToHaveMultipleElements_WithTheSameValue()
+        {
+            Commit(x => x.InsertToList("key", "1"));
+            Commit(x => x.InsertToList("key", "2"));
+            Commit(x => x.InsertToList("key", "3"));
+            Commit(x => x.InsertToList("key", "2"));
+
+            var entry = _state.Lists["key"];
+            Assert.Equal(4, entry.Count);
+            Assert.Equal("2", entry[0]);
+            Assert.Equal("3", entry[1]);
+            Assert.Equal("2", entry[2]);
+            Assert.Equal("1", entry[3]);
+        }
+
+        [Fact]
+        public void RemoveFromList_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.RemoveFromList(null, "value")));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void RemoveFromList_ThrowsAnException_WhenValueIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.RemoveFromList("key", null)));
+
+            Assert.Equal("value", exception.ParamName);
+        }
+
+        [Fact]
+        public void RemoveFromList_DoesNotThrow_WhenTargetListDoesNotExist()
+        {
+            Commit(x => x.RemoveFromList("some-key", "some-value"));
+        }
+
+        [Fact]
+        public void RemoveFromList_RemovesAllOccurrences_OfTheGivenValue_InTheGivenList()
+        {
+            Commit(x => x.InsertToList("key", "1"));
+            Commit(x => x.InsertToList("key", "2"));
+            Commit(x => x.InsertToList("key", "3"));
+            Commit(x => x.InsertToList("key", "2"));
+            Commit(x => x.InsertToList("key", "1"));
+            Commit(x => x.InsertToList("key", "2"));
+
+            Commit(x => x.RemoveFromList("key", "2"));
+
+            var entry = _state.Lists["key"];
+            Assert.Equal(3, entry.Count);
+            Assert.Equal("1", entry[0]);
+            Assert.Equal("3", entry[1]);
+            Assert.Equal("1", entry[2]);
+        }
+
+        [Fact]
+        public void RemoveFromList_RemovesAssociatedKey_WhenTargetListBecomesEmpty()
+        {
+            Commit(x => x.InsertToList("key", "1"));
+            Commit(x => x.InsertToList("key", "1"));
+
+            Commit(x => x.RemoveFromList("key", "1"));
+
+            Assert.False(_state.Lists.ContainsKey("key"));
+        }
+
         private void Commit(Action<InMemoryTransaction> action)
         {
             var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state));

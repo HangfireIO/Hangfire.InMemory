@@ -164,14 +164,15 @@ namespace Hangfire.InMemory
             _actions.Add(state => state.ListGetOrAdd(key).Add(value));
         }
 
-        public override void RemoveFromList(string key, string value)
+        public override void RemoveFromList([NotNull] string key, [NotNull] string value)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
             _actions.Add(state =>
             {
-                // TODO: Possible that value is null?
                 var list = state.ListGetOrAdd(key);
-                // TODO: Does this remove all occurrences?
-                list.Remove(value);
+                list.RemoveAll(value);
 
                 if (list.Count == 0) state.ListDelete(list);
             });
