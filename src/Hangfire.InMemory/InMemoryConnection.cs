@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Hangfire.Annotations;
 using Hangfire.Common;
 using Hangfire.Server;
 using Hangfire.Storage;
@@ -13,7 +14,7 @@ namespace Hangfire.InMemory
     {
         private readonly InMemoryDispatcherBase _dispatcher;
 
-        public InMemoryConnection(InMemoryDispatcherBase dispatcher)
+        public InMemoryConnection([NotNull] InMemoryDispatcherBase dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }

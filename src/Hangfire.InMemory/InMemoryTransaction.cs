@@ -13,7 +13,7 @@ namespace Hangfire.InMemory
         private readonly HashSet<QueueEntry> _enqueued = new HashSet<QueueEntry>();
         private readonly InMemoryDispatcherBase _dispatcher;
 
-        public InMemoryTransaction(InMemoryDispatcherBase dispatcher)
+        public InMemoryTransaction([NotNull] InMemoryDispatcherBase dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
