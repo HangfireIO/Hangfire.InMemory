@@ -298,24 +298,30 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override void PersistHash(string key)
+        public override void PersistHash([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             _actions.Add(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash)) state.HashExpire(hash, null);
             });
         }
 
-        public override void PersistList(string key)
+        public override void PersistList([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             _actions.Add(state =>
             {
                 if (state.Lists.TryGetValue(key, out var list)) state.ListExpire(list, null);
             });
         }
 
-        public override void PersistSet(string key)
+        public override void PersistSet([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             _actions.Add(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set)) state.SetExpire(set, null);
@@ -326,7 +332,6 @@ namespace Hangfire.InMemory
         {
             _dispatcher.QueryAndWait(state =>
             {
-                // TODO: Check all the preconditions (for example if locks are still held)
                 foreach (var action in _actions)
                 {
                     action(state);

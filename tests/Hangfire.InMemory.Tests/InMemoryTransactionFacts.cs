@@ -1219,6 +1219,141 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal("key", _state._setIndex.Single().Key);
         }
 
+        [Fact]
+        public void PersistHash_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(() => Commit(
+                x => x.PersistHash(null)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void PersistHash_DoesNotThrowAnException_WhenHashDoesNotExist()
+        {
+            Commit(x => x.PersistHash("some-key"));
+            Assert.False(_state.Hashes.ContainsKey("some-key"));
+        }
+
+        [Fact]
+        public void PersistHash_ResetsExpirationTime_OfTheGivenHash()
+        {
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string> { { "field", "value" } }));
+            Commit(x => x.ExpireHash("key", TimeSpan.FromMinutes(30)));
+            Assert.NotNull(_state.Hashes["key"].ExpireAt);
+
+            Commit(x => x.PersistHash("key"));
+
+            Assert.Null(_state.Hashes["key"].ExpireAt);
+        }
+
+        [Fact]
+        public void PersistHash_RemovesEntry_FromExpirationIndex()
+        {
+            // Arrange
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string> { { "field", "value" } }));
+            Commit(x => x.ExpireHash("key", TimeSpan.FromMinutes(30)));
+            Assert.NotEmpty(_state._hashIndex);
+
+            // Act
+            Commit(x => x.PersistHash("key"));
+
+            // Assert
+            Assert.Empty(_state._hashIndex);
+        }
+
+        [Fact]
+        public void PersistList_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(() => Commit(
+                x => x.PersistList(null)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void PersistList_DoesNotThrowAnException_WhenListDoesNotExist()
+        {
+            Commit(x => x.PersistList("some-key"));
+            Assert.False(_state.Lists.ContainsKey("some-key"));
+        }
+
+        [Fact]
+        public void PersistList_ResetsExpirationTime_OfTheGivenList()
+        {
+            Commit(x => x.InsertToList("key", "value"));
+            Commit(x => x.ExpireList("key", TimeSpan.FromMinutes(30)));
+            Assert.NotNull(_state.Lists["key"].ExpireAt);
+
+            Commit(x => x.PersistList("key"));
+
+            Assert.Null(_state.Lists["key"].ExpireAt);
+        }
+
+        [Fact]
+        public void PersistList_RemovesEntry_FromExpirationIndex()
+        {
+            // Arrange
+            Commit(x => x.InsertToList("key", "value"));
+            Commit(x => x.ExpireList("key", TimeSpan.FromMinutes(30)));
+            Assert.NotEmpty(_state._listIndex);
+
+            // Act
+            Commit(x => x.PersistList("key"));
+
+            // Assert
+            Assert.Empty(_state._listIndex);
+        }
+
+        [Fact]
+        public void PersistSet_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(() => Commit(
+                x => x.PersistSet(null)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void PersistSet_DoesNotThrowAnException_WhenListDoesNotExist()
+        {
+            Commit(x => x.PersistSet("some-key"));
+            Assert.False(_state.Sets.ContainsKey("some-key"));
+        }
+
+        [Fact]
+        public void PersistSet_ResetsExpirationTime_OfTheGivenSet()
+        {
+            Commit(x => x.AddToSet("key", "value"));
+            Commit(x => x.ExpireSet("key", TimeSpan.FromMinutes(30)));
+            Assert.NotNull(_state.Sets["key"].ExpireAt);
+
+            Commit(x => x.PersistSet("key"));
+
+            Assert.Null(_state.Sets["key"].ExpireAt);
+        }
+
+        [Fact]
+        public void PersistSet_RemovesEntry_FromExpirationIndex()
+        {
+            // Arrange
+            Commit(x => x.AddToSet("key", "value"));
+            Commit(x => x.ExpireSet("key", TimeSpan.FromMinutes(30)));
+            Assert.NotEmpty(_state._setIndex);
+
+            // Act
+            Commit(x => x.PersistSet("key"));
+
+            // Assert
+            Assert.Empty(_state._setIndex);
+        }
+
+        [Fact]
+        public void Commit_DoesNotThrow_WhenThereAreNoCommandsToRun()
+        {
+            Commit(x => { });
+        }
+
         private void Commit(Action<InMemoryTransaction> action)
         {
             var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state));
