@@ -9,6 +9,7 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryTransaction : JobStorageTransaction
     {
         private readonly List<Action<InMemoryState>> _actions = new List<Action<InMemoryState>>();
+        private readonly List<Action<InMemoryState>> _queueActions = new List<Action<InMemoryState>>();
         private readonly HashSet<QueueEntry> _enqueued = new HashSet<QueueEntry>();
         private readonly InMemoryDispatcherBase _dispatcher;
 
@@ -95,7 +96,7 @@ namespace Hangfire.InMemory
             if (queue == null) throw new ArgumentNullException(nameof(queue));
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
-            _actions.Add(state =>
+            _queueActions.Add(state =>
             {
                 var entry = state.QueueGetOrCreate(queue);
                 entry.Queue.Enqueue(jobId);
@@ -178,19 +179,20 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override void TrimList(string key, int keepStartingFrom, int keepEndingAt)
+        public override void TrimList([NotNull] string key, int keepStartingFrom, int keepEndingAt)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             _actions.Add(state =>
             {
                 if (!state.Lists.TryGetValue(key, out var list)) return;
 
                 var result = new List<string>(); // TODO: Create only when really necessary
 
-                for (var index = 0; index < list.Count; index++)
+                for (var index = list.Count - 1; index >= 0; index--)
                 {
                     if (index >= keepStartingFrom && index <= keepEndingAt)
                     {
-                        // TODO: Ensure resulting list is not inverted
                         result.Add(list[index]);
                     }
                 }
@@ -311,6 +313,13 @@ namespace Hangfire.InMemory
             {
                 // TODO: Check all the preconditions (for example if locks are still held)
                 foreach (var action in _actions)
+                {
+                    action(state);
+                }
+
+                // We reorder queue actions and run them after all the other commands, because
+                // our GetJobData method is being reordered too
+                foreach (var action in _queueActions)
                 {
                     action(state);
                 }

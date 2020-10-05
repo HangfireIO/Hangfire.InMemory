@@ -833,6 +833,76 @@ namespace Hangfire.InMemory.Tests
             Assert.False(_state.Lists.ContainsKey("key"));
         }
 
+        [Fact]
+        public void TrimList_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.TrimList(null, 0, 1)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void TrimList_DoesNotThrow_WhenTargetListDoesNotExists()
+        {
+            Commit(x => x.TrimList("some-key", 0, 1));
+        }
+
+        [Fact]
+        public void TrimList_TrimsTheGivenList_ToTheSpecifiedRange()
+        {
+            Commit(x => x.InsertToList("key", "0"));
+            Commit(x => x.InsertToList("key", "1"));
+            Commit(x => x.InsertToList("key", "2"));
+            Commit(x => x.InsertToList("key", "3"));
+            Commit(x => x.InsertToList("key", "4"));
+
+            Commit(x => x.TrimList("key", 1, 2));
+
+            var list = _state.Lists["key"];
+            Assert.Equal(2, list.Count);
+            Assert.Equal("3", list[0]);
+            Assert.Equal("2", list[1]);
+        }
+
+        [Fact]
+        public void TrimList_RemovesElementsToEnd_WhenKeepEndingAt_IsGreaterThanTheNumberOfElements()
+        {
+            Commit(x => x.InsertToList("key", "0"));
+            Commit(x => x.InsertToList("key", "1"));
+            Commit(x => x.InsertToList("key", "2"));
+
+            Commit(x => x.TrimList("key", 1, 100));
+
+            var list = _state.Lists["key"];
+            Assert.Equal(2, list.Count);
+            Assert.Equal("1", list[0]);
+            Assert.Equal("0", list[1]);
+        }
+
+        [Fact]
+        public void TrimList_RemovesListEntry_WhenResultingListIsEmpty()
+        {
+            Commit(x => x.InsertToList("key", "0"));
+
+            Commit(x => x.TrimList("key", 5, 6));
+
+            Assert.False(_state.Lists.ContainsKey("key"));
+        }
+
+        [Fact]
+        public void TrimList_RemovesAllElements_WhenStartingFromIsGreaterThanKeepEndingAt()
+        {
+            Commit(x => x.InsertToList("key", "0"));
+            Commit(x => x.InsertToList("key", "1"));
+            Commit(x => x.InsertToList("key", "2"));
+            Commit(x => x.InsertToList("key", "3"));
+
+            Commit(x => x.TrimList("key", 2, 1));
+
+            Assert.False(_state.Lists.ContainsKey("key"));
+        }
+
         private void Commit(Action<InMemoryTransaction> action)
         {
             var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state));
