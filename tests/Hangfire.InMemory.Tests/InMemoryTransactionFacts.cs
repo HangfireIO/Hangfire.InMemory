@@ -6,6 +6,13 @@ using Hangfire.States;
 using Moq;
 using Xunit;
 
+// ReSharper disable StringLiteralTypo
+
+// TODO: Case sensitivity tests, may be for different modes – SQL Server and Redis compatibility
+// TODO: Expiration index checks for Increment/DecrementCounter
+// TODO: Add checks for key lengths for SQL Server compatibility mode
+// TODO: Add mixed namespace for better compatibility with Redis?
+
 namespace Hangfire.InMemory.Tests
 {
     public class InMemoryTransactionFacts
@@ -561,10 +568,6 @@ namespace Hangfire.InMemory.Tests
             Assert.DoesNotContain("somecounter", _state.Counters);
         }
 
-        // TODO: Case sensitivity tests, may be for different modes – SQL Server and Redis compatibility
-        // TODO: Expiration index checks for Increment/DecrementCounter
-        // TODO: Add checks for key lengths for SQL Server compatibility mode
-
         [Fact]
         public void AddToSet_ThrowsAnException_WhenKeyIsNull()
         {
@@ -901,6 +904,91 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.TrimList("key", 2, 1));
 
             Assert.False(_state.Lists.ContainsKey("key"));
+        }
+
+        [Fact]
+        public void SetRangeInHash_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.SetRangeInHash(null, Enumerable.Empty<KeyValuePair<string, string>>())));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void SetRangeInHash_ThrowsAnException_WhenKeyValuePairsArgumentIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.SetRangeInHash("key", null)));
+
+            Assert.Equal("keyValuePairs", exception.ParamName);
+        }
+
+        [Fact]
+        public void SetRangeInHash_DoesNotCreateEmptyHashEntry_WhenKeyValuePairsIsEmpty()
+        {
+            Commit(x => x.SetRangeInHash("key", Enumerable.Empty<KeyValuePair<string, string>>()));
+
+            Assert.False(_state.Hashes.ContainsKey("key"));
+        }
+
+        [Fact]
+        public void SetRangeInHash_CreatesANewEntry_WithSpecifiedRecords_WhenHashDoesNotExist()
+        {
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string>
+            {
+                { "field1", "value1" },
+                { "field2", "value2" }
+            }));
+
+            var hash = _state.Hashes["key"];
+            Assert.Equal("value1", hash.Value["field1"]);
+            Assert.Equal("value2", hash.Value["field2"]);
+        }
+
+        [Fact]
+        public void SetRangeInHash_InsertsNewEntries_IntoExistingHashEntry_WhenFieldNamesDoNotInterleave()
+        {
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string>
+            {
+                { "field1", "value1" },
+                { "field3", "value3" }
+            }));
+
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string>
+            {
+                { "field2", "value2" },
+                { "field4", "value4" }
+            }));
+
+            var hash = _state.Hashes["key"];
+            Assert.Equal("value1", hash.Value["field1"]);
+            Assert.Equal("value2", hash.Value["field2"]);
+            Assert.Equal("value3", hash.Value["field3"]);
+            Assert.Equal("value4", hash.Value["field4"]);
+        }
+
+        [Fact]
+        public void SetRangeInHash_OverwritesAllTheGivenFields_WhenTheyAlreadyExist()
+        {
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string>
+            {
+                { "field1", "value1" },
+                { "field2", "value2" },
+                { "field3", "value3" }
+            }));
+
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string>
+            {
+                { "field1", "newvalue1" },
+                { "field3", "newvalue3" }
+            }));
+
+            var hash = _state.Hashes["key"];
+            Assert.Equal(3, hash.Value.Count);
+            Assert.Equal("newvalue1", hash.Value["field1"]);
+            Assert.Equal("value2", hash.Value["field2"]);
+            Assert.Equal("newvalue3", hash.Value["field3"]);
         }
 
         private void Commit(Action<InMemoryTransaction> action)
