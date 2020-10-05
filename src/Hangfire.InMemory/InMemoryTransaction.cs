@@ -231,8 +231,10 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override void RemoveHash(string key)
+        public override void RemoveHash([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             _actions.Add(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash)) state.HashDelete(hash);

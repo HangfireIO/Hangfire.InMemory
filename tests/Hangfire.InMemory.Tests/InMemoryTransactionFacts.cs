@@ -46,6 +46,7 @@ namespace Hangfire.InMemory.Tests
         public void ExpireJob_DoesNotThrow_WhenJobDoesNotExist()
         {
             Commit(x => x.ExpireJob("some-job", TimeSpan.Zero));
+            Assert.False(_state.Jobs.ContainsKey("some-job"));
         }
 
         [Fact]
@@ -87,6 +88,7 @@ namespace Hangfire.InMemory.Tests
         public void PersistJob_DoesNotThrowAnException_WhenJobDoesNotExist()
         {
             Commit(x => x.PersistJob("some-job"));
+            Assert.False(_state.Jobs.ContainsKey("some-job"));
         }
 
         [Fact]
@@ -157,6 +159,7 @@ namespace Hangfire.InMemory.Tests
             state.SetupGet(x => x.Name).Returns("SomeState");
 
             Commit(x => x.SetJobState("some-job", state.Object));
+            Assert.False(_state.Jobs.ContainsKey("some-job"));
         }
 
         [Fact]
@@ -238,6 +241,7 @@ namespace Hangfire.InMemory.Tests
         public void AddJobState_DoesNotThrowAnException_WhenJobDoesNotExist()
         {
             Commit(x => x.AddJobState("some-job", new Mock<IState>().Object));
+            Assert.False(_state.Jobs.ContainsKey("some-job"));
         }
 
         [Fact]
@@ -687,6 +691,7 @@ namespace Hangfire.InMemory.Tests
         public void RemoveFromSet_DoesNotThrow_WhenTargetSetDoesNotExist()
         {
             Commit(x => x.RemoveFromSet("some-set", "value"));
+            Assert.False(_state.Sets.ContainsKey("some-set"));
         }
 
         [Fact]
@@ -804,6 +809,7 @@ namespace Hangfire.InMemory.Tests
         public void RemoveFromList_DoesNotThrow_WhenTargetListDoesNotExist()
         {
             Commit(x => x.RemoveFromList("some-key", "some-value"));
+            Assert.False(_state.Lists.ContainsKey("some-key"));
         }
 
         [Fact]
@@ -849,6 +855,7 @@ namespace Hangfire.InMemory.Tests
         public void TrimList_DoesNotThrow_WhenTargetListDoesNotExists()
         {
             Commit(x => x.TrimList("some-key", 0, 1));
+            Assert.False(_state.Lists.ContainsKey("some-key"));
         }
 
         [Fact]
@@ -989,6 +996,35 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal("newvalue1", hash.Value["field1"]);
             Assert.Equal("value2", hash.Value["field2"]);
             Assert.Equal("newvalue3", hash.Value["field3"]);
+        }
+
+        [Fact]
+        public void RemoveHash_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.RemoveHash(null)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void RemoveHash_DoesNotThrow_WhenTargetHashDoesNotExist()
+        {
+            Commit(x => x.RemoveHash("some-key"));
+            Assert.False(_state.Hashes.ContainsKey("some-key"));
+        }
+
+        [Fact]
+        public void RemoveHash_RemovesTheSpecifiedHashEntryImmediately()
+        {
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string>
+            {
+                { "field", "value" }
+            }));
+
+            Commit(x => x.RemoveHash("key"));
+
+            Assert.False(_state.Hashes.ContainsKey("key"));
         }
 
         private void Commit(Action<InMemoryTransaction> action)
