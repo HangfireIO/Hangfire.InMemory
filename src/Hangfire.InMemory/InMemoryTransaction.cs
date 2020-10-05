@@ -241,14 +241,16 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override void AddRangeToSet(string key, IList<string> items)
+        public override void AddRangeToSet([NotNull] string key, [NotNull] IList<string> items)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (items == null) throw new ArgumentNullException(nameof(items));
+
             _actions.Add(state =>
             {
                 // TODO: Don't do anything when items is empty
                 var set = state.SetGetOrAdd(key);
 
-                // TODO: Original implementation in SQL Server expects all the items in this case don't exist.
                 foreach (var value in items)
                 {
                     set.Add(value, 0.0D);

@@ -12,6 +12,7 @@ using Xunit;
 // TODO: Expiration index checks for Increment/DecrementCounter
 // TODO: Add checks for key lengths for SQL Server compatibility mode
 // TODO: Add mixed namespace for better compatibility with Redis?
+// TODO: AddToSet/AddRangeToSet with null value – how other storages behave?
 
 namespace Hangfire.InMemory.Tests
 {
@@ -999,6 +1000,19 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void SetRangeInHash_CanSetANullValue()
+        {
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string>
+            {
+                { "field1", null },
+                { "field2", null }
+            }));
+
+            Assert.Null(_state.Hashes["key"].Value["field1"]);
+            Assert.Null(_state.Hashes["key"].Value["field2"]);
+        }
+
+        [Fact]
         public void RemoveHash_ThrowsAnException_WhenKeyIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
@@ -1025,6 +1039,35 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.RemoveHash("key"));
 
             Assert.False(_state.Hashes.ContainsKey("key"));
+        }
+
+        [Fact]
+        public void AddRangeToSet_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.AddRangeToSet(null, new List<string>())));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void AddRangeToSet_ThrowsAnException_WhenItemsIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.AddRangeToSet("key", null)));
+
+            Assert.Equal("items", exception.ParamName);
+        }
+
+        [Fact]
+        public void AddRangeToSet_AddsAllTheGivenElements_WithZeroScore()
+        {
+            Commit(x => x.AddRangeToSet("key", new List<string> { "1", "2", "3" }));
+
+            Assert.Equal(3, _state.Sets["key"].Count);
+            Assert.Equal(0.0D, _state.Sets["key"].Single(x => x.Value == "1").Score, 2);
+            Assert.Equal(0.0D, _state.Sets["key"].Single(x => x.Value == "2").Score, 2);
+            Assert.Equal(0.0D, _state.Sets["key"].Single(x => x.Value == "3").Score, 2);
         }
 
         private void Commit(Action<InMemoryTransaction> action)
