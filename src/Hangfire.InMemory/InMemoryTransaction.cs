@@ -258,32 +258,40 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override void RemoveSet(string key)
+        public override void RemoveSet([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             _actions.Add(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set)) state.SetDelete(set);
             });
         }
 
-        public override void ExpireHash(string key, TimeSpan expireIn)
+        public override void ExpireHash([NotNull]string key, TimeSpan expireIn)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             _actions.Add(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash)) state.HashExpire(hash, expireIn);
             });
         }
 
-        public override void ExpireList(string key, TimeSpan expireIn)
+        public override void ExpireList([NotNull] string key, TimeSpan expireIn)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             _actions.Add(state =>
             {
                 if (state.Lists.TryGetValue(key, out var list)) state.ListExpire(list, expireIn);
             });
         }
 
-        public override void ExpireSet(string key, TimeSpan expireIn)
+        public override void ExpireSet([NotNull] string key, TimeSpan expireIn)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             _actions.Add(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set)) state.SetExpire(set, expireIn);

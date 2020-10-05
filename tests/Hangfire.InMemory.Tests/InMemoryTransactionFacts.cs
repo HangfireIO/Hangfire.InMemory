@@ -1070,6 +1070,155 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(0.0D, _state.Sets["key"].Single(x => x.Value == "3").Score, 2);
         }
 
+        [Fact]
+        public void RemoveSet_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.RemoveSet(null)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void RemoveSet_DoesNotThrow_WhenTargetSetDoesNotExist()
+        {
+            Commit(x => x.RemoveSet("some-key"));
+            Assert.False(_state.Sets.ContainsKey("some-key"));
+        }
+
+        [Fact]
+        public void RemoveSet_RemovesTheSpecifiedSetEntryImmediately()
+        {
+            Commit(x => x.AddToSet("key", "value"));
+
+            Commit(x => x.RemoveSet("key"));
+
+            Assert.False(_state.Sets.ContainsKey("key"));
+        }
+
+        [Fact]
+        public void ExpireHash_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(() => Commit(
+                x => x.ExpireHash(null, TimeSpan.Zero)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void ExpireHash_DoesNotThrow_WhenTargetHashDoesNotExist()
+        {
+            Commit(x => x.ExpireHash("some-key", TimeSpan.Zero));
+            Assert.False(_state.Hashes.ContainsKey("some-key"));
+        }
+
+        [Fact]
+        public void ExpireHash_SetsExpirationTime_OfTheGivenHash()
+        {
+            // Arrange
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string> { { "field", "value" } }));
+
+            // Act
+            Commit(x => x.ExpireHash("key", TimeSpan.FromMinutes(30)));
+
+            // Assert
+            var expireAt = _state.Hashes["key"].ExpireAt;
+            Assert.NotNull(expireAt);
+            Assert.Equal(_now.AddMinutes(30), expireAt.Value);
+        }
+
+        [Fact]
+        public void ExpireHash_AddsEntry_ToExpirationIndex()
+        {
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string> { { "field", "value" } }));
+
+            Commit(x => x.ExpireHash("key", TimeSpan.FromMinutes(30)));
+
+            Assert.Equal("key", _state._hashIndex.Single().Key);
+        }
+
+        [Fact]
+        public void ExpireList_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(() => Commit(
+                x => x.ExpireList(null, TimeSpan.Zero)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void ExpireList_DoesNotThrow_WhenTargetListDoesNotExist()
+        {
+            Commit(x => x.ExpireList("some-key", TimeSpan.Zero));
+            Assert.False(_state.Lists.ContainsKey("some-key"));
+        }
+
+        [Fact]
+        public void ExpireList_SetsExpirationTime_OfTheGivenList()
+        {
+            // Arrange
+            Commit(x => x.InsertToList("key", "value"));
+
+            // Act
+            Commit(x => x.ExpireList("key", TimeSpan.FromMinutes(30)));
+
+            // Assert
+            var expireAt = _state.Lists["key"].ExpireAt;
+            Assert.NotNull(expireAt);
+            Assert.Equal(_now.AddMinutes(30), expireAt.Value);
+        }
+
+        [Fact]
+        public void ExpireList_AddsEntry_ToExpirationIndex()
+        {
+            Commit(x => x.InsertToList("key", "value"));
+
+            Commit(x => x.ExpireList("key", TimeSpan.FromMinutes(30)));
+
+            Assert.Equal("key", _state._listIndex.Single().Key);
+        }
+
+        [Fact]
+        public void ExpireSet_ThrowsAnException_WhenKeyIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(() => Commit(
+                x => x.ExpireSet(null, TimeSpan.Zero)));
+
+            Assert.Equal("key", exception.ParamName);
+        }
+
+        [Fact]
+        public void ExpireSet_DoesNotThrow_WhenTargetSetDoesNotExist()
+        {
+            Commit(x => x.ExpireSet("some-key", TimeSpan.Zero));
+            Assert.False(_state.Sets.ContainsKey("some-key"));
+        }
+
+        [Fact]
+        public void ExpireSet_SetsExpirationTime_OfTheGivenSet()
+        {
+            // Arrange
+            Commit(x => x.AddToSet("key", "value"));
+
+            // Act
+            Commit(x => x.ExpireSet("key", TimeSpan.FromMinutes(30)));
+
+            // Assert
+            var expireAt = _state.Sets["key"].ExpireAt;
+            Assert.NotNull(expireAt);
+            Assert.Equal(_now.AddMinutes(30), expireAt.Value);
+        }
+
+        [Fact]
+        public void ExpireSet_AddsEntry_ToExpirationIndex()
+        {
+            Commit(x => x.AddToSet("key", "value"));
+
+            Commit(x => x.ExpireSet("key", TimeSpan.FromMinutes(30)));
+
+            Assert.Equal("key", _state._setIndex.Single().Key);
+        }
+
         private void Commit(Action<InMemoryTransaction> action)
         {
             var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state));
