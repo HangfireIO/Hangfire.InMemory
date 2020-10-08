@@ -20,7 +20,7 @@ Distributed locks (heh, in an in-process storage), queue fetch logic (even from 
 
 ## Installation
 
-[Hangfire.InMemory](https://www.nuget.org/packages/Hangfire.InMemory/) is available on NuGet so you can install it as usual using your favorite package manager. Here is how `*.csproj` file look like when the package is installed to use the latest `0.X` version.
+[Hangfire.InMemory](https://www.nuget.org/packages/Hangfire.InMemory/) is available on NuGet so we can install it as usual using your favorite package manager. Here is how `*.csproj` file look like when the package is installed to use the latest `0.X` version.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -37,7 +37,7 @@ Distributed locks (heh, in an in-process storage), queue fetch logic (even from 
 </Project>
 ```
 
-After the package is installed you can use the new `UseMemoryStorage` method for the `IGlobalConfiguration` interface to register the storage.
+After the package is installed we can use the new `UseMemoryStorage` method for the `IGlobalConfiguration` interface to register the storage.
 
 ```csharp
 GlobalConfiguration.Configuration.UseInMemoryStorage();
