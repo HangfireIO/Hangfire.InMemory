@@ -9,9 +9,7 @@ Read and write queries are processed by a single thread to avoid additional sync
 
 Distributed locks (heh, in an in-process storage), queue fetch logic (even from multiple queues) and transactional queries are implemented as blocking operations, so there is no active polling in these cases. Every data returned by storage can be safely changed without causing underlying storage state to be changed with bypassing required transactional processing logic, so everything is safe (but increase load on GC). Every data structure, including indexes and their records, is removed when empty to avoid memory leaks.
 
-
-
-### TODO
+## TODO
 
 * Control `OutOfMemoryException` by providing some kind of limits which can be established easily, e.g. total number of jobs.
 * Avoid unnecessary object allocations without sacrificing the safety property (as described above).
@@ -19,3 +17,28 @@ Distributed locks (heh, in an in-process storage), queue fetch logic (even from 
 * Force expiration when memory pressure is high to avoid `OutOfMemoryException`.
 * Add overridden default for expiration time for jobs and batches?
 * Can avoid synchronization in some read-only methods in the `MemoryConnection`class.
+
+## Installation
+
+[Hangfire.InMemory](https://www.nuget.org/packages/Hangfire.InMemory/) is available on NuGet so you can install it as usual using your favorite package manager. Here is how `*.csproj` file look like when the package is installed to use the latest `0.X` version.
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hangfire.InMemory" Version="0.*" />
+  </ItemGroup>
+
+</Project>
+```
+
+After the package is installed you can use the new `UseMemoryStorage` method for the `IGlobalConfiguration` interface to register the storage.
+
+```csharp
+GlobalConfiguration.Configuration.UseInMemoryStorage();
+```
