@@ -36,6 +36,7 @@ namespace Hangfire.InMemory
 
         public string GetJobParameter([NotNull] string jobId, [NotNull] string name)
         {
+            // TODO: Consider removing guard statements below and from other method and delegate checks to Connection and Transaction instead
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
             if (name == null) throw new ArgumentNullException(nameof(name));
 

@@ -87,19 +87,27 @@ namespace Hangfire.InMemory
             }
         }
 
-        public override string CreateExpiredJob(Job job, IDictionary<string, string> parameters, DateTime createdAt, TimeSpan expireIn)
+        public override string CreateExpiredJob(
+            [NotNull] Job job,
+            [NotNull] IDictionary<string, string> parameters,
+            DateTime createdAt,
+            TimeSpan expireIn)
         {
+            if (job == null) throw new ArgumentNullException(nameof(job));
+            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+
             var backgroundJob = new BackgroundJobEntry
             {
                 Key = Guid.NewGuid().ToString(), // TODO: Change with Long type
                 InvocationData = InvocationData.SerializeJob(job),
-                Parameters = new ConcurrentDictionary<string, string>(parameters, StringComparer.Ordinal),
+                Parameters = new ConcurrentDictionary<string, string>(parameters, StringComparer.Ordinal), // TODO: case sensitivity
                 CreatedAt = createdAt
             };
 
             // TODO: Precondition: jobId does not exist
             _dispatcher.QueryAndWait(state =>
             {
+                // TODO: We need somehow to ensure that this entry isn't removed before initialization
                 backgroundJob.ExpireAt = state.TimeResolver().Add(expireIn);
                 state.JobCreate(backgroundJob);
             });
@@ -149,8 +157,14 @@ namespace Hangfire.InMemory
             return null;
         }
 
-        public override void SetJobParameter(string id, string name, string value)
+        public override void SetJobParameter(
+            [NotNull] string id,
+            [NotNull] string name,
+            [CanBeNull] string value)
         {
+            if (id == null) throw new ArgumentNullException(nameof(id));
+            if (name == null) throw new ArgumentNullException(nameof(name));
+
             _dispatcher.QueryAndWait(state =>
             {
                 if (state.Jobs.TryGetValue(id, out var jobEntry))
@@ -162,13 +176,18 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override string GetJobParameter(string id, string name)
+        public override string GetJobParameter([NotNull] string id, [NotNull] string name)
         {
+            if (id == null) throw new ArgumentNullException(nameof(id));
+            if (name == null) throw new ArgumentNullException(nameof(name));
+
             return _dispatcher.GetJobParameter(id, name);
         }
 
-        public override JobData GetJobData(string jobId)
+        public override JobData GetJobData([NotNull] string jobId)
         {
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
+
             if (!_dispatcher.TryGetJobData(jobId, out var entry))
             {
                 return null;
@@ -195,8 +214,10 @@ namespace Hangfire.InMemory
             };
         }
 
-        public override StateData GetStateData(string jobId)
+        public override StateData GetStateData([NotNull] string jobId)
         {
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
+
             return _dispatcher.QueryAndWait(state =>
             {
                 if (!state.Jobs.TryGetValue(jobId, out var jobEntry) || jobEntry.State == null)
@@ -208,6 +229,7 @@ namespace Hangfire.InMemory
                 {
                     Name = jobEntry.State.Name,
                     Reason = jobEntry.State.Reason,
+                    // TODO Case sensitivity
                     Data = jobEntry.State.Data.ToDictionary(x => x.Key, x => x.Value)
                 };
             });
