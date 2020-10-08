@@ -432,7 +432,9 @@ namespace Hangfire.InMemory.Tests
             return new InMemoryConnection(new InMemoryDispatcherBase(_state));
         }
 
+#pragma warning disable xUnit1013 // Public method should be marked as test
         public void MyMethod(string arg)
+#pragma warning restore xUnit1013 // Public method should be marked as test
         {
         }
     }
