@@ -13,6 +13,7 @@ using Xunit;
 // TODO: Add checks for key lengths for SQL Server compatibility mode
 // TODO: Add mixed namespace for better compatibility with Redis?
 // TODO: AddToSet/AddRangeToSet with null value – how other storages behave?
+// TODO: Check return values aren't the same and copied for each response for safety.
 
 namespace Hangfire.InMemory.Tests
 {
@@ -1356,10 +1357,11 @@ namespace Hangfire.InMemory.Tests
 
         private void Commit(Action<InMemoryTransaction> action)
         {
-            var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state));
-            action(transaction);
-
-            transaction.Commit();
+            using (var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state)))
+            {
+                action(transaction);
+                transaction.Commit();
+            }
         }
     }
 }

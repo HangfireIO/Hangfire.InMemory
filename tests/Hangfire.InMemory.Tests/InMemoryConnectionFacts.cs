@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Hangfire.Common;
+using Hangfire.Server;
 using Hangfire.States;
 using Hangfire.Storage;
 using Moq;
@@ -11,10 +12,10 @@ namespace Hangfire.InMemory.Tests
 {
     public class InMemoryConnectionFacts
     {
-        private readonly DateTime _now;
         private readonly InMemoryState _state;
         private readonly Dictionary<string, string> _parameters;
         private readonly Job _job;
+        private DateTime _now;
 
         public InMemoryConnectionFacts()
         {
@@ -257,6 +258,20 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void GetJobParameter_ReturnsNull_WhenGivenJobAndParameterExist_ButValueItselfIsNull()
+        {
+            UseConnection(connection =>
+            {
+                _parameters.Add("name", null);
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+
+                var value = connection.GetJobParameter(jobId, "name");
+
+                Assert.Null(value);
+            });
+        }
+
+        [Fact]
         public void GetJobParameter_ReturnsTheActualValue_WhenBackgroundJobAndParameterExist()
         {
             UseConnection(connection =>
@@ -322,9 +337,7 @@ namespace Hangfire.InMemory.Tests
 
                 var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
 
-                var transaction = connection.CreateWriteTransaction();
-                transaction.SetJobState(jobId, state.Object);
-                transaction.Commit();
+                Commit(connection, x => x.SetJobState(jobId, state.Object));
 
                 // Act
                 var data = connection.GetJobData(jobId);
@@ -404,9 +417,7 @@ namespace Hangfire.InMemory.Tests
 
                 var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
 
-                var transaction = connection.CreateWriteTransaction();
-                transaction.SetJobState(jobId, state.Object);
-                transaction.Commit();
+                Commit(connection, x => x.SetJobState(jobId, state.Object));
 
                 // Act
                 var data = connection.GetStateData(jobId);
@@ -419,11 +430,878 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
+        [Fact]
+        public void GetAllItemsFromSet_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetAllItemsFromSet(null));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetAllItemsFromSet_ReturnsNonNullEmptyCollection_WhenTargetSetDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetAllItemsFromSet("some-key");
+
+                Assert.NotNull(result);
+                Assert.Empty(result);
+            });
+        }
+
+        [Fact]
+        public void GetAllItemsFromSet_ReturnsAllValues_CorrectlySorted()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "value3", 3);
+                    x.AddToSet("key", "value1", 1);
+                    x.AddToSet("key", "value2", 2);
+                });
+
+                var result = connection.GetAllItemsFromSet("key");
+
+                Assert.Equal(new [] { "value1", "value2", "value3" }, result);
+            });
+        }
+
+        [Fact]
+        public void SetRangeInHash_ThrowsAnException_WhenKeyIsNull()
+        {
+            // Duplicated from InMemoryTransactionFacts class
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.SetRangeInHash(null, Enumerable.Empty<KeyValuePair<string, string>>()));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void SetRangeInHash_ThrowsAnException_WhenKeyValuePairsArgumentIsNull()
+        {
+            // Duplicated from InMemoryTransactionFacts class
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.SetRangeInHash("key", null));
+
+                Assert.Equal("keyValuePairs", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void SetRangeInHash_DoesNotCreateEmptyHashEntry_WhenKeyValuePairsIsEmpty()
+        {
+            // Duplicated from InMemoryTransactionFacts class
+            UseConnection(connection =>
+            {
+                connection.SetRangeInHash("key", Enumerable.Empty<KeyValuePair<string, string>>());
+
+                Assert.False(_state.Hashes.ContainsKey("key"));
+            });
+        }
+
+        [Fact]
+        public void SetRangeInHash_CreatesANewEntry_WithSpecifiedRecords_WhenHashDoesNotExist()
+        {
+            // Duplicated from InMemoryTransactionFacts class
+            UseConnection(connection =>
+            {
+                connection.SetRangeInHash("key", new Dictionary<string, string>
+                {
+                    {"field1", "value1"},
+                    {"field2", "value2"}
+                });
+
+                var hash = _state.Hashes["key"];
+                Assert.Equal("value1", hash.Value["field1"]);
+                Assert.Equal("value2", hash.Value["field2"]);
+            });
+        }
+
+        [Fact]
+        public void SetRangeInHash_InsertsNewEntries_IntoExistingHashEntry_WhenFieldNamesDoNotInterleave()
+        {
+            // Duplicated from InMemoryTransactionFacts class
+            UseConnection(connection =>
+            {
+                connection.SetRangeInHash("key", new Dictionary<string, string>
+                {
+                    {"field1", "value1"},
+                    {"field3", "value3"}
+                });
+
+                connection.SetRangeInHash("key", new Dictionary<string, string>
+                {
+                    {"field2", "value2"},
+                    {"field4", "value4"}
+                });
+
+                var hash = _state.Hashes["key"];
+                Assert.Equal("value1", hash.Value["field1"]);
+                Assert.Equal("value2", hash.Value["field2"]);
+                Assert.Equal("value3", hash.Value["field3"]);
+                Assert.Equal("value4", hash.Value["field4"]);
+            });
+        }
+
+        [Fact]
+        public void SetRangeInHash_OverwritesAllTheGivenFields_WhenTheyAlreadyExist()
+        {
+            // Duplicated from InMemoryTransactionFacts class
+            UseConnection(connection =>
+            {
+                connection.SetRangeInHash("key", new Dictionary<string, string>
+                {
+                    {"field1", "value1"},
+                    {"field2", "value2"},
+                    {"field3", "value3"}
+                });
+
+                connection.SetRangeInHash("key", new Dictionary<string, string>
+                {
+                    {"field1", "newvalue1"},
+                    {"field3", "newvalue3"}
+                });
+
+                var hash = _state.Hashes["key"];
+                Assert.Equal(3, hash.Value.Count);
+                Assert.Equal("newvalue1", hash.Value["field1"]);
+                Assert.Equal("value2", hash.Value["field2"]);
+                Assert.Equal("newvalue3", hash.Value["field3"]);
+            });
+        }
+
+        [Fact]
+        public void SetRangeInHash_CanSetANullValue()
+        {
+            // Duplicated from InMemoryTransactionFacts class
+            UseConnection(connection =>
+            {
+                connection.SetRangeInHash("key", new Dictionary<string, string>
+                {
+                    {"field1", null},
+                    {"field2", null}
+                });
+
+                Assert.Null(_state.Hashes["key"].Value["field1"]);
+                Assert.Null(_state.Hashes["key"].Value["field2"]);
+            });
+        }
+
+        [Fact]
+        public void GetAllEntriesFromHash_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetAllEntriesFromHash(null));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetAllEntriesFromHash_ReturnsNullValue_WhenHashDoesNotExists()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetAllEntriesFromHash("some-key");
+                Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void GetAllEntriesFromHash_ReturnsAllEntries()
+        {
+            UseConnection(connection =>
+            {
+                connection.SetRangeInHash("key", new Dictionary<string, string>
+                {
+                    { "Key1", "Value1" },
+                    { "Key2", "Value2" }
+                });
+
+                var result = connection.GetAllEntriesFromHash("key");
+
+                Assert.Equal(2, result.Count);
+                Assert.Equal("Value1", result["Key1"]);
+                Assert.Equal("Value2", result["Key2"]);
+            });
+        }
+
+        [Fact]
+        public void GetListCount_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetListCount(null));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetListCount_ReturnsZero_WhenTargetListDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetListCount("some-key");
+
+                Assert.Equal(0, result);
+            });
+        }
+
+        [Fact]
+        public void GetListCount_ReturnsTheNumberOfElements_InTheGivenList()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.InsertToList("key", "value");
+                    x.InsertToList("key", "value");
+                    x.InsertToList("key", "value");
+                    x.InsertToList("key", "value");
+                });
+
+                var result = connection.GetListCount("key");
+
+                Assert.Equal(4, result);
+            });
+        }
+
+        [Fact]
+        public void GetSetCount_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetSetCount(null));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetSetCount_ReturnsZero_WhenTargetSetDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetSetCount("some-key");
+                Assert.Equal(0, result);
+            });
+        }
+
+        [Fact]
+        public void GetSetCount_ReturnsTheNumberOfElements_InTheGivenSet()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "value1");
+                    x.AddToSet("key", "value2");
+                    x.AddToSet("key", "value3");
+                    x.AddToSet("key", "value3"); // Duplicate value, should be ignored
+                });
+
+                var result = connection.GetSetCount("key");
+
+                Assert.Equal(3, result);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromSet_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetRangeFromSet(null, 0, 1));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromSet_ReturnsNonNullEmptyCollection_WhenTargetSetDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetRangeFromSet("some-key", 0, 1);
+
+                Assert.NotNull(result);
+                Assert.Empty(result);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromSet_ReturnsTheGivenRange_FromTheGivenSet()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "3", 3.0D);
+                    x.AddToSet("key", "1", 1.0D);
+                    x.AddToSet("key", "4", 4.0D);
+                    x.AddToSet("key", "2", 2.0D);
+                });
+
+                var result = connection.GetRangeFromSet("key", 1, 2);
+
+                Assert.Equal(new[] { "2", "3" }, result);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromSet_ReturnsEmptyRange_WhenStartingAt_GreaterThanTheNumberOfElements()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "4", 4.0D);
+                    x.AddToSet("key", "1", 1.0D);
+                });
+
+                var result = connection.GetRangeFromSet("key", 3, 100);
+
+                Assert.NotNull(result);
+                Assert.Empty(result);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromSet_ReadsToEnd_WhenEndingAt_IsGreaterThanTheNumberOfElements()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "3", 3.0D);
+                    x.AddToSet("key", "1", 1.0D);
+                    x.AddToSet("key", "4", 4.0D);
+                    x.AddToSet("key", "2", 2.0D);
+                });
+
+                var result = connection.GetRangeFromSet("key", 2, 1000);
+
+                Assert.Equal(new [] { "3", "4" }, result);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromList_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetRangeFromList(null, 0, 1));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromList_ReturnsNonNullEmptyCollection_WhenTargetSetDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetRangeFromList("some-key", 0, 1);
+
+                Assert.NotNull(result);
+                Assert.Empty(result);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromList_ReturnsTheGivenRange_FromTheGivenSet()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.InsertToList("key", "3");
+                    x.InsertToList("key", "1");
+                    x.InsertToList("key", "4");
+                    x.InsertToList("key", "2");
+                });
+
+                var result = connection.GetRangeFromList("key", 1, 2);
+
+                Assert.Equal(new[] { "4", "1" }, result);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromList_ReturnsEmptyRange_WhenStartingAt_GreaterThanTheNumberOfElements()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.InsertToList("key", "4");
+                    x.InsertToList("key", "1");
+                });
+
+                var result = connection.GetRangeFromList("key", 3, 100);
+
+                Assert.NotNull(result);
+                Assert.Empty(result);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromList_ReadsToEnd_WhenEndingAt_IsGreaterThanTheNumberOfElements()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.InsertToList("key", "3");
+                    x.InsertToList("key", "1");
+                    x.InsertToList("key", "4");
+                    x.InsertToList("key", "2");
+                });
+
+                var result = connection.GetRangeFromList("key", 2, 1000);
+
+                Assert.Equal(new[] { "1", "3" }, result);
+            });
+        }
+
+        [Fact]
+        public void GetAllItemsFromList_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetAllItemsFromList(null));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetAllItemsFromList_ReturnsNonNullEmptyCollection_WhenTargetListDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetAllItemsFromList("some-key");
+
+                Assert.NotNull(result);
+                Assert.Empty(result);
+            });
+        }
+
+        [Fact]
+        public void GetAllItemsFromList_ReturnsAllElements_InTheCorrectOrder()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.InsertToList("key", "3");
+                    x.InsertToList("key", "1");
+                    x.InsertToList("key", "4");
+                    x.InsertToList("key", "2");
+                });
+
+                var result = connection.GetAllItemsFromList("key");
+
+                Assert.Equal(new [] { "2", "4", "1", "3" }, result);
+            });
+        }
+
+        [Fact]
+        public void GetHashCount_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetHashCount(null));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetHashCount_ReturnsZero_WhenTargetHashDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetHashCount("some-key");
+                Assert.Equal(0, result);
+            });
+        }
+
+        [Fact]
+        public void GetHashCount_ReturnsTheNumberOfKeys_InTheGivenHash()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x => x.SetRangeInHash("key", new Dictionary<string, string>
+                {
+                    { "key1", "value1" },
+                    { "key2", null },
+                    { "key3", "" }
+                }));
+
+                var result = connection.GetHashCount("key");
+
+                Assert.Equal(3, result);
+            });
+        }
+
+        [Fact]
+        public void GetCounter_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetCounter(null));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetCounter_ReturnsZero_WhenTargetCounterDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetCounter("some-key");
+                Assert.Equal(0, result);
+            });
+        }
+
+        [Fact]
+        public void GetCounter_ReturnsActualValue_WhenCounterExists()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.IncrementCounter("key");
+                    x.IncrementCounter("key");
+                    x.IncrementCounter("key");
+                });
+
+                var result = connection.GetCounter("key");
+
+                Assert.Equal(3, result);
+            });
+        }
+
+        [Fact]
+        public void GetHashTtl_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetHashTtl(null));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetHashTtl_ReturnsNegativeValue_WhenTargetHashDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var expireIn = connection.GetHashTtl("some-key");
+                Assert.True(expireIn < TimeSpan.Zero);
+            });
+        }
+
+        [Fact]
+        public void GetHashTtl_ReturnsNegativeValue_WhenTargetHashDoesExist_ButNotExpiring()
+        {
+            UseConnection(connection =>
+            {
+                connection.SetRangeInHash("key", new Dictionary<string, string>
+                {
+                    { "field", "value" }
+                });
+
+                var expireIn = connection.GetHashTtl("key");
+
+                Assert.True(expireIn < TimeSpan.Zero);
+            });
+        }
+
+        [Fact]
+        public void GetHashTtl_ReturnsRelativeValue_ForExpiringHash()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.SetRangeInHash("key", new Dictionary<string, string> { { "field", "value" } });
+                    x.ExpireHash("key", TimeSpan.FromSeconds(35));
+                });
+
+                var expireIn = connection.GetHashTtl("key");
+
+                Assert.Equal(35, (int)expireIn.TotalSeconds);
+            });
+        }
+
+        [Fact]
+        public void GetHashTtl_DoesNotReturnNegativeValue_WhenTargetHashIsExpiring_AfterClockSkew()
+        {
+            UseConnection(connection =>
+            {
+                // Arrange
+                Commit(connection, x =>
+                {
+                    x.SetRangeInHash("key", new Dictionary<string, string> { { "field", "value" } });
+                    x.ExpireHash("key", TimeSpan.FromSeconds(35));
+                });
+
+                _now = _now.AddMinutes(5);
+
+                // Act
+                var expireIn = connection.GetHashTtl("key");
+
+                // Assert
+                Assert.True(expireIn >= TimeSpan.Zero);
+            });
+        }
+
+        [Fact]
+        public void GetListTtl_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetListTtl(null));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetListTtl_ReturnsNegativeValue_WhenTargetListDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var expireIn = connection.GetListTtl("some-key");
+                Assert.True(expireIn < TimeSpan.Zero);
+            });
+        }
+
+        [Fact]
+        public void GetListTtl_ReturnsNegativeValue_WhenTargetListDoesExist_ButNotExpiring()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x => x.InsertToList("key", "value"));
+
+                var expireIn = connection.GetListTtl("key");
+
+                Assert.True(expireIn < TimeSpan.Zero);
+            });
+        }
+
+        [Fact]
+        public void GetListTtl_ReturnsRelativeValue_ForExpiringList()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.InsertToList("key", "value");
+                    x.ExpireList("key", TimeSpan.FromSeconds(35));
+                });
+
+                var expireIn = connection.GetListTtl("key");
+
+                Assert.Equal(35, (int)expireIn.TotalSeconds);
+            });
+        }
+
+        [Fact]
+        public void GetListTtl_DoesNotReturnNegativeValue_WhenTargetListIsExpiring_AfterClockSkew()
+        {
+            UseConnection(connection =>
+            {
+                // Arrange
+                Commit(connection, x =>
+                {
+                    x.InsertToList("key", "value");
+                    x.ExpireList("key", TimeSpan.FromSeconds(35));
+                });
+
+                _now = _now.AddMinutes(5);
+
+                // Act
+                var expireIn = connection.GetListTtl("key");
+
+                // Assert
+                Assert.True(expireIn >= TimeSpan.Zero);
+            });
+        }
+
+        [Fact]
+        public void GetSetTtl_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetSetTtl(null));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetSetTtl_ReturnsNegativeValue_WhenTargetSetDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var expireIn = connection.GetSetTtl("some-key");
+                Assert.True(expireIn < TimeSpan.Zero);
+            });
+        }
+
+        [Fact]
+        public void GetSetTtl_ReturnsNegativeValue_WhenTargetSetDoesExist_ButNotExpiring()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x => x.AddToSet("key", "value"));
+
+                var expireIn = connection.GetSetTtl("key");
+
+                Assert.True(expireIn < TimeSpan.Zero);
+            });
+        }
+
+        [Fact]
+        public void GetSetTtl_ReturnsRelativeValue_ForExpiringSet()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "value");
+                    x.ExpireSet("key", TimeSpan.FromSeconds(35));
+                });
+
+                var expireIn = connection.GetSetTtl("key");
+
+                Assert.Equal(35, (int)expireIn.TotalSeconds);
+            });
+        }
+
+        [Fact]
+        public void GetSetTtl_DoesNotReturnNegativeValue_WhenTargetSetIsExpiring_AfterClockSkew()
+        {
+            UseConnection(connection =>
+            {
+                // Arrange
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "value");
+                    x.ExpireSet("key", TimeSpan.FromSeconds(35));
+                });
+
+                _now = _now.AddMinutes(5);
+
+                // Act
+                var expireIn = connection.GetSetTtl("key");
+
+                // Assert
+                Assert.True(expireIn >= TimeSpan.Zero);
+            });
+        }
+
+        [Fact]
+        public void AnnounceServer_ThrowsAnException_WhenServerIdIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.AnnounceServer(null, new ServerContext()));
+
+                Assert.Equal("serverId", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void AnnounceServer_ThrowsAnException_WhenContextIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.AnnounceServer("some-id", null));
+
+                Assert.Equal("context", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void AnnounceServer_AddsTheGivenServer_WithCorrectDetails()
+        {
+            UseConnection(connection =>
+            {
+                // Arrange
+                var queues = new[] { "critical", "default" };
+
+                // Act
+                connection.AnnounceServer("some-id", new ServerContext { Queues = queues, WorkerCount = 27 });
+
+                // Assert
+                Assert.True(_state.Servers.ContainsKey("some-id"));
+
+                var entry = _state.Servers["some-id"];
+
+                Assert.Equal(queues, entry.Context.Queues);
+                Assert.NotSame(queues, entry.Context.Queues);
+                Assert.Equal(27, entry.Context.WorkerCount);
+                Assert.Equal(_now, entry.StartedAt);
+                Assert.Equal(_now, entry.HeartbeatAt);
+            });
+        }
+
+        [Fact]
+        public void AnnounceServer_DoesNotThrow_OnRetry()
+        {
+            UseConnection(connection =>
+            {
+                connection.AnnounceServer("some-id", new ServerContext());
+                connection.AnnounceServer("some-id", new ServerContext());
+            });
+        }
+
         private void UseConnection(Action<InMemoryConnection> action)
         {
             using (var connection = CreateConnection())
             {
                 action(connection);
+            }
+        }
+
+        private static void Commit(IStorageConnection connection, Action<JobStorageTransaction> action)
+        {
+            using (var transaction = connection.CreateWriteTransaction())
+            {
+                action((JobStorageTransaction)transaction);
+                transaction.Commit();
             }
         }
 

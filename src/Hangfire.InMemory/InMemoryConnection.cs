@@ -235,19 +235,24 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override void AnnounceServer(string serverId, ServerContext context)
+        public override void AnnounceServer([NotNull] string serverId, [NotNull] ServerContext context)
         {
+            if (serverId == null) throw new ArgumentNullException(nameof(serverId));
+            if (context == null) throw new ArgumentNullException(nameof(context));
+
             _dispatcher.QueryAndWait(state =>
             {
-                // TODO: What if we add a duplicate server?
-                var now = state.TimeResolver();
-
-                state.ServerAdd(serverId, new ServerEntry
+                if (!state.Servers.ContainsKey(serverId))
                 {
-                    Context = new ServerContext { Queues = context.Queues.ToArray(), WorkerCount = context.WorkerCount },
-                    StartedAt = now,
-                    HeartbeatAt = now,
-                });
+                    var now = state.TimeResolver();
+
+                    state.ServerAdd(serverId, new ServerEntry
+                    {
+                        Context = new ServerContext { Queues = context.Queues?.ToArray(), WorkerCount = context.WorkerCount },
+                        StartedAt = now,
+                        HeartbeatAt = now,
+                    });
+                }
 
                 return true;
             });
@@ -300,11 +305,12 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override HashSet<string> GetAllItemsFromSet(string key)
+        public override HashSet<string> GetAllItemsFromSet([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             return _dispatcher.QueryAndWait(state =>
             {
-                // TODO: Null or empty when doesn't exists?
                 var result = new HashSet<string>();
 
                 if (state.Sets.TryGetValue(key, out var set))
@@ -336,107 +342,105 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override long GetSetCount(string key)
+        public override long GetSetCount([NotNull] string key)
         {
-            return _dispatcher.QueryAndWait(state =>
-            {
-                if (state.Sets.TryGetValue(key, out var set))
-                {
-                    return set.Count;
-                }
+            if (key == null) throw new ArgumentNullException(nameof(key));
 
-                return 0;
-            });
+            return _dispatcher.QueryAndWait(
+                state => state.Sets.TryGetValue(key, out var set)
+                    ? set.Count
+                    : 0);
         }
 
-        public override long GetListCount(string key)
+        public override long GetListCount([NotNull] string key)
         {
-            return _dispatcher.QueryAndWait(state =>
-            {
-                if (state.Lists.TryGetValue(key, out var list))
-                {
-                    return list.Count;
-                }
+            if (key == null) throw new ArgumentNullException(nameof(key));
 
-                return 0;
-            });
+            return _dispatcher.QueryAndWait(
+                state => state.Lists.TryGetValue(key, out var list)
+                    ? list.Count
+                    : 0);
         }
 
-        public override long GetCounter(string key)
+        public override long GetCounter([NotNull] string key)
         {
-            return _dispatcher.QueryAndWait(state =>
-            {
-                if (state.Counters.TryGetValue(key, out var counter))
-                {
-                    return counter.Value;
-                }
+            if (key == null) throw new ArgumentNullException(nameof(key));
 
-                return 0;
-            });
+            return _dispatcher.QueryAndWait(
+                state => state.Counters.TryGetValue(key, out var counter)
+                    ? counter.Value
+                    : 0);
         }
 
-        public override long GetHashCount(string key)
+        public override long GetHashCount([NotNull] string key)
         {
-            return _dispatcher.QueryAndWait(state =>
-            {
-                if (state.Hashes.TryGetValue(key, out var hash))
-                {
-                    return hash.Value.Count;
-                }
+            if (key == null) throw new ArgumentNullException(nameof(key));
 
-                return 0;
-            });
+            return _dispatcher.QueryAndWait(
+                state => state.Hashes.TryGetValue(key, out var hash)
+                    ? hash.Value.Count 
+                    : 0);
         }
 
-        public override TimeSpan GetHashTtl(string key)
+        public override TimeSpan GetHashTtl([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             return _dispatcher.QueryAndWait(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.ExpireAt.HasValue)
                 {
-                    return hash.ExpireAt.Value - state.TimeResolver();
+                    var expireIn = hash.ExpireAt.Value - state.TimeResolver();
+                    return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
                 }
 
-                // TODO: Really?
                 return Timeout.InfiniteTimeSpan;
             });
         }
 
 
-        public override TimeSpan GetListTtl(string key)
+        public override TimeSpan GetListTtl([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             return _dispatcher.QueryAndWait(state =>
             {
                 if (state.Lists.TryGetValue(key, out var list) && list.ExpireAt.HasValue)
                 {
-                    return list.ExpireAt.Value - state.TimeResolver();
+                    var expireIn = list.ExpireAt.Value - state.TimeResolver();
+                    return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
                 }
 
-                // TODO: Really?
                 return Timeout.InfiniteTimeSpan;
             });
         }
 
-        public override TimeSpan GetSetTtl(string key)
+        public override TimeSpan GetSetTtl([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             return _dispatcher.QueryAndWait(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set) && set.ExpireAt.HasValue)
                 {
-                    return set.ExpireAt.Value - state.TimeResolver();
+                    var expireIn = set.ExpireAt.Value - state.TimeResolver();
+                    return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
                 }
 
-                // TODO: Really?
                 return Timeout.InfiniteTimeSpan;
             });
         }
 
-        public override void SetRangeInHash(string key, IEnumerable<KeyValuePair<string, string>> keyValuePairs)
+        public override void SetRangeInHash([NotNull] string key, [NotNull] IEnumerable<KeyValuePair<string, string>> keyValuePairs)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (keyValuePairs == null) throw new ArgumentNullException(nameof(keyValuePairs));
+
+            // TODO Return early when keyValuePairs empty, can remove comparison and deletion when empty
+
             _dispatcher.QueryAndWait(state =>
             {
-                // TODO: return when keyValuePairs is empty
-
+                // TODO: Avoid creating a hash when values are empty
                 var hash = state.HashGetOrAdd(key);
 
                 foreach (var valuePair in keyValuePairs)
@@ -444,21 +448,28 @@ namespace Hangfire.InMemory
                     hash.Value[valuePair.Key] = valuePair.Value;
                 }
 
+                if (hash.Value.Count == 0)
+                {
+                    state.HashDelete(hash);
+                }
+
                 return true;
             });
         }
 
-        public override Dictionary<string, string> GetAllEntriesFromHash(string key)
+        public override Dictionary<string, string> GetAllEntriesFromHash([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             return _dispatcher.QueryAndWait(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash))
                 {
+                    // TODO: Don't forget about case sensitivity
                     return hash.Value.ToDictionary(x => x.Key, x => x.Value);
                 }
 
-                // TODO: Null or empty?
-                return new Dictionary<string, string>(0);
+                return null;
             });
         }
 
@@ -475,71 +486,70 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override List<string> GetAllItemsFromList(string key)
+        public override List<string> GetAllItemsFromList([NotNull] string key)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state.Lists.TryGetValue(key, out var list))
-                {
-                    // TODO: Or null?
-                    return new List<string>(0);
-                }
+                var result = new List<string>();
 
-                var result = new List<string>(list.Count);
-                for (var i = 0; i < list.Count; i++)
+                if (state.Lists.TryGetValue(key, out var list))
                 {
-                    result.Add(list[i]);
+                    for (var i = 0; i < list.Count; i++)
+                    {
+                        result.Add(list[i]);
+                    }
                 }
 
                 return result;
             });
         }
 
-        public override List<string> GetRangeFromList(string key, int startingFrom, int endingAt)
+        public override List<string> GetRangeFromList([NotNull] string key, int startingFrom, int endingAt)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state.Lists.TryGetValue(key, out var list))
+                var result = new List<string>();
+
+                if (state.Lists.TryGetValue(key, out var list))
                 {
-                    // TODO: Or null?
-                    return new List<string>(0);
-                }
+                    for (var index = 0; index < list.Count; index++)
+                    {
+                        if (index < startingFrom) continue;
+                        if (index > endingAt) break;
 
-                var result = new List<string>(list.Count);
-
-                for (var index = 0; index < list.Count; index++)
-                {
-                    if (index < startingFrom) continue;
-                    if (index > endingAt) break;
-
-                    result.Add(list[index]);
+                        result.Add(list[index]);
+                    }
                 }
 
                 return result;
             });
         }
 
-        public override List<string> GetRangeFromSet(string key, int startingFrom, int endingAt)
+        public override List<string> GetRangeFromSet([NotNull] string key, int startingFrom, int endingAt)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state.Sets.TryGetValue(key, out var set))
+                var result = new List<string>();
+
+                if (state.Sets.TryGetValue(key, out var set))
                 {
-                    // TODO: Or null?
-                    return new List<string>(0);
-                }
+                    var counter = 0;
 
-                var result = new List<string>(set.Count);
-                var counter = 0;
+                    foreach (var entry in set)
+                    {
+                        if (counter < startingFrom) { counter++; continue; }
+                        if (counter > endingAt) break;
 
-                foreach (var entry in set)
-                {
-                    if (counter < startingFrom) { counter++; continue; }
-                    if (counter > endingAt) break;
+                        result.Add(entry.Value);
 
-                    result.Add(entry.Value);
-
-                    counter++;
+                        counter++;
+                    }
                 }
 
                 return result;
