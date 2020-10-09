@@ -1288,6 +1288,125 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
+        [Fact]
+        public void RemoveServer_ThrowsAnException_WhenServerIdIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.RemoveServer(null));
+
+                Assert.Equal("serverId", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void RemoveServer_DoesNotThrow_WhenGivenServerDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                connection.RemoveServer("some-server");
+                Assert.Empty(_state.Servers);
+            });
+        }
+
+        [Fact]
+        public void RemoveServer_RemovesServerWithTheGivenServerId()
+        {
+            UseConnection(connection =>
+            {
+                connection.AnnounceServer("some-server", new ServerContext());
+                Assert.NotEmpty(_state.Servers);
+
+                connection.RemoveServer("some-server");
+                Assert.Empty(_state.Servers);
+            });
+        }
+
+        [Fact]
+        public void Heartbeat_ThrowsAnException_WhenServerIdIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.Heartbeat(null));
+
+                Assert.Equal("serverId", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void Heartbeat_UpdatesHeartbeat_OfTheGivenServer()
+        {
+            UseConnection(connection =>
+            {
+                connection.AnnounceServer("some-server", new ServerContext());
+                _now = _now.AddMinutes(32);
+
+                connection.Heartbeat("some-server");
+
+                Assert.Equal(_now, _state.Servers["some-server"].HeartbeatAt);
+                Assert.Equal(_now.AddMinutes(-32), _state.Servers["some-server"].StartedAt);
+            });
+        }
+
+        [Fact]
+        public void Heartbeat_ThrowsBackgroundServerGoneException_WhenGivenServerDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                Assert.Throws<BackgroundServerGoneException>(
+                    () => connection.Heartbeat("some-id"));
+            });
+        }
+
+        [Fact]
+        public void RemoveTimedOutServers_ThrowsAnException_WhenTimeoutIsNegative()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentException>(
+                    () => connection.RemoveTimedOutServers(TimeSpan.FromMinutes(-1)));
+
+                Assert.Equal("timeout", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void RemoveTimedOutServers_ThrowsAnException_WhenTimeoutIsZero()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentException>(
+                    () => connection.RemoveTimedOutServers(TimeSpan.Zero));
+
+                Assert.Equal("timeout", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void RemoveTimedOutServers_WorksCorrectly()
+        {
+            UseConnection(connection =>
+            {
+                // Arrange
+                connection.AnnounceServer("server-1", new ServerContext());
+                connection.AnnounceServer("server-2", new ServerContext());
+                _state.Servers["server-2"].HeartbeatAt = _now.AddMinutes(-30);
+                connection.AnnounceServer("server-3", new ServerContext());
+                _state.Servers["server-3"].HeartbeatAt = _now.AddMinutes(-5);
+                connection.AnnounceServer("server-4", new ServerContext());
+                _state.Servers["server-4"].HeartbeatAt = _now.AddMinutes(-60);
+
+                // Act
+                var result = connection.RemoveTimedOutServers(TimeSpan.FromMinutes(15));
+
+                // Assert
+                Assert.Equal(2, result);
+                Assert.Equal(new [] { "server-1", "server-3" }, _state.Servers.Keys.ToArray());
+            });
+        }
+
         private void UseConnection(Action<InMemoryConnection> action)
         {
             using (var connection = CreateConnection())

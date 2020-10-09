@@ -258,8 +258,10 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override void RemoveServer(string serverId)
+        public override void RemoveServer([NotNull] string serverId)
         {
+            if (serverId == null) throw new ArgumentNullException(nameof(serverId));
+
             _dispatcher.QueryAndWait(state =>
             {
                 state.ServerRemove(serverId);
@@ -267,21 +269,29 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override void Heartbeat(string serverId)
+        public override void Heartbeat([NotNull] string serverId)
         {
+            if (serverId == null) throw new ArgumentNullException(nameof(serverId));
+
             _dispatcher.QueryAndWait(state =>
             {
                 if (state.Servers.TryGetValue(serverId, out var server))
                 {
                     server.HeartbeatAt = state.TimeResolver();
+                    return true;
                 }
 
-                return true;
+                throw new BackgroundServerGoneException();
             });
         }
 
-        public override int RemoveTimedOutServers(TimeSpan timeOut)
+        public override int RemoveTimedOutServers(TimeSpan timeout)
         {
+            if (timeout.Duration() != timeout || timeout == TimeSpan.Zero)
+            {
+                throw new ArgumentException("The `timeout` value must be positive.", nameof(timeout));
+            }
+
             return _dispatcher.QueryAndWait(state =>
             {
                 var serversToRemove = new List<string>();
@@ -289,8 +299,7 @@ namespace Hangfire.InMemory
 
                 foreach (var server in state.Servers)
                 {
-                    // TODO: Check this logic
-                    if (server.Value.HeartbeatAt + timeOut < now)
+                    if (now > server.Value.HeartbeatAt + timeout)
                     {
                         serversToRemove.Add(server.Key);
                     }
