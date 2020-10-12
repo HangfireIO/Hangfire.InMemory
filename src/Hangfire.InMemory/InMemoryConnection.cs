@@ -129,16 +129,21 @@ namespace Hangfire.InMemory
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    var entries = _dispatcher.GetOrAddQueues(queues);
+                    var entries = _dispatcher.GetOrAddQueues(queues).ToArray();
 
-                    foreach (var entry in entries)
+                    for (var i = 0; i < entries.Length; i++)
                     {
-                        if (entry.Value.Queue.TryDequeue(out var jobId))
+                        if (entries[i].Value.Queue.TryDequeue(out var jobId))
                         {
-                            // TODO: Looks like we should signal all the remaining queues as well
-                            // TODO: Signal only when wait node is added
-                            _dispatcher.SignalOneQueueWaitNode(entry.Value);
-                            return new InMemoryFetchedJob(_dispatcher, entry.Key, jobId);
+                            if (waitAdded)
+                            {
+                                for (var j = i; j < entries.Length; j++)
+                                {
+                                    _dispatcher.SignalOneQueueWaitNode(entries[j].Value);
+                                }
+                            }
+                            
+                            return new InMemoryFetchedJob(_dispatcher, entries[i].Key, jobId);
                         }
                     }
 
