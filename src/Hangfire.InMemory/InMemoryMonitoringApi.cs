@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Hangfire.Annotations;
 using Hangfire.Common;
 using Hangfire.States;
 using Hangfire.Storage;
@@ -12,7 +13,7 @@ namespace Hangfire.InMemory
     {
         private readonly InMemoryDispatcherBase _dispatcher;
 
-        public InMemoryMonitoringApi(InMemoryDispatcherBase dispatcher)
+        public InMemoryMonitoringApi([NotNull] InMemoryDispatcherBase dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
