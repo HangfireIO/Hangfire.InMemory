@@ -334,20 +334,49 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override string GetFirstByLowestScoreFromSet(string key, double fromScore, double toScore)
+        public override string GetFirstByLowestScoreFromSet([NotNull] string key, double fromScore, double toScore)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
             return _dispatcher.QueryAndWait(state =>
             {
-                if (!state.Sets.TryGetValue(key, out var set)) return null;
-                foreach (var entry in set)
+                if (state.Sets.TryGetValue(key, out var set))
                 {
-                    if (entry.Score < fromScore) continue;
-                    if (entry.Score > toScore) break;
+                    foreach (var entry in set)
+                    {
+                        if (entry.Score < fromScore) continue;
+                        if (entry.Score > toScore) break;
 
-                    return entry.Value;
+                        return entry.Value;
+                    }
                 }
 
                 return null;
+            });
+        }
+
+        public override List<string> GetFirstByLowestScoreFromSet([NotNull] string key, double fromScore, double toScore, int count)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+
+            return _dispatcher.QueryAndWait(state =>
+            {
+                var result = new List<string>();
+
+                if (state.Sets.TryGetValue(key, out var set))
+                {
+                    foreach (var entry in set)
+                    {
+                        if (entry.Score < fromScore) continue;
+                        if (entry.Score > toScore) break;
+
+                        result.Add(entry.Value);
+
+                        if (result.Count >= count) break;
+                    }
+                }
+
+                return result;
             });
         }
 
@@ -482,8 +511,11 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override string GetValueFromHash(string key, string name)
+        public override string GetValueFromHash([NotNull] string key, [NotNull] string name)
         {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (name == null) throw new ArgumentNullException(nameof(name));
+
             return _dispatcher.QueryAndWait(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.Value.TryGetValue(name, out var result))

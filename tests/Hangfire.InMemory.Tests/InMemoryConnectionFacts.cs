@@ -8,6 +8,8 @@ using Hangfire.Storage;
 using Moq;
 using Xunit;
 
+// TODO: Add unit test for ranges where startingFrom is greater than endingAt (and similar)
+
 namespace Hangfire.InMemory.Tests
 {
     public class InMemoryConnectionFacts
@@ -1404,6 +1406,295 @@ namespace Hangfire.InMemory.Tests
                 // Assert
                 Assert.Equal(2, result);
                 Assert.Equal(new [] { "server-1", "server-3" }, _state.Servers.Keys.ToArray());
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetFirstByLowestScoreFromSet(null, 0, 1));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        // TODO: Remove GetFirstByLowestScoreFromSet_ThrowsAnException_ToScoreIsLowerThanFromScore from SQL Server implementation
+        // TODO: Also remove GetFirstByLowestScoreFromSet_ThrowsArgException_WhenRequestingLessThanZero there
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_ReturnsNull_WhenTargetSetDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetFirstByLowestScoreFromSet("some-key", 0, 1);
+                Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_ReturnsAnElementWithTheLowestScore()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "value2", 2.0D);
+                    x.AddToSet("key", "value1", 1.0D);
+                    x.AddToSet("key", "value3", 3.0D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", 0.0D, 5.0D);
+
+                Assert.Equal("value1", result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_IgnoresElementsOutsideOfTheGivenRange()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "value1", -100.0D);
+                    x.AddToSet("key", "value2", 50.0D);
+                    x.AddToSet("key", "value3", -23.0D);
+                    x.AddToSet("key", "value4", 125.0D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", -25.0D, 100.0D);
+
+                Assert.Equal("value3", result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_ReturnsNull_WhenNoElementMatchesTheGivenRange()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "value1", -100.0D);
+                    x.AddToSet("key", "value2", 50.0D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", 200.0D, 500.0D);
+
+                Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_UsesStrictComparisonOperations_ForFromScoreArgument_WithNegativeValues()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "value1", -2.01D);
+                    x.AddToSet("key", "value2", -2.00D);
+                    x.AddToSet("key", "value3", 2.0D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", -2.0D, 2.0D);
+
+                Assert.Equal("value2", result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_UsesStrictComparisonOperations_ForFromScoreArgument_WithPositiveValues()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "value1", 2.01D);
+                    x.AddToSet("key", "value2", 2.00D);
+                    x.AddToSet("key", "value3", 2.1D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", 2.0D, 2.01D);
+
+                Assert.Equal("value2", result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_UsesStrictComparisonOperations_ForToScoreArgument()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "value2", -2.00D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", -100.0D, -2.0D);
+
+                Assert.Equal("value2", result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_WithCount_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetFirstByLowestScoreFromSet(null, 0, 1, 10));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_WithCount_ReturnsEmptyCollection_WhenTargetSetDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetFirstByLowestScoreFromSet("some-key", 0, 1, 10);
+                Assert.NotNull(result);
+                Assert.Empty(result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_WithCount_ReturnsTheGivenRange_FromTheGivenSet()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "3", 3.0D);
+                    x.AddToSet("key", "1", 1.0D);
+                    x.AddToSet("key", "4", 4.0D);
+                    x.AddToSet("key", "2", 2.0D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", 2.0D, 10.0D, 2);
+
+                Assert.Equal(new[] { "2", "3" }, result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_WithCount_ReturnsEmptyRange_WhenStartingAt_GreaterThanTheNumberOfElements()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "4", 4.0D);
+                    x.AddToSet("key", "1", 1.0D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", 5.0D, 10.0D, 10);
+
+                Assert.NotNull(result);
+                Assert.Empty(result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_WithCount_ReadsToEnd_WhenEndingAt_IsGreaterThanTheNumberOfElements()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "3", 3.0D);
+                    x.AddToSet("key", "1", 1.0D);
+                    x.AddToSet("key", "4", 4.0D);
+                    x.AddToSet("key", "2", 2.0D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", 3.0D, 10.0D, 10);
+
+                Assert.Equal(new[] { "3", "4" }, result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_WithCount_UsesStrictComparisonOperations()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "value1", -2.01D);
+                    x.AddToSet("key", "value2", -2.00D);
+                    x.AddToSet("key", "value3", 2.0D);
+                    x.AddToSet("key", "value4", 2.01D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", -2.0D, 2.0D, 10);
+
+                Assert.Equal(new [] { "value2", "value3" }, result);
+            });
+        }
+
+        [Fact]
+        public void GetValueFromHash_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetValueFromHash(null, "name"));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetValueFromHash_ThrowsAnException_WhenNameIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetValueFromHash("key", null));
+
+                Assert.Equal("name", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetValueFromHash_ReturnsNull_WhenTargetHashDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetValueFromHash("some-key", "name");
+                Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void GetValueFromHash_ReturnsValue_WhenTargetHashAndFieldExist()
+        {
+            UseConnection(connection =>
+            {
+                connection.SetRangeInHash("key", new Dictionary<string, string> { { "name", "value" } });
+
+                var result = connection.GetValueFromHash("key", "name");
+
+                Assert.Equal("value", result);
+            });
+        }
+
+        [Fact]
+        public void GetValueFromHash_ReturnsNull_WhenTargetHashExists_ButGivenFieldDoesNot()
+        {
+            UseConnection(connection =>
+            {
+                connection.SetRangeInHash("key", new Dictionary<string, string> {{ "name", "value" }});
+
+                var result = connection.GetValueFromHash("key", "another-name");
+
+                Assert.Null(result);
             });
         }
 
