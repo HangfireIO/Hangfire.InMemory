@@ -115,9 +115,12 @@ namespace Hangfire.InMemory
             return backgroundJob.Key;
         }
 
-        public override IFetchedJob FetchNextJob(string[] queueNames, CancellationToken cancellationToken)
+        public override IFetchedJob FetchNextJob([NotNull] string[] queues, CancellationToken cancellationToken)
         {
-            using (var ready = new SemaphoreSlim(0, queueNames.Length))
+            if (queues == null) throw new ArgumentNullException(nameof(queues));
+            if (queues.Length == 0) throw new ArgumentException("Queue array must be non-empty.", nameof(queues));
+
+            using (var ready = new SemaphoreSlim(0, queues.Length))
             {
                 var waitNode = new InMemoryQueueWaitNode(ready);
                 var waitAdded = false;
@@ -125,13 +128,14 @@ namespace Hangfire.InMemory
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     // TODO: Ensure duplicate queue names do not fail everything
-                    var entries = _dispatcher.GetOrAddQueues(queueNames);
+                    var entries = _dispatcher.GetOrAddQueues(queues);
 
                     foreach (var entry in entries)
                     {
                         if (entry.Value.Queue.TryDequeue(out var jobId))
                         {
                             // TODO: Looks like we should signal all the remaining queues as well
+                            // TODO: Signal only when wait node is added
                             _dispatcher.SignalOneQueueWaitNode(entry.Value);
                             return new InMemoryFetchedJob(_dispatcher, entry.Key, jobId);
                         }

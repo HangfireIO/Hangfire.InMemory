@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Hangfire.Common;
 using Hangfire.Server;
 using Hangfire.States;
@@ -1695,6 +1696,162 @@ namespace Hangfire.InMemory.Tests
                 var result = connection.GetValueFromHash("key", "another-name");
 
                 Assert.Null(result);
+            });
+        }
+
+        [Fact]
+        public void FetchNextJob_ThrowsAnException_WhenQueuesArgumentIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.FetchNextJob(null, CancellationToken.None));
+
+                Assert.Equal("queues", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void FetchNextJob_ThrowsAnException_WhenQueuesCollectionIsEmpty()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentException>(
+                    () => connection.FetchNextJob(new string[0], CancellationToken.None));
+
+                Assert.Equal("queues", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void FetchNextJob_ThrowsAnException_WhenCancellationTokenIsSetAtTheBeginning()
+        {
+            UseConnection(connection =>
+            {
+                using (var cts = new CancellationTokenSource())
+                {
+                    cts.Cancel();
+
+                    Assert.Throws<OperationCanceledException>(() => connection.FetchNextJob(
+                        new [] { "default" },
+                        // ReSharper disable once AccessToDisposedClosure
+                        cts.Token));
+                }
+            });
+        }
+
+        [Fact]
+        public void FetchNextJob_WaitsIndefinitely_OnCancellationToken_WhenThereAreNoJobs()
+        {
+            UseConnection(connection =>
+            {
+                using (var cts = new CancellationTokenSource(millisecondsDelay: 500))
+                {
+                    Assert.Throws<OperationCanceledException>(() => connection.FetchNextJob(
+                        new [] { "default" },
+                        // ReSharper disable once AccessToDisposedClosure
+                        cts.Token));
+                }
+            });
+        }
+
+        [Fact]
+        public void FetchNextJob_ReturnsJobIdFromTheGivenQueue()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x => x.AddToQueue("default", "some-id"));
+
+                using (var result = connection.FetchNextJob(new[] {"default"}, CancellationToken.None))
+                {
+                    Assert.Equal("some-id", result.JobId);
+                }
+            });
+        }
+
+        [Fact]
+        public void FetchNextJob_ReturnsTheEarliestQueuedJobId()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x => x.AddToQueue("default", "job-1"));
+                Commit(connection, x => x.AddToQueue("default", "job-2"));
+
+                using (var result = connection.FetchNextJob(new[] {"default"}, CancellationToken.None))
+                {
+                    Assert.Equal("job-1", result.JobId);
+                }
+            });
+        }
+
+        [Fact]
+        public void FetchNextJob_IsWaitingForJobIds_ToBeQueued()
+        {
+            UseConnection(connection =>
+            {
+                using (var cts = new CancellationTokenSource(millisecondsDelay: 500))
+                {
+                    cts.Token.Register(() =>
+                    {
+                        Commit(connection, x => x.AddToQueue("default", "job-id"));
+                    });
+
+                    using (var result = connection.FetchNextJob(new[] {"default"}, CancellationToken.None))
+                    {
+                        Assert.Equal("job-id", result.JobId);
+                    }
+                }
+            });
+        }
+
+        [Fact]
+        public void FetchNextJob_CanFetchJobIdsFromMultipleQueues_InTheGivenOrder()
+        {
+            UseConnection(connection =>
+            {
+                // Arrange
+                Commit(connection, x => x.AddToQueue("default", "1"));
+                Commit(connection, x => x.AddToQueue("critical", "2"));
+
+                var queues = new[] { "critical", "default" };
+
+                // Act
+                using (var job1 = connection.FetchNextJob(queues, CancellationToken.None))
+                using (var job2 = connection.FetchNextJob(queues, CancellationToken.None))
+                {
+                    // Assert
+                    Assert.Equal("2", job1.JobId);
+                    Assert.Equal("1", job2.JobId);
+                }
+            });
+        }
+
+        [Fact]
+        public void FetchNextJob_IsWaitingForJobIds_ToBeQueuedWhenUsingMultipleQueues()
+        {
+            UseConnection(connection =>
+            {
+                using (var cts = new CancellationTokenSource(millisecondsDelay: 500))
+                {
+                    // Arrange
+                    cts.Token.Register(() =>
+                    {
+                        Commit(connection, x => x.AddToQueue("default", "1"));
+                        Thread.Sleep(millisecondsTimeout: 100);
+                        Commit(connection, x => x.AddToQueue("critical", "2"));
+                    });
+
+                    var queues = new[] { "critical", "default" };
+
+                    // Act
+                    using (var job1 = connection.FetchNextJob(queues, CancellationToken.None))
+                    using (var job2 = connection.FetchNextJob(queues, CancellationToken.None))
+                    {
+                        // Assert
+                        Assert.Equal("1", job1.JobId);
+                        Assert.Equal("2", job2.JobId);
+                    }
+                }
             });
         }
 
