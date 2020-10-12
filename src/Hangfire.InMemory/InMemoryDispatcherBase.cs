@@ -22,7 +22,10 @@ namespace Hangfire.InMemory
             var entries = new Dictionary<string, QueueEntry>(queueNames.Count);
             foreach (var queueName in queueNames)
             {
-                entries.Add(queueName, _state.QueueGetOrCreate(queueName));
+                if (!entries.ContainsKey(queueName))
+                {
+                    entries.Add(queueName, _state.QueueGetOrCreate(queueName));
+                }
             }
 
             return entries;

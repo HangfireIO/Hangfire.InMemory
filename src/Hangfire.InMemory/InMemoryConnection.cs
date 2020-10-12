@@ -129,7 +129,6 @@ namespace Hangfire.InMemory
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    // TODO: Ensure duplicate queue names do not fail everything
                     var entries = _dispatcher.GetOrAddQueues(queues);
 
                     foreach (var entry in entries)

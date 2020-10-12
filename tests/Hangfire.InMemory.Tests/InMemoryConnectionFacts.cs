@@ -1856,6 +1856,21 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void FetchNextJob_CorrectlyHandles_DuplicateQueueNames()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x => x.AddToQueue("default", "job-id"));
+
+                var result = connection.FetchNextJob(
+                    new[] {"default", "default"},
+                    CancellationToken.None);
+
+                Assert.Equal("job-id", result.JobId);
+            });
+        }
+
+        [Fact]
         public void AcquireDistributedLock_ThrowsAnException_WhenResourceIsNull()
         {
             UseConnection(connection =>
