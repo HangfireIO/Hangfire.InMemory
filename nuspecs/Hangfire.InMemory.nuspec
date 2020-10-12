@@ -13,6 +13,10 @@
     <copyright>Copyright © 2020 Sergey Odinokov</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
+0.2.0
+• Fixed – A lot of corner cases revealed by unit tests.
+• Project – Added a ton of unit tests for the top-level classes to ensure behavior is consistent.
+
 0.1.0 – Initial release
 </releaseNotes>
     <dependencies>
