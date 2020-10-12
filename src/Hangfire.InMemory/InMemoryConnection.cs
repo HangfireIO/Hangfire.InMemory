@@ -24,8 +24,10 @@ namespace Hangfire.InMemory
             return new InMemoryTransaction(_dispatcher);
         }
 
-        public override IDisposable AcquireDistributedLock(string resource, TimeSpan timeout)
+        public override IDisposable AcquireDistributedLock([NotNull] string resource, TimeSpan timeout)
         {
+            if (resource == null) throw new ArgumentNullException(nameof(resource));
+
             // TODO: Track acquired lock at a connection level and release them on dispose
             if (_dispatcher.TryAcquireLockEntry(this, resource, out var entry))
             {

@@ -1855,6 +1855,75 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
+        [Fact]
+        public void AcquireDistributedLock_ThrowsAnException_WhenResourceIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.AcquireDistributedLock(null, TimeSpan.Zero));
+
+                Assert.Equal("resource", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void AcquireDistributedLock_SameResource_DifferentConnections_CauseTimeout()
+        {
+            using (var connection1 = CreateConnection())
+            using (var connection2 = CreateConnection())
+            {
+                Assert.Throws<DistributedLockTimeoutException>(() =>
+                {
+                    using (connection1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1)))
+                    using (connection2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1)))
+                    {
+                    }
+                });
+            }
+        }
+
+        [Fact]
+        public void AcquireDistributedLock_Granted_OnDifferentResource()
+        {
+            using (var connection1 = CreateConnection())
+            using (var connection2 = CreateConnection())
+            {
+                using (connection1.AcquireDistributedLock("resource1", TimeSpan.FromSeconds(1)))
+                using (connection2.AcquireDistributedLock("resource2", TimeSpan.FromSeconds(1)))
+                {
+                }
+            }
+        }
+
+        [Fact]
+        public void AcquireDistributedLock_Granted_OnSameResource_AndSameConnections()
+        {
+            UseConnection(connection =>
+            {
+                using (connection.AcquireDistributedLock("resource", TimeSpan.FromSeconds(5)))
+                using (connection.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1)))
+                {
+                }
+            });
+        }
+
+        [Fact]
+        public void AcquireDistributedLock_EventuallyGranted_OnSameResource_DifferentConnections_AfterRelease()
+        {
+            using (var connection1 = CreateConnection())
+            using (var connection2 = CreateConnection())
+            {
+                var lock1 = connection1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
+                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                cts.Token.Register(() => lock1.Dispose());
+
+                using (connection2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(15)))
+                {
+                }
+            }
+        }
+
         private void UseConnection(Action<InMemoryConnection> action)
         {
             using (var connection = CreateConnection())
