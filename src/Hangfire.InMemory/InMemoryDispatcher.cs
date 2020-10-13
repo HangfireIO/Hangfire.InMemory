@@ -8,7 +8,7 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryDispatcher : InMemoryDispatcherBase
     {
-        private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(15);
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
         private readonly ConcurrentQueue<InMemoryDispatcherCallback> _queries = new ConcurrentQueue<InMemoryDispatcherCallback>();
@@ -41,7 +41,11 @@ namespace Hangfire.InMemory
                     }
                 }
 
-                callback.Ready.Wait(DefaultQueryTimeout);
+                if (!callback.Ready.Wait(DefaultQueryTimeout))
+                {
+                    throw new TimeoutException();
+                }
+
                 return callback.Result;
             }
         }
