@@ -95,8 +95,10 @@ namespace Hangfire.InMemory
             });
         }
 
-        public JobDetailsDto JobDetails(string jobId)
+        public JobDetailsDto JobDetails([NotNull] string jobId)
         {
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
+
             return _dispatcher.QueryAndWait(state =>
             {
                 if (!state.Jobs.TryGetValue(jobId, out var entry))
@@ -149,8 +151,10 @@ namespace Hangfire.InMemory
             });
         }
 
-        public JobList<EnqueuedJobDto> EnqueuedJobs(string queueName, int @from, int perPage)
+        public JobList<EnqueuedJobDto> EnqueuedJobs([NotNull] string queueName, int @from, int perPage)
         {
+            if (queueName == null) throw new ArgumentNullException(nameof(queueName));
+
             return _dispatcher.QueryAndWait(state =>
             {
                 var result = new JobList<EnqueuedJobDto>(Enumerable.Empty<KeyValuePair<string, EnqueuedJobDto>>());
@@ -193,8 +197,9 @@ namespace Hangfire.InMemory
             });
         }
 
-        public JobList<FetchedJobDto> FetchedJobs(string queue, int @from, int perPage)
+        public JobList<FetchedJobDto> FetchedJobs([NotNull] string queueName, int @from, int perPage)
         {
+            if (queueName == null) throw new ArgumentNullException(nameof(queueName));
             return new JobList<FetchedJobDto>(Enumerable.Empty<KeyValuePair<string, FetchedJobDto>>());
         }
 
@@ -415,15 +420,18 @@ namespace Hangfire.InMemory
             return GetCountByStateName(ScheduledState.StateName);
         }
 
-        public long EnqueuedCount(string queueName)
+        public long EnqueuedCount([NotNull] string queueName)
         {
+            if (queueName == null) throw new ArgumentNullException(nameof(queueName));
+
             return _dispatcher.QueryAndWait(state => state.Queues.TryGetValue(queueName, out var queue) 
                 ? queue.Queue.Count
                 : 0);
         }
 
-        public long FetchedCount(string queue)
+        public long FetchedCount([NotNull] string queue)
         {
+            if (queue == null) throw new ArgumentNullException(nameof(queue));
             return 0;
         }
 
