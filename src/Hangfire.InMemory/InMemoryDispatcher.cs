@@ -59,7 +59,14 @@ namespace Hangfire.InMemory
                         while (_queries.TryDequeue(out var next))
                         {
                             next.Result = base.QueryAndWait(next.Callback);
-                            next.Ready.Set();
+
+                            try
+                            {
+                                next.Ready.Set();
+                            }
+                            catch (ObjectDisposedException)
+                            {
+                            }
                         }
                     }
                     else
