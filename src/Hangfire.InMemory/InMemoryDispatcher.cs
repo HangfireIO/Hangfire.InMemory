@@ -2,14 +2,18 @@
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Hangfire.Logging;
 
 namespace Hangfire.InMemory
 {
     internal sealed class InMemoryDispatcher : InMemoryDispatcherBase
     {
+        private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(30);
+
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
         private readonly ConcurrentQueue<InMemoryDispatcherCallback> _queries = new ConcurrentQueue<InMemoryDispatcherCallback>();
         private readonly Thread _thread;
+        private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
 
         private PaddedInt64 _outstandingRequests;
 
@@ -37,30 +41,36 @@ namespace Hangfire.InMemory
                     }
                 }
 
-                // TODO: Add timeout here – dispatcher thread can fail, and we shouldn't block user code in this case
-                callback.Ready.Wait();
+                callback.Ready.Wait(DefaultQueryTimeout);
                 return callback.Result;
             }
         }
 
         private void DoWork()
         {
-            while (true)
+            try
             {
-                if (_semaphore.Wait(TimeSpan.FromSeconds(1)))
+                while (true)
                 {
-                    Interlocked.Exchange(ref _outstandingRequests.Value, 0);
-
-                    while (_queries.TryDequeue(out var next))
+                    if (_semaphore.Wait(TimeSpan.FromSeconds(1)))
                     {
-                        next.Result = base.QueryAndWait(next.Callback);
-                        next.Ready.Set();
+                        Interlocked.Exchange(ref _outstandingRequests.Value, 0);
+
+                        while (_queries.TryDequeue(out var next))
+                        {
+                            next.Result = base.QueryAndWait(next.Callback);
+                            next.Ready.Set();
+                        }
+                    }
+                    else
+                    {
+                        ExpireEntries();
                     }
                 }
-                else
-                {
-                    ExpireEntries();
-                }
+            }
+            catch (Exception ex)
+            {
+                _logger.FatalException("Query dispatcher stopped due to an exception, no queries will be processed. Please report this problem to Hangfire.InMemory developers.", ex);
             }
         }
 
