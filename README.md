@@ -17,6 +17,7 @@ Distributed locks (heh, in an in-process storage), queue fetch logic (even from 
 * Force expiration when memory pressure is high to avoid `OutOfMemoryException`.
 * Add overridden default for expiration time for jobs and batches?
 * Can avoid synchronization in some read-only methods in the `MemoryConnection`class.
+* Avoid using large object heap at any cost by large collections – millions of jobs can be created.
 
 ## Installation
 
