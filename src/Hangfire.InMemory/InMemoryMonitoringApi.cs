@@ -22,19 +22,18 @@ namespace Hangfire.InMemory
         {
             return _dispatcher.QueryAndWait(state =>
             {
+                // TODO: Move all allocations outside of dispatcher thread, just in case it helps
                 var result = new List<QueueWithTopEnqueuedJobsDto>();
 
                 foreach (var queueEntry in state.Queues)
                 {
                     var queueResult = new JobList<EnqueuedJobDto>(Enumerable.Empty<KeyValuePair<string, EnqueuedJobDto>>());
-                    var counter = 0;
-                    var from = 0;
-                    var perPage = 5;
+                    var index = 0;
+                    const int count = 5;
 
                     foreach (var message in queueEntry.Value.Queue)
                     {
-                        if (counter < from) { counter++; continue; }
-                        if (counter >= from + perPage) break;
+                        if (index++ >= count) break;
 
                         Job job = null;
 
@@ -49,21 +48,22 @@ namespace Hangfire.InMemory
                             }
                         }
 
+                        var stateName = jobEntry?.State?.Name;
+                        var inEnqueuedState = EnqueuedState.StateName.Equals(
+                            stateName,
+                            StringComparison.OrdinalIgnoreCase);
+
                         queueResult.Add(new KeyValuePair<string, EnqueuedJobDto>(message, new EnqueuedJobDto
                         {
                             Job = job,
-                            State = jobEntry?.State?.Name,
-                            InEnqueuedState = EnqueuedState.StateName.Equals(jobEntry?.State?.Name,
-                                StringComparison.OrdinalIgnoreCase),
-                            EnqueuedAt = jobEntry?.State?.CreatedAt
+                            State = stateName,
+                            InEnqueuedState = inEnqueuedState,
+                            EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt : null
                         }));
-
-                        counter++;
                     }
 
                     result.Add(new QueueWithTopEnqueuedJobsDto
                     {
-                        Fetched = 0,
                         Length = queueEntry.Value.Queue.Count,
                         Name = queueEntry.Key,
                         FirstJobs = queueResult

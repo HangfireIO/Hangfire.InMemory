@@ -50,6 +50,9 @@ namespace Hangfire.InMemory
             if (state == null) throw new ArgumentNullException(nameof(state));
             if (state.Name == null) throw new ArgumentException("Name property must not return null.", nameof(state));
 
+            // TODO: Add test to ensure state.Name doesn't throw inside dispatcher
+            // TODO: Add test to ensure state.SerializeData doesn't throw inside dispatcher
+
             var stateEntry = new StateEntry
             {
                 Name = state.Name,
@@ -73,6 +76,10 @@ namespace Hangfire.InMemory
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
             if (state == null) throw new ArgumentNullException(nameof(state));
+
+            // TODO: Add non-null state.Name check
+            // TODO: Add test to ensure state.Name doesn't throw inside dispatcher
+            // TODO: Add test to ensure state.SerializeData doesn't throw inside dispatcher
 
             var stateEntry = new StateEntry
             {
