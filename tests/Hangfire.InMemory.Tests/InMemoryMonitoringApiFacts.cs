@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Hangfire.Common;
+using Hangfire.Server;
 using Hangfire.States;
 using Hangfire.Storage;
 using Moq;
@@ -229,6 +230,45 @@ namespace Hangfire.InMemory.Tests
 
             Assert.NotNull(result);
             Assert.Empty(result);
+        }
+
+        [Fact]
+        public void Servers_ReturnsAllTheRegisteredServers_WithCorrectDetails()
+        {
+            // Arrange
+            UseConnection(connection =>
+            {
+                connection.AnnounceServer("server1", new ServerContext { Queues = new []{ "default" }, WorkerCount = 100 });
+                connection.AnnounceServer("server2", new ServerContext { Queues = new[] { "critical" }, WorkerCount = 17 });
+                connection.AnnounceServer("server3", new ServerContext { Queues = new[] { "alpha", "beta" }, WorkerCount = 0 });
+                return true;
+            });
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.Servers();
+
+            // Assert
+            Assert.Equal(3, result.Count);
+
+            var server1 = result.Single(x => x.Name == "server1");
+            Assert.Equal(new [] { "default" }, server1.Queues);
+            Assert.Equal(100, server1.WorkersCount);
+            Assert.Equal(_now, server1.StartedAt);
+            Assert.Equal(_now, server1.Heartbeat);
+
+            var server2 = result.Single(x => x.Name == "server2");
+            Assert.Equal(new[] { "critical" }, server2.Queues);
+            Assert.Equal(17, server2.WorkersCount);
+            Assert.Equal(_now, server2.StartedAt);
+            Assert.Equal(_now, server2.Heartbeat);
+
+            var server3 = result.Single(x => x.Name == "server3");
+            Assert.Equal(new[] { "alpha", "beta" }, server3.Queues);
+            Assert.Equal(0, server3.WorkersCount);
+            Assert.Equal(_now, server3.StartedAt);
+            Assert.Equal(_now, server3.Heartbeat);
         }
 
         [Fact]

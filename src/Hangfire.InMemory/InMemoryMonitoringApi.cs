@@ -121,12 +121,14 @@ namespace Hangfire.InMemory
                     CreatedAt = entry.CreatedAt,
                     ExpireAt = entry.ExpireAt,
                     Job = job,
+                    // TODO: Case sensitivity
                     Properties = entry.Parameters.ToDictionary(x => x.Key, x => x.Value),
                     History = entry.History.Select(x => new StateHistoryDto
                     {
                         CreatedAt = x.CreatedAt,
                         StateName = x.Name,
                         Reason = x.Reason,
+                        // TODO: Case sensitivity
                         Data = x.Data.ToDictionary(y => y.Key, y => y.Value)
                     }).OrderByDescending(x => x.CreatedAt).ToList()
                 };
