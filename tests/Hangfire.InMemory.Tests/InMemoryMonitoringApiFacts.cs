@@ -13,7 +13,7 @@ namespace Hangfire.InMemory.Tests
     public class InMemoryMonitoringApiFacts
     {
         private readonly InMemoryState _state;
-        private readonly DateTime _now;
+        private DateTime _now;
 
         public InMemoryMonitoringApiFacts()
         {
@@ -290,6 +290,102 @@ namespace Hangfire.InMemory.Tests
             var result = monitoring.JobDetails("some-job");
 
             Assert.Null(result);
+        }
+
+        [Fact]
+        public void JobDetails_CorrectlyHandles_CreatedButNotInitializedJob()
+        {
+            // Arrange
+            var jobId = UseConnection(connection => connection.CreateExpiredJob(
+                    Job.FromExpression<ITestServices>(x => x.Empty()),
+                    new Dictionary<string, string> { { "CurrentCulture", "en-US" }, { "RetryCount", "5" } },
+                    _now,
+                    TimeSpan.FromMinutes(37)));
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.JobDetails(jobId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(typeof(ITestServices), result.Job.Type);
+            Assert.Equal("Empty", result.Job.Method.Name);
+            Assert.Equal("en-US", result.Properties["CurrentCulture"]);
+            Assert.Equal("5", result.Properties["RetryCount"]);
+            Assert.Equal(_now, result.CreatedAt);
+            Assert.Equal(_now.AddMinutes(37), result.ExpireAt);
+        }
+
+        [Fact]
+        public void JobDetails_CorrectlyShowsCreated_AndInitializedJob()
+        {
+            // Arrange
+            var createdId = UseConnection(connection =>
+            {
+                var jobId = connection.CreateExpiredJob(
+                    Job.FromExpression<ITestServices>(x => x.Empty()),
+                    new Dictionary<string, string>(), 
+                    _now,
+                    TimeSpan.Zero);
+
+                using (var transaction = connection.CreateWriteTransaction())
+                {
+                    transaction.SetJobState(jobId, new EnqueuedState("critical") { Reason = "Some reason" });
+                    transaction.Commit();
+                }
+
+                _now = _now.AddMinutes(1);
+
+                using (var transaction = connection.CreateWriteTransaction())
+                {
+                    transaction.SetJobState(jobId, new DeletedState());
+                    transaction.Commit();
+                }
+
+                return jobId;
+            });
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.JobDetails(createdId);
+
+            // Assert
+            Assert.Equal("Deleted", result.History.First().StateName);
+            Assert.Null(result.History.First().Reason);
+            Assert.Equal(_now, result.History.First().CreatedAt);
+
+            Assert.Equal("Enqueued", result.History.Last().StateName, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal("Some reason", result.History.Last().Reason);
+            Assert.Equal("critical", result.History.Last().Data["Queue"]);
+            Assert.Equal(_now.AddMinutes(-1), result.History.Last().CreatedAt);
+        }
+
+        [Fact]
+        public void JobDetails_IsAbleToHandleSerializationProblems()
+        {
+            // Arrange
+            var jobId = UseConnection(connection => connection.CreateExpiredJob(
+                Job.FromExpression<ITestServices>(x => x.Empty()),
+                new Dictionary<string, string>(),
+                _now,
+                TimeSpan.Zero));
+
+            _state.Jobs[jobId].InvocationData = new InvocationData("asfasf", "232", "afasf", "gg");
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.JobDetails(jobId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Null(result.Job);
+            Assert.Empty(result.Properties);
+            Assert.Empty(result.History);
+            Assert.Equal(_now, result.CreatedAt);
+            Assert.Equal(_now, result.ExpireAt);
         }
 
         [Fact]
