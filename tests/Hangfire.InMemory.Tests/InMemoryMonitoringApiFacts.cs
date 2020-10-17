@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Hangfire.Common;
 using Hangfire.States;
+using Hangfire.Storage;
 using Moq;
 using Xunit;
 
@@ -173,13 +174,13 @@ namespace Hangfire.InMemory.Tests
         public void Queues_ReturnsTop5Jobs_FromItsHead()
         {
             // Arrange
-            var jobId1 = SimpleEnqueueJob("default");
-            var jobId2 = SimpleEnqueueJob("default");
-            var jobId3 = SimpleEnqueueJob("default");
-            var jobId4 = SimpleEnqueueJob("default");
-            var jobId5 = SimpleEnqueueJob("default");
-            var jobId6 = SimpleEnqueueJob("default");
-            var jobId7 = SimpleEnqueueJob("critical");
+            var jobId1 = SimpleEnqueueJob("default", state: new EnqueuedState());
+            var jobId2 = SimpleEnqueueJob("default", state: new EnqueuedState());
+            var jobId3 = SimpleEnqueueJob("default", state: new EnqueuedState());
+            var jobId4 = SimpleEnqueueJob("default", state: new EnqueuedState());
+            var jobId5 = SimpleEnqueueJob("default", state: new EnqueuedState());
+            var jobId6 = SimpleEnqueueJob("default", state: new EnqueuedState());
+            var jobId7 = SimpleEnqueueJob("critical", state: new EnqueuedState());
 
             var monitoring = CreateMonitoringApi();
 
@@ -197,6 +198,26 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(1, criticalQueue.Length);
             Assert.Single(criticalQueue.FirstJobs);
             Assert.Equal(jobId7, criticalQueue.FirstJobs.Single().Key);
+        }
+
+        [Fact]
+        public void Queues_IsAbleToHandleSerializationProblems_InJobs()
+        {
+            // Arrange
+            var jobId = SimpleEnqueueJob("default", state: new EnqueuedState());
+            _state.Jobs[jobId].InvocationData = new InvocationData("asfasf", "232", "afasf", "gg");
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.Queues();
+
+            // Assert
+            var queuedJob = result.Single().FirstJobs.Single();
+            Assert.Equal(jobId, queuedJob.Key);
+            Assert.Null(queuedJob.Value.Job);
+            Assert.True(queuedJob.Value.InEnqueuedState);
+            Assert.Equal("Enqueued", queuedJob.Value.State, StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
