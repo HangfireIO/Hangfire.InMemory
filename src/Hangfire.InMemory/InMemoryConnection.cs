@@ -13,10 +13,14 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryConnection : JobStorageConnection
     {
         private readonly InMemoryDispatcherBase _dispatcher;
+        private readonly InMemoryStorageOptions _options;
 
-        public InMemoryConnection([NotNull] InMemoryDispatcherBase dispatcher)
+        public InMemoryConnection(
+            [NotNull] InMemoryDispatcherBase dispatcher,
+            [NotNull] InMemoryStorageOptions options)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         public override IWriteOnlyTransaction CreateWriteTransaction()

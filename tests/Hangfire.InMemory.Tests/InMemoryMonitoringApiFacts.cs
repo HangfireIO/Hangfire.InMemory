@@ -696,7 +696,9 @@ namespace Hangfire.InMemory.Tests
 
         private T UseConnection<T>(Func<InMemoryConnection, T> action)
         {
-            using (var connection = new InMemoryConnection(new InMemoryDispatcherBase(_state)))
+            using (var connection = new InMemoryConnection(
+                new InMemoryDispatcherBase(_state),
+                new InMemoryStorageOptions()))
             {
                 return action(connection);
             }

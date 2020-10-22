@@ -1,4 +1,5 @@
 ﻿using System;
+using Hangfire.Annotations;
 using Hangfire.Storage;
 
 namespace Hangfire.InMemory
@@ -7,6 +8,18 @@ namespace Hangfire.InMemory
     {
         private readonly InMemoryDispatcherBase _dispatcher = new InMemoryDispatcher(new InMemoryState(() => DateTime.UtcNow));
 
+        public InMemoryStorage()
+            : this(new InMemoryStorageOptions())
+        {
+        }
+
+        public InMemoryStorage([NotNull] InMemoryStorageOptions options)
+        {
+            Options = options ?? throw new ArgumentNullException(nameof(options));
+        }
+
+        public InMemoryStorageOptions Options { get; }
+
         public override IMonitoringApi GetMonitoringApi()
         {
             return new InMemoryMonitoringApi(_dispatcher);
@@ -14,7 +27,7 @@ namespace Hangfire.InMemory
 
         public override IStorageConnection GetConnection()
         {
-            return new InMemoryConnection(_dispatcher);
+            return new InMemoryConnection(_dispatcher, Options);
         }
     }
 }
