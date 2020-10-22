@@ -149,7 +149,7 @@ namespace Hangfire.InMemory
                 if (node == null) return;
 
                 var tailNode = Interlocked.Exchange(ref node.Next, Tombstone);
-                if (tailNode != null)
+                if (tailNode != null && !ReferenceEquals(tailNode, Tombstone))
                 {
                     var waitHead = entry.WaitHead;
                     do
