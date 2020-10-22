@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using Hangfire.Common;
 using Hangfire.Server;
 using Hangfire.Storage;
@@ -131,6 +132,7 @@ namespace Hangfire.InMemory
 
         public string Key { get; set; }
         public InvocationData InvocationData { get; set; }
+        public Job Job { get; set; }
 
         // TODO What case sensitivity to use here?
         public ConcurrentDictionary<string, string> Parameters { get; set; }
@@ -143,6 +145,11 @@ namespace Hangfire.InMemory
         public Job TryGetJob(out JobLoadException exception)
         {
             exception = null;
+
+            if (Job != null)
+            {
+                return new Job(Job.Type, Job.Method, Job.Args.ToArray());
+            }
 
             try
             {
