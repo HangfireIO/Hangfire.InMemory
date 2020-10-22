@@ -39,13 +39,7 @@ namespace Hangfire.InMemory
 
                         if (state.Jobs.TryGetValue(message, out var jobEntry))
                         {
-                            try
-                            {
-                                job = jobEntry.InvocationData.DeserializeJob();
-                            }
-                            catch (JobLoadException)
-                            {
-                            }
+                            job = jobEntry.TryGetJob(out _);
                         }
 
                         var stateName = jobEntry?.State?.Name;
@@ -106,21 +100,11 @@ namespace Hangfire.InMemory
                     return null;
                 }
 
-                Job job = null;
-
-                try
-                {
-                    job = entry.InvocationData.DeserializeJob();
-                }
-                catch (JobLoadException)
-                {
-                }
-
                 return new JobDetailsDto
                 {
                     CreatedAt = entry.CreatedAt,
                     ExpireAt = entry.ExpireAt,
-                    Job = job,
+                    Job = entry.TryGetJob(out _),
                     // TODO: Case sensitivity
                     Properties = entry.Parameters.ToDictionary(x => x.Key, x => x.Value),
                     History = entry.History.Select(x => new StateHistoryDto
@@ -174,13 +158,7 @@ namespace Hangfire.InMemory
 
                         if (state.Jobs.TryGetValue(message, out var jobEntry))
                         {
-                            try
-                            {
-                                job = jobEntry.InvocationData.DeserializeJob();
-                            }
-                            catch (JobLoadException)
-                            {
-                            }
+                            job = jobEntry.TryGetJob(out _);
                         }
 
                         result.Add(new KeyValuePair<string, EnqueuedJobDto>(message, new EnqueuedJobDto
@@ -219,23 +197,12 @@ namespace Hangfire.InMemory
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        Job job = null;
-
-                        try
-                        {
-                            job = entry.InvocationData.DeserializeJob();
-                        }
-                        catch (JobLoadException)
-                        {
-                        }
-
                         result.Add(new KeyValuePair<string, ProcessingJobDto>(entry.Key, new ProcessingJobDto
                         {
                             ServerId = entry.State?.Data.ContainsKey("ServerId") ?? false ? entry.State.Data["ServerId"] : null,
-                            Job = job,
+                            Job = entry.TryGetJob(out _),
                             InProcessingState = ProcessingState.StateName.Equals(entry.State?.Name, StringComparison.OrdinalIgnoreCase),
-                            StartedAt = entry.State?.CreatedAt,
-                            
+                            StartedAt = entry.State?.CreatedAt
                         }));
 
                         index++;
@@ -263,13 +230,7 @@ namespace Hangfire.InMemory
                         Job job = null;
                         if (state.Jobs.TryGetValue(entry.Value, out var backgroundJob))
                         {
-                            try
-                            {
-                                job = backgroundJob.InvocationData.DeserializeJob();
-                            }
-                            catch (JobLoadException)
-                            {
-                            }
+                            job = backgroundJob.TryGetJob(out _);
                         }
 
                         result.Add(new KeyValuePair<string, ScheduledJobDto>(entry.Value, new ScheduledJobDto
@@ -277,8 +238,7 @@ namespace Hangfire.InMemory
                             EnqueueAt = JobHelper.FromTimestamp((long)entry.Score),
                             Job = job,
                             InScheduledState = ScheduledState.StateName.Equals(backgroundJob?.State?.Name, StringComparison.OrdinalIgnoreCase),
-                            ScheduledAt = backgroundJob?.State?.CreatedAt,
-
+                            ScheduledAt = backgroundJob?.State?.CreatedAt
                         }));
 
                         index++;
@@ -303,26 +263,15 @@ namespace Hangfire.InMemory
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        Job job = null;
-
-                        try
-                        {
-                            job = entry.InvocationData.DeserializeJob();
-                        }
-                        catch (JobLoadException)
-                        {
-                        }
-
                         result.Add(new KeyValuePair<string, SucceededJobDto>(entry.Key, new SucceededJobDto
                         {
                             Result = entry.State?.Data.ContainsKey("Result") ?? false ? entry.State.Data["Result"] : null,
                             TotalDuration = (entry.State?.Data.ContainsKey("PerformanceDuration") ?? false) && (entry.State?.Data.ContainsKey("Latency") ?? false) 
                                 ? long.Parse(entry.State.Data["PerformanceDuration"]) + long.Parse(entry.State.Data["Latency"])
                                 : (long?)null,
-                            Job = job,
+                            Job = entry.TryGetJob(out _),
                             InSucceededState = SucceededState.StateName.Equals(entry.State?.Name, StringComparison.OrdinalIgnoreCase),
-                            SucceededAt = entry.State?.CreatedAt,
-
+                            SucceededAt = entry.State?.CreatedAt
                         }));
 
                         index++;
@@ -347,26 +296,15 @@ namespace Hangfire.InMemory
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        Job job = null;
-
-                        try
-                        {
-                            job = entry.InvocationData.DeserializeJob();
-                        }
-                        catch (JobLoadException)
-                        {
-                        }
-
                         result.Add(new KeyValuePair<string, FailedJobDto>(entry.Key, new FailedJobDto
                         {
-                            Job = job,
+                            Job = entry.TryGetJob(out _),
                             ExceptionDetails = entry.State?.Data.ContainsKey("ExceptionDetails") ?? false ? entry.State.Data["ExceptionDetails"] : null,
                             ExceptionType = entry.State?.Data.ContainsKey("ExceptionType") ?? false ? entry.State.Data["ExceptionType"] : null,
                             ExceptionMessage = entry.State?.Data.ContainsKey("ExceptionMessage") ?? false ? entry.State.Data["ExceptionMessage"] : null,
                             Reason = entry.State?.Reason,
                             InFailedState = FailedState.StateName.Equals(entry.State?.Name, StringComparison.OrdinalIgnoreCase),
-                            FailedAt = entry.State?.CreatedAt,
-
+                            FailedAt = entry.State?.CreatedAt
                         }));
 
                         index++;
@@ -391,22 +329,11 @@ namespace Hangfire.InMemory
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        Job job = null;
-
-                        try
-                        {
-                            job = entry.InvocationData.DeserializeJob();
-                        }
-                        catch (JobLoadException)
-                        {
-                        }
-
                         result.Add(new KeyValuePair<string, DeletedJobDto>(entry.Key, new DeletedJobDto
                         {
-                            Job = job,
+                            Job = entry.TryGetJob(out _),
                             InDeletedState = DeletedState.StateName.Equals(entry.State?.Name, StringComparison.OrdinalIgnoreCase),
-                            DeletedAt = entry.State?.CreatedAt,
-
+                            DeletedAt = entry.State?.CreatedAt
                         }));
 
                         index++;

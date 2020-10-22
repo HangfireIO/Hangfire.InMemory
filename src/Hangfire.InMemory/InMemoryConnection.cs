@@ -203,21 +203,9 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            Job job = null;
-            JobLoadException loadException = null;
-
-            try
-            {
-                job = entry.InvocationData.DeserializeJob();
-            }
-            catch (JobLoadException ex)
-            {
-                loadException = ex;
-            }
-
             return new JobData
             {
-                Job = job,
+                Job = entry.TryGetJob(out var loadException),
                 LoadException = loadException,
                 CreatedAt = entry.CreatedAt,
                 State = entry.State?.Name

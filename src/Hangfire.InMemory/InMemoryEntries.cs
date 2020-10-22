@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using Hangfire.Common;
 using Hangfire.Server;
 using Hangfire.Storage;
 
@@ -138,6 +139,21 @@ namespace Hangfire.InMemory
         public ICollection<StateEntry> History { get; set; } = new List<StateEntry>(StateCountForRegularJob);
         public DateTime CreatedAt { get; set; }
         public DateTime? ExpireAt { get; set; }
+
+        public Job TryGetJob(out JobLoadException exception)
+        {
+            exception = null;
+
+            try
+            {
+                return InvocationData.DeserializeJob();
+            }
+            catch (JobLoadException ex)
+            {
+                exception = ex;
+                return null;
+            }
+        }
     }
 
     internal sealed class ServerEntry
