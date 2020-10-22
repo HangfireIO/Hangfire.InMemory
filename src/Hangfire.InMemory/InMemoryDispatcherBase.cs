@@ -143,26 +143,34 @@ namespace Hangfire.InMemory
 
         public void SignalOneQueueWaitNode(QueueEntry entry)
         {
-            if (Volatile.Read(ref entry.WaitHead.Next) == null) return;
-
-            var node = Interlocked.Exchange(ref entry.WaitHead.Next, null);
-            if (node == null) return;
-
-            var tailNode = Interlocked.Exchange(ref node.Next, Tombstone);
-            if (tailNode != null)
+            while (Volatile.Read(ref entry.WaitHead.Next) != null)
             {
-                var waitHead = entry.WaitHead;
-                do
-                {
-                    waitHead = Interlocked.CompareExchange(ref waitHead.Next, tailNode, null);
-                    if (ReferenceEquals(waitHead, Tombstone))
-                    {
-                        waitHead = entry.WaitHead;
-                    }
-                } while (waitHead != null);
-            }
+                var node = Interlocked.Exchange(ref entry.WaitHead.Next, null);
+                if (node == null) return;
 
-            node.Value.Release();
+                var tailNode = Interlocked.Exchange(ref node.Next, Tombstone);
+                if (tailNode != null)
+                {
+                    var waitHead = entry.WaitHead;
+                    do
+                    {
+                        waitHead = Interlocked.CompareExchange(ref waitHead.Next, tailNode, null);
+                        if (ReferenceEquals(waitHead, Tombstone))
+                        {
+                            waitHead = entry.WaitHead;
+                        }
+                    } while (waitHead != null);
+                }
+
+                try
+                {
+                    node.Value.Release();
+                    return;
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+            }
         }
 
         protected virtual object QueryAndWait(Func<InMemoryState, object> query)
