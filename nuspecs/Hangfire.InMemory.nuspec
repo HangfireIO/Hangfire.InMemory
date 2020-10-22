@@ -13,6 +13,13 @@
     <copyright>Copyright © 2020 Sergey Odinokov</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
+0.3.0
+• Added – `InMemoryStorageOptions.DisableJobSerialization` option.
+• Fixed – `ObjectDisposedException` on semaphore when committing a transaction.
+• Fixed – Gracefully handle `ObjectDisposedException` when signaling for query completion.
+• Fixed – Avoid killing the whole process in case of an exception in dispatcher, stop it instead.
+• Project – Add a lot of new unit tests for `InMemoryMonitoringApi` class.
+
 0.2.0
 • Fixed – A lot of corner cases revealed by unit tests.
 • Project – Added a ton of unit tests for the top-level classes to ensure behavior is consistent.
