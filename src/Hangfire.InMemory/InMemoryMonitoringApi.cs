@@ -161,12 +161,17 @@ namespace Hangfire.InMemory
                             job = jobEntry.TryGetJob(out _);
                         }
 
+                        var stateName = jobEntry?.State?.Name;
+                        var inEnqueuedState = EnqueuedState.StateName.Equals(
+                            stateName,
+                            StringComparison.OrdinalIgnoreCase);
+
                         result.Add(new KeyValuePair<string, EnqueuedJobDto>(message, new EnqueuedJobDto
                         {
                             Job = job,
-                            State = jobEntry?.State?.Name,
-                            InEnqueuedState = EnqueuedState.StateName.Equals(jobEntry?.State?.Name, StringComparison.OrdinalIgnoreCase),
-                            EnqueuedAt = jobEntry?.State?.CreatedAt
+                            State = stateName,
+                            InEnqueuedState = inEnqueuedState,
+                            EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt : null
                         }));
 
                         counter++;

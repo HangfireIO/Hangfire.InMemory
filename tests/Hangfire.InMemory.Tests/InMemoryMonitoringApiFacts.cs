@@ -429,6 +429,153 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void EnqueuedJobs_ReturnsCorrectJobs_WhichWillBeDequeuedNext()
+        {
+            // Arrange
+            var jobId = SimpleEnqueueJob(
+                "critical",
+                job: Job.FromExpression<ITestServices>(x => x.Empty()),
+                state: new EnqueuedState());
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.EnqueuedJobs("critical", 0, 10);
+
+            // Assert
+            var queuedJob = result.Single();
+
+            Assert.Equal(jobId, queuedJob.Key);
+            Assert.True(queuedJob.Value.InEnqueuedState);
+            Assert.Equal("Enqueued", queuedJob.Value.State, StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(_now, queuedJob.Value.EnqueuedAt);
+
+            Assert.Equal(typeof(ITestServices), queuedJob.Value.Job.Type);
+            Assert.Equal("Empty", queuedJob.Value.Job.Method.Name);
+        }
+
+        [Fact]
+        public void EnqueuedJobs_IsAbleToHandle_JobIdWithoutCorrespondingBackgroundJobEntry()
+        {
+            // Arrange
+            SimpleEnqueueJob("default", jobId: "some-job");
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.EnqueuedJobs("default", 0, 10);
+
+            // Assert
+            var someJob = result.Single();
+
+            Assert.Equal("some-job", someJob.Key);
+            Assert.Null(someJob.Value.Job);
+            Assert.False(someJob.Value.InEnqueuedState);
+            Assert.Null(someJob.Value.State);
+            Assert.Null(someJob.Value.EnqueuedAt);
+        }
+
+        [Fact]
+        public void EnqueuedJobs_IsAbleToHandle_BackgroundJobEntry_WithNullState()
+        {
+            // Arrange
+            var jobId = SimpleEnqueueJob("test", state: null);
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.EnqueuedJobs("test", 0, 10);
+
+            // Assert
+            var someJob = result.Single();
+
+            Assert.Equal(jobId, someJob.Key);
+            Assert.False(someJob.Value.InEnqueuedState);
+            Assert.Null(someJob.Value.State);
+            Assert.Null(someJob.Value.EnqueuedAt);
+        }
+
+        [Fact]
+        public void EnqueuedJobs_IsAbleToHandle_BackgroundJobEntry_WithAnotherState()
+        {
+            // Arrange
+            var jobId = SimpleEnqueueJob("default", state: new DeletedState());
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.EnqueuedJobs("default", 0, 10);
+
+            // Assert
+            var someJob = result.Single();
+
+            Assert.Equal(jobId, someJob.Key);
+            Assert.False(someJob.Value.InEnqueuedState);
+            Assert.Equal("Deleted", someJob.Value.State, StringComparer.OrdinalIgnoreCase);
+            Assert.Null(someJob.Value.EnqueuedAt);
+        }
+
+        [Fact]
+        public void EnqueuedJobs_IsAbleToHandle_EnqueuedLikeStates_AsEnqueued()
+        {
+            // Arrange
+            var state = new Mock<IState>();
+            state.SetupGet(x => x.Name).Returns("EnQUEued");
+
+            var jobId = SimpleEnqueueJob("default", state: state.Object);
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.EnqueuedJobs("default", 0, 10);
+
+            // Assert
+            var someJob = result.Single();
+
+            Assert.Equal(jobId, someJob.Key);
+            Assert.True(someJob.Value.InEnqueuedState);
+            Assert.Equal("EnQUEued", someJob.Value.State);
+            Assert.Equal(_now, someJob.Value.EnqueuedAt);
+        }
+
+        [Fact]
+        public void EnqueuedJobs_ReturnsTheGivenRange_FromTheGivenQueue()
+        {
+            // Arrange
+            var jobId1 = SimpleEnqueueJob("default", state: new EnqueuedState());
+            var jobId2 = SimpleEnqueueJob("default", state: new EnqueuedState());
+            var jobIdX = SimpleEnqueueJob("critical", state: new EnqueuedState());
+            var jobId3 = SimpleEnqueueJob("default", state: new EnqueuedState());
+            var jobId4 = SimpleEnqueueJob("default", state: new EnqueuedState());
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.EnqueuedJobs("default", 1, 2);
+
+            // Assert
+            Assert.Equal(2, result.Count);
+            Assert.Equal(jobId2, result.First().Key);
+            Assert.Equal(jobId3, result.Last().Key);
+        }
+
+        [Fact]
+        public void EnqueuedJobs_IsAbleToHandleSerializationProblems_InJobs()
+        {
+            // Arrange
+            var jobId = SimpleEnqueueJob("default", state: new EnqueuedState());
+            _state.Jobs[jobId].InvocationData = new InvocationData("asfasf", "232", "afasf", "gg");
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.EnqueuedJobs("default", 0, 10);
+
+            // Assert
+            var queuedJob = result.Single();
+            Assert.Equal(jobId, queuedJob.Key);
+            Assert.Null(queuedJob.Value.Job);
+            Assert.True(queuedJob.Value.InEnqueuedState);
+            Assert.Equal("Enqueued", queuedJob.Value.State, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
         public void FetchedJobs_ThrowsAnException_WhenQueueIsNull()
         {
             var monitoring = CreateMonitoringApi();
