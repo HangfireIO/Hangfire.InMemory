@@ -308,7 +308,7 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void AddToQueue_SignalsTheGivenQueue_AfterCommittingChanges()
         {
-            using (var semaphore = new SemaphoreSlim(0))
+            using (var semaphore = new AutoResetEvent(false))
             {
                 // Arrange
                 var entry = new QueueEntry();

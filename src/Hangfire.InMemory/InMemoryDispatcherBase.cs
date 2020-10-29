@@ -143,13 +143,19 @@ namespace Hangfire.InMemory
 
         public void SignalOneQueueWaitNode(QueueEntry entry)
         {
-            while (Volatile.Read(ref entry.WaitHead.Next) != null)
+            if (Volatile.Read(ref entry.WaitHead.Next) == null) return;
+            SignalOneQueueWaitNodeSlow(entry);
+        }
+
+        private static void SignalOneQueueWaitNodeSlow(QueueEntry entry)
+        {
+            while (true)
             {
                 var node = Interlocked.Exchange(ref entry.WaitHead.Next, null);
                 if (node == null) return;
 
                 var tailNode = Interlocked.Exchange(ref node.Next, Tombstone);
-                if (tailNode != null && !ReferenceEquals(tailNode, Tombstone))
+                if (tailNode != null)
                 {
                     var waitHead = entry.WaitHead;
                     do
@@ -164,7 +170,7 @@ namespace Hangfire.InMemory
 
                 try
                 {
-                    node.Value.Release();
+                    node.Value.Set();
                     return;
                 }
                 catch (ObjectDisposedException)

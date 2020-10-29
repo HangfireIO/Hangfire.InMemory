@@ -22,7 +22,10 @@ namespace ConsoleSample
             app.UseDeveloperExceptionPage();
             app.UseHangfireDashboard(String.Empty);
 
-            app.UseHangfireServer();
+            app.UseHangfireServer(new BackgroundJobServerOptions
+            {
+                Queues = new [] { "critical", "default" }
+            });
         }
     }
 }

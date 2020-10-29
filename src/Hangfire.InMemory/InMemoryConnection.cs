@@ -127,49 +127,59 @@ namespace Hangfire.InMemory
             if (queues == null) throw new ArgumentNullException(nameof(queues));
             if (queues.Length == 0) throw new ArgumentException("Queue array must be non-empty.", nameof(queues));
 
-            using (var ready = new SemaphoreSlim(0, queues.Length))
+            using (var cancellationEvent = cancellationToken.GetCancellationEvent())
             {
-                var waitNode = new InMemoryQueueWaitNode(ready);
-                var waitAdded = false;
+                var entries = _dispatcher.GetOrAddQueues(queues).ToArray();
+                var readyEvents = new WaitHandle[entries.Length + 1];
+                var waitAdded = new bool[entries.Length];
 
-                while (!cancellationToken.IsCancellationRequested)
+                try
                 {
-                    var entries = _dispatcher.GetOrAddQueues(queues).ToArray();
-
                     for (var i = 0; i < entries.Length; i++)
                     {
-                        if (entries[i].Value.Queue.TryDequeue(out var jobId))
-                        {
-                            if (waitAdded)
-                            {
-                                for (var j = i; j < entries.Length; j++)
-                                {
-                                    _dispatcher.SignalOneQueueWaitNode(entries[j].Value);
-                                }
-                            }
-                            
-                            return new InMemoryFetchedJob(_dispatcher, entries[i].Key, jobId);
-                        }
+                        readyEvents[i] = new AutoResetEvent(false);
                     }
 
-                    if (!waitAdded && ready.CurrentCount == 0)
+                    readyEvents[entries.Length] = cancellationEvent.WaitHandle;
+
+                    while (!cancellationToken.IsCancellationRequested)
                     {
                         foreach (var entry in entries)
                         {
-                            _dispatcher.AddQueueWaitNode(entry.Value, waitNode);
+                            if (entry.Value.Queue.TryDequeue(out var jobId))
+                            {
+                                _dispatcher.SignalOneQueueWaitNode(entry.Value);
+                                return new InMemoryFetchedJob(_dispatcher, entry.Key, jobId);
+                            }
                         }
 
-                        waitAdded = true;
-                        continue;
+                        for (var i = 0; i < entries.Length; i++)
+                        {
+                            if (!waitAdded[i])
+                            {
+                                _dispatcher.AddQueueWaitNode(entries[i].Value, new InMemoryQueueWaitNode((AutoResetEvent)readyEvents[i]));
+                                waitAdded[i] = true;
+                            }
+                        }
+
+                        var ready = WaitHandle.WaitAny(readyEvents, TimeSpan.FromSeconds(1));
+                        if (ready != WaitHandle.WaitTimeout && ready < entries.Length)
+                        {
+                            waitAdded[ready] = false;
+                        }
                     }
 
-                    ready.Wait(cancellationToken);
-                    waitAdded = false;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return null;
+                }
+                finally
+                {
+                    for (var i = 0; i < entries.Length; i++)
+                    {
+                        readyEvents[i]?.Dispose();
+                    }
                 }
             }
-
-            cancellationToken.ThrowIfCancellationRequested();
-            return null;
         }
 
         public override void SetJobParameter(

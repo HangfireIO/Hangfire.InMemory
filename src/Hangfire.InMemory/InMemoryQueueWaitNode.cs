@@ -4,12 +4,12 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryQueueWaitNode
     {
-        public InMemoryQueueWaitNode(SemaphoreSlim value)
+        public InMemoryQueueWaitNode(AutoResetEvent value)
         {
             Value = value;
         }
 
-        public readonly SemaphoreSlim Value;
+        public readonly AutoResetEvent Value;
         public InMemoryQueueWaitNode Next;
     }
 }
