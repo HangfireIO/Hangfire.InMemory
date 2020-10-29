@@ -13,6 +13,11 @@
     <copyright>Copyright © 2020 Sergey Odinokov</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
+0.3.2
+• Fixed – Some workers are waiting for background jobs forever when several jobs added at once.
+• Fixed – Workers are able to detect new background jobs only after another background job is processed.
+• Fixed – Workers don't see background jobs when multiple queues are used with minimal workload.
+
 0.3.1
 • Fixed – `NullReferenceException` in the `SignalOneQueueWaitNode` method when using multiple queues.
 
