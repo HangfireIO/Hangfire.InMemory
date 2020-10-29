@@ -45,7 +45,7 @@ namespace Hangfire.InMemory
             if (!_queues.TryGetValue(name, out var entry))
             {
                 // TODO: Refactor this to unify creation of a queue
-                _queues.GetOrAdd(name, _ => entry = new QueueEntry());
+                entry = _queues.GetOrAdd(name, _ => new QueueEntry());
             }
 
             return entry;
