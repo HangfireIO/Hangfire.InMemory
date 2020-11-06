@@ -13,6 +13,12 @@
     <copyright>Copyright © 2020 Sergey Odinokov</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
+
+0.3.4
+• Fixed – Reverse state list instead of sorting it by date in the `JobDetails` method.
+• Fixed – Better sorting for state indexes, take into account job creation date.
+• Fixed – Reverse succeeded and deleted job lists to match Redis implementation.
+
 0.3.3
 • Fixed – Sort queues and servers when returning them from monitoring api and in the Dashboard UI.
 
