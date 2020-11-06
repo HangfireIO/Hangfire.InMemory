@@ -116,7 +116,7 @@ namespace Hangfire.InMemory
                         Reason = x.Reason,
                         // TODO: Case sensitivity
                         Data = x.Data.ToDictionary(y => y.Key, y => y.Value)
-                    }).OrderByDescending(x => x.CreatedAt).ToList()
+                    }).Reverse().ToList()
                 };
             });
         }
