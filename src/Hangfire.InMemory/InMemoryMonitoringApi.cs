@@ -265,7 +265,7 @@ namespace Hangfire.InMemory
                 {
                     var index = 0;
 
-                    foreach (var entry in indexEntry)
+                    foreach (var entry in indexEntry.Reverse())
                     {
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
@@ -331,7 +331,7 @@ namespace Hangfire.InMemory
                 {
                     var index = 0;
 
-                    foreach (var entry in indexEntry)
+                    foreach (var entry in indexEntry.Reverse())
                     {
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
