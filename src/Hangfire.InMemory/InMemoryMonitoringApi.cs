@@ -64,7 +64,8 @@ namespace Hangfire.InMemory
                     });
                 }
 
-                return result;
+                // TODO: Case sensitivity
+                return result.OrderBy(x => x.Name).ToList();
             });
         }
 
@@ -85,7 +86,8 @@ namespace Hangfire.InMemory
                     });
                 }
 
-                return result;
+                // TODO: Case sensitivity
+                return result.OrderBy(x => x.Name).ToList();
             });
         }
 

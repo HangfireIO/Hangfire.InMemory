@@ -222,6 +222,25 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void Queues_ProducesSortedList_RegardlessOfActualEnqueueOrder()
+        {
+            // Arrange
+            SimpleEnqueueJob("b-queue", state: new EnqueuedState());
+            SimpleEnqueueJob("a-queue", state: new EnqueuedState());
+            SimpleEnqueueJob("c-queue", state: new EnqueuedState());
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.Queues().ToArray();
+
+            // Assert
+            Assert.Equal("a-queue", result[0].Name);
+            Assert.Equal("b-queue", result[1].Name);
+            Assert.Equal("c-queue", result[2].Name);
+        }
+
+        [Fact]
         public void Servers_ReturnsEmptyCollection_WhenThereAreNoServers()
         {
             var monitoring = CreateMonitoringApi();
@@ -269,6 +288,29 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(0, server3.WorkersCount);
             Assert.Equal(_now, server3.StartedAt);
             Assert.Equal(_now, server3.Heartbeat);
+        }
+
+        [Fact]
+        public void Servers_ProducesSortedList_RegardlessOfActualAnnouncementOrder()
+        {
+            // Arrange
+            UseConnection(connection =>
+            {
+                connection.AnnounceServer("server3", new ServerContext { Queues = new[] { "default" }, WorkerCount = 4 });
+                connection.AnnounceServer("server1", new ServerContext { Queues = new[] { "default" }, WorkerCount = 4 });
+                connection.AnnounceServer("server2", new ServerContext { Queues = new[] { "default" }, WorkerCount = 4 });
+                return true;
+            });
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.Servers().ToArray();
+
+            // Assert
+            Assert.Equal("server1", result[0].Name);
+            Assert.Equal("server2", result[1].Name);
+            Assert.Equal("server3", result[2].Name);
         }
 
         [Fact]
