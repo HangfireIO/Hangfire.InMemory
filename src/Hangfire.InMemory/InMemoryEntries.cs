@@ -226,9 +226,13 @@ namespace Hangfire.InMemory
             if (y?.State == null) return 1;
             if (x?.State == null) return -1;
 
-            var createdAtComparison = x.State.CreatedAt.CompareTo(y.State.CreatedAt);
+            var stateCreatedAtComparison = x.State.CreatedAt.CompareTo(y.State.CreatedAt);
+            if (stateCreatedAtComparison != 0) return stateCreatedAtComparison;
+
+            var createdAtComparison = x.CreatedAt.CompareTo(y.CreatedAt);
             if (createdAtComparison != 0) return createdAtComparison;
 
+            // TODO: Case sensitivity
             return String.Compare(x.Key, y.Key, StringComparison.Ordinal);
         }
     }
