@@ -51,16 +51,6 @@ namespace Hangfire.InMemory
             return entry;
         }
 
-        public BackgroundJobEntry JobGetOrThrow(string jobId)
-        {
-            if (!_jobs.TryGetValue(jobId, out var backgroundJob))
-            {
-                throw new InvalidOperationException($"Background job with '{jobId}' identifier does not exist.");
-            }
-
-            return backgroundJob;
-        }
-
         public void JobCreate(BackgroundJobEntry job)
         {
             if (!_jobs.TryAdd(job.Key, job))
