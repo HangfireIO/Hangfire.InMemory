@@ -255,9 +255,10 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (items == null) throw new ArgumentNullException(nameof(items));
 
+            if (items.Count == 0) return;
+
             _actions.Add(state =>
             {
-                // TODO: Don't do anything when items is empty
                 var set = state.SetGetOrAdd(key);
 
                 foreach (var value in items)
