@@ -3,8 +3,8 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyProduct("Hangfire.InMemory")]
-[assembly: AssemblyCompany("Hangfire OÜ")]
-[assembly: AssemblyCopyright("Copyright © 2020 Hangfire OÜ")]
+[assembly: AssemblyCompany("Sergey Odinokov")]
+[assembly: AssemblyCopyright("Copyright © 2020 Sergey Odinokov")]
 [assembly: AssemblyCulture("")]
 
 [assembly: ComVisible(false)]
