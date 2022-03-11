@@ -10,7 +10,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <licenseUrl>https://www.hangfire.io/licenses.html</licenseUrl>
     <description>In-memory job storage for Hangfire with transactional implementation.</description>
-    <copyright>Copyright © 2020 Sergey Odinokov</copyright>
+    <copyright>Copyright © 2020 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
 
