@@ -29,5 +29,10 @@ namespace Hangfire.InMemory
         {
             return new InMemoryConnection(_dispatcher, Options);
         }
+
+        public override string ToString()
+        {
+            return "In-Memory Storage";
+        }
     }
 }
