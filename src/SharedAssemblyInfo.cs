@@ -10,5 +10,5 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 [assembly: CLSCompliant(true)]
 
-// Don't edit manually! Use `build.bat version` command instead!
-[assembly: AssemblyVersion("0.3.4")]
+// Please don't change it manually, use the `build.bat version` command instead.
+[assembly: AssemblyVersion("0.3.5")]

@@ -10,9 +10,12 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <licenseUrl>https://www.hangfire.io/licenses.html</licenseUrl>
     <description>In-memory job storage for Hangfire with transactional implementation.</description>
-    <copyright>Copyright © 2020 Hangfire OÜ</copyright>
+    <copyright>Copyright © 2020–2022 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
+
+0.3.5
+• Fixed – Ensure entries are expired even during constant storage pressure.
 
 0.3.4
 • Fixed – Reverse state list instead of sorting it by date in the `JobDetails` method.
