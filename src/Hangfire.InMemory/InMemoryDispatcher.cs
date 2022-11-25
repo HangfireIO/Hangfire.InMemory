@@ -9,6 +9,7 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryDispatcher : InMemoryDispatcherBase
     {
         private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(15);
+        private static readonly uint DefaultExpirationIntervalMs = 1000U;
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
         private readonly ConcurrentQueue<InMemoryDispatcherCallback> _queries = new ConcurrentQueue<InMemoryDispatcherCallback>();
@@ -56,9 +57,11 @@ namespace Hangfire.InMemory
             {
                 while (true)
                 {
-                    if (_semaphore.Wait(TimeSpan.FromSeconds(1)))
+                    if (_semaphore.Wait(TimeSpan.FromMilliseconds(DefaultExpirationIntervalMs)))
                     {
                         Interlocked.Exchange(ref _outstandingRequests.Value, 0);
+
+                        var startTime = Environment.TickCount;
 
                         while (_queries.TryDequeue(out var next))
                         {
@@ -70,6 +73,12 @@ namespace Hangfire.InMemory
                             }
                             catch (ObjectDisposedException)
                             {
+                            }
+
+                            if (Environment.TickCount - startTime >= DefaultExpirationIntervalMs)
+                            {
+                                ExpireEntries();
+                                startTime = Environment.TickCount;
                             }
                         }
                     }
