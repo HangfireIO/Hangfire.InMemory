@@ -67,9 +67,11 @@ namespace Hangfire.InMemory
                     entry.Level++;
                     acquired = true;
                 }
-
-                // TODO: Ensure ReferenceCount is updated only under _state._locks
-                entry.ReferenceCount++;
+                else
+                {
+                    // TODO: Ensure ReferenceCount is updated only under _state._locks
+                    entry.ReferenceCount++;
+                }
             }
 
             return acquired;
