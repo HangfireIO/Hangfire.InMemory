@@ -13,6 +13,8 @@
     <copyright>Copyright © 2020–2022 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
+0.3.6
+• Fixed – Ensure lock entries are eventually removed from their collection.
 
 0.3.5
 • Fixed – Ensure entries are expired even during constant storage pressure.
