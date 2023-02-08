@@ -64,13 +64,19 @@ namespace Hangfire.InMemory
                 }
                 else if (entry.Owner == connection)
                 {
-                    entry.Level++;
+                    lock (entry)
+                    {
+                        entry.Level++;
+                    }
                     acquired = true;
                 }
                 else
                 {
-                    // TODO: Ensure ReferenceCount is updated only under _state._locks
-                    entry.ReferenceCount++;
+                    lock (entry)
+                    {
+                        // TODO: Ensure ReferenceCount is updated only under _state._locks
+                        entry.ReferenceCount++;
+                    }
                 }
             }
 
@@ -86,11 +92,14 @@ namespace Hangfire.InMemory
                     throw new InvalidOperationException("Precondition failed when decrementing a lock");
                 }
 
-                entry.ReferenceCount--;
-
-                if (entry.ReferenceCount == 0)
+                lock (entry)
                 {
-                    _state._locks.Remove(resource);
+                    entry.ReferenceCount--;
+
+                    if (entry.ReferenceCount == 0)
+                    {
+                        _state._locks.Remove(resource);
+                    }
                 }
             }
         }
