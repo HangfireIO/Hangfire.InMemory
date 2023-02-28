@@ -52,10 +52,10 @@
 </releaseNotes>
     <dependencies>
       <group targetFramework="net451">
-        <dependency id="Hangfire.Core" version="1.7.0" />
+        <dependency id="Hangfire.Core" version="1.8.0-rc2" />
       </group>
       <group targetFramework="netstandard2.0">
-        <dependency id="Hangfire.Core" version="1.7.0" />
+        <dependency id="Hangfire.Core" version="1.8.0-rc2" />
       </group>
     </dependencies>
   </metadata>
