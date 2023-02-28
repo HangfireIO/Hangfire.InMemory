@@ -51,7 +51,7 @@
 0.1.0 – Initial release
 </releaseNotes>
     <dependencies>
-      <group targetFramework="net45">
+      <group targetFramework="net451">
         <dependency id="Hangfire.Core" version="1.7.0" />
       </group>
       <group targetFramework="netstandard2.0">
@@ -60,8 +60,8 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="net45\Hangfire.InMemory.dll" target="lib\net45" />
-    <file src="net45\Hangfire.InMemory.pdb" target="lib\net45" />
+    <file src="net451\Hangfire.InMemory.dll" target="lib\net451" />
+    <file src="net451\Hangfire.InMemory.pdb" target="lib\net451" />
 
     <file src="netstandard2.0\Hangfire.InMemory.dll" target="lib\netstandard2.0" />
     <file src="netstandard2.0\Hangfire.InMemory.pdb" target="lib\netstandard2.0" />

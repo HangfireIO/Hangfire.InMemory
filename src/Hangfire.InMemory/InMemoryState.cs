@@ -37,7 +37,7 @@ namespace Hangfire.InMemory
         public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
         public IReadOnlyDictionary<string, SetEntry> Sets => _sets;
         public IReadOnlyDictionary<string, CounterEntry> Counters => _counters;
-        public ConcurrentDictionary<string, QueueEntry> Queues => _queues; // net45 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
+        public ConcurrentDictionary<string, QueueEntry> Queues => _queues; // net451 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
         public IReadOnlyDictionary<string, ServerEntry> Servers => _servers;
 
         public QueueEntry QueueGetOrCreate(string name)
