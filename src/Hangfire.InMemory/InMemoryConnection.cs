@@ -286,7 +286,7 @@ namespace Hangfire.InMemory
         {
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
-            _dispatcher.QueryAndWait(state =>
+            var result = _dispatcher.QueryAndWait(state =>
             {
                 if (state.Servers.TryGetValue(serverId, out var server))
                 {
@@ -294,8 +294,13 @@ namespace Hangfire.InMemory
                     return true;
                 }
 
-                throw new BackgroundServerGoneException();
+                return false;
             });
+
+            if (!result)
+            {
+                throw new BackgroundServerGoneException();
+            }
         }
 
         public override int RemoveTimedOutServers(TimeSpan timeout)
