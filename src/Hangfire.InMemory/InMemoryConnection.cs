@@ -332,6 +332,12 @@ namespace Hangfire.InMemory
             });
         }
 
+        public override DateTime GetUtcDateTime()
+        {
+            // TODO: Implement without touching the dispatcher
+            return _dispatcher.QueryAndWait(state => state.TimeResolver());
+        }
+
         public override HashSet<string> GetAllItemsFromSet([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));

@@ -1454,6 +1454,16 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void GetUtcDateTime_ReturnsValueFromTimeResolver()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetUtcDateTime();
+                Assert.Equal(_now, result);
+            });
+        }
+
+        [Fact]
         public void GetFirstByLowestScoreFromSet_ThrowsAnException_WhenKeyIsNull()
         {
             UseConnection(connection =>

@@ -13,7 +13,7 @@ namespace Hangfire.InMemory
         {
             { "Storage.ExtendedApi", true },
             { "Job.Queue", true },
-            { "Connection.GetUtcDateTime", false },
+            { "Connection.GetUtcDateTime", true },
             { "Connection.BatchedGetFirstByLowestScoreFromSet", true },
             { "Connection.GetSetContains", false },
             { "Connection.GetSetCount.Limited", false },
