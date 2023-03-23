@@ -25,6 +25,7 @@ namespace Hangfire.InMemory.Tests
         public void HasFeature_ReturnsTrue_ForTheFollowingFeatures()
         {
             Assert.True(_storage.HasFeature("Storage.ExtendedApi"));
+            Assert.True(_storage.HasFeature("Connection.BatchedGetFirstByLowestScoreFromSet"));
             Assert.False(_storage.HasFeature("SomeNonExistingFeature"));
         }
     }
