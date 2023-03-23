@@ -135,6 +135,9 @@ namespace Hangfire.InMemory
                 Servers = state.Servers.Count,
                 Recurring = state.Sets.TryGetValue("recurring-jobs", out var recurring)
                     ? recurring.Count
+                    : 0,
+                Retries = state.Sets.TryGetValue("retries", out var retries)
+                    ? retries.Count
                     : 0
             });
         }

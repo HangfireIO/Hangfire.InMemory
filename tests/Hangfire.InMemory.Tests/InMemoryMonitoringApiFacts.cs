@@ -446,6 +446,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(0, result.Scheduled);
             Assert.Equal(0, result.Servers);
             Assert.Equal(0, result.Succeeded);
+            Assert.Equal(0, result.Retries);
         }
 
         [Fact]
