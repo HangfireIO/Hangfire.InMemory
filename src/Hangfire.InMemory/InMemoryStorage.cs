@@ -21,7 +21,7 @@ namespace Hangfire.InMemory
             { "Transaction.AcquireDistributedLock", false },
             { "Transaction.CreateJob", false },
             { "Transaction.SetJobParameter", false },
-            { "TransactionalAcknowledge:RedisFetchedJob", false },
+            { "TransactionalAcknowledge:InMemoryFetchedJob", false },
             { "Monitoring.DeletedStateGraphs", false },
             { "Monitoring.AwaitingJobs", false }
         };
