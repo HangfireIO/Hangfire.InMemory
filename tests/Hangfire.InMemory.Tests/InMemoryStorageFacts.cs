@@ -32,6 +32,8 @@ namespace Hangfire.InMemory.Tests
             Assert.True(_storage.HasFeature("Connection.GetSetCount.Limited"));
             Assert.True(_storage.HasFeature("Transaction.CreateJob"));
             Assert.True(_storage.HasFeature("Transaction.SetJobParameter"));
+            Assert.True(_storage.HasFeature("Monitoring.DeletedStateGraphs"));
+            Assert.True(_storage.HasFeature("Monitoring.AwaitingJobs"));
             Assert.False(_storage.HasFeature("SomeNonExistingFeature"));
         }
     }

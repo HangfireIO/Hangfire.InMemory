@@ -696,6 +696,17 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void AwaitingJobs_ReturnsEmptyCollection_WhenThereAreNoAwaitingJobs()
+        {
+            var monitoring = CreateMonitoringApi();
+
+            var result = monitoring.AwaitingJobs(0, 10);
+
+            Assert.NotNull(result);
+            Assert.Empty(result);
+        }
+
+        [Fact]
         public void ScheduledCount_ReturnsZero_WhenThereAreNoScheduledJobs()
         {
             var monitoring = CreateMonitoringApi();
@@ -788,6 +799,16 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void AwaitingCount_ReturnsZero_WhenThereAreNoAwaitingJobs()
+        {
+            var monitoring = CreateMonitoringApi();
+
+            var result = monitoring.AwaitingCount();
+
+            Assert.Equal(0, result);
+        }
+
+        [Fact]
         public void SucceededByDatesCount_ReturnsEntriesForTheWholeWeek_EvenWhenThereAreNoSucceededJobs()
         {
             var monitoring = CreateMonitoringApi();
@@ -810,6 +831,23 @@ namespace Hangfire.InMemory.Tests
             var monitoring = CreateMonitoringApi();
 
             var result = monitoring.FailedByDatesCount();
+
+            Assert.Equal(7, result.Count);
+            Assert.Equal(0, result[_now.Date]);
+            Assert.Equal(0, result[_now.Date.AddDays(-1)]);
+            Assert.Equal(0, result[_now.Date.AddDays(-2)]);
+            Assert.Equal(0, result[_now.Date.AddDays(-3)]);
+            Assert.Equal(0, result[_now.Date.AddDays(-4)]);
+            Assert.Equal(0, result[_now.Date.AddDays(-5)]);
+            Assert.Equal(0, result[_now.Date.AddDays(-6)]);
+        }
+
+        [Fact]
+        public void DeletedByDatesCount_ReturnsEntriesForTheWholeWeek_EvenWhenThereAreNoDeletedJobs()
+        {
+            var monitoring = CreateMonitoringApi();
+
+            var result = monitoring.DeletedByDatesCount();
 
             Assert.Equal(7, result.Count);
             Assert.Equal(0, result[_now.Date]);
@@ -845,6 +883,24 @@ namespace Hangfire.InMemory.Tests
             var monitoring = CreateMonitoringApi();
 
             var result = monitoring.HourlyFailedJobs();
+
+            Assert.Equal(24, result.Count);
+            Assert.Equal(0, result[_now]);
+            Assert.Equal(0, result[_now.AddHours(-3)]);
+            Assert.Equal(0, result[_now.AddHours(-6)]);
+            Assert.Equal(0, result[_now.AddHours(-9)]);
+            Assert.Equal(0, result[_now.AddHours(-12)]);
+            Assert.Equal(0, result[_now.AddHours(-15)]);
+            Assert.Equal(0, result[_now.AddHours(-18)]);
+            Assert.Equal(0, result[_now.AddHours(-21)]);
+        }
+
+        [Fact]
+        public void HourlyDeletedJobs_ReturnsEntriesForTheWholeDay_EvenWhenThereAreNoDeletedJobs()
+        {
+            var monitoring = CreateMonitoringApi();
+
+            var result = monitoring.HourlyDeletedJobs();
 
             Assert.Equal(24, result.Count);
             Assert.Equal(0, result[_now]);

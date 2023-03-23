@@ -22,8 +22,8 @@ namespace Hangfire.InMemory
             { "Transaction.CreateJob", true },
             { "Transaction.SetJobParameter", true },
             { "TransactionalAcknowledge:InMemoryFetchedJob", false },
-            { "Monitoring.DeletedStateGraphs", false },
-            { "Monitoring.AwaitingJobs", false }
+            { "Monitoring.DeletedStateGraphs", true },
+            { "Monitoring.AwaitingJobs", true }
         };
 
         public InMemoryStorage()

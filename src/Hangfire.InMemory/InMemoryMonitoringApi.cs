@@ -9,7 +9,7 @@ using Hangfire.Storage.Monitoring;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class InMemoryMonitoringApi : IMonitoringApi
+    internal sealed class InMemoryMonitoringApi : JobStorageMonitor
     {
         private readonly InMemoryDispatcherBase _dispatcher;
 
@@ -18,7 +18,7 @@ namespace Hangfire.InMemory
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
 
-        public IList<QueueWithTopEnqueuedJobsDto> Queues()
+        public override IList<QueueWithTopEnqueuedJobsDto> Queues()
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -69,7 +69,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public IList<ServerDto> Servers()
+        public override IList<ServerDto> Servers()
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -91,7 +91,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public JobDetailsDto JobDetails([NotNull] string jobId)
+        public override JobDetailsDto JobDetails([NotNull] string jobId)
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
@@ -121,7 +121,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public StatisticsDto GetStatistics()
+        public override StatisticsDto GetStatistics()
         {
             return _dispatcher.QueryAndWait(state => new StatisticsDto
             {
@@ -142,7 +142,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public JobList<EnqueuedJobDto> EnqueuedJobs([NotNull] string queueName, int @from, int perPage)
+        public override JobList<EnqueuedJobDto> EnqueuedJobs([NotNull] string queueName, int @from, int perPage)
         {
             if (queueName == null) throw new ArgumentNullException(nameof(queueName));
 
@@ -187,13 +187,13 @@ namespace Hangfire.InMemory
             });
         }
 
-        public JobList<FetchedJobDto> FetchedJobs([NotNull] string queueName, int @from, int perPage)
+        public override JobList<FetchedJobDto> FetchedJobs([NotNull] string queueName, int @from, int perPage)
         {
             if (queueName == null) throw new ArgumentNullException(nameof(queueName));
             return new JobList<FetchedJobDto>(Enumerable.Empty<KeyValuePair<string, FetchedJobDto>>());
         }
 
-        public JobList<ProcessingJobDto> ProcessingJobs(int @from, int count)
+        public override JobList<ProcessingJobDto> ProcessingJobs(int @from, int count)
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -223,7 +223,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public JobList<ScheduledJobDto> ScheduledJobs(int @from, int count)
+        public override JobList<ScheduledJobDto> ScheduledJobs(int @from, int count)
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -259,7 +259,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public JobList<SucceededJobDto> SucceededJobs(int @from, int count)
+        public override JobList<SucceededJobDto> SucceededJobs(int @from, int count)
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -292,7 +292,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public JobList<FailedJobDto> FailedJobs(int @from, int count)
+        public override JobList<FailedJobDto> FailedJobs(int @from, int count)
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -325,7 +325,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public JobList<DeletedJobDto> DeletedJobs(int @from, int count)
+        public override JobList<DeletedJobDto> DeletedJobs(int @from, int count)
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -354,12 +354,42 @@ namespace Hangfire.InMemory
             });
         }
 
-        public long ScheduledCount()
+        public override JobList<AwaitingJobDto> AwaitingJobs(int from, int count)
+        {
+            return _dispatcher.QueryAndWait(state =>
+            {
+                var result = new JobList<AwaitingJobDto>(Enumerable.Empty<KeyValuePair<string, AwaitingJobDto>>());
+                if (state._jobStateIndex.TryGetValue(AwaitingState.StateName, out var indexEntry))
+                {
+                    var index = 0;
+
+                    foreach (var entry in indexEntry.Reverse())
+                    {
+                        if (index < from) { index++; continue; }
+                        if (index >= from + count) break;
+
+                        result.Add(new KeyValuePair<string, AwaitingJobDto>(entry.Key, new AwaitingJobDto
+                        {
+                            Job = entry.TryGetJob(out _),
+                            InAwaitingState = AwaitingState.StateName.Equals(entry.State?.Name, StringComparison.OrdinalIgnoreCase),
+                            AwaitingAt = entry.State?.CreatedAt,
+                            StateData = entry.State != null ? new Dictionary<string, string>(entry.State.Data, StringComparer.OrdinalIgnoreCase) : null
+                        }));
+
+                        index++;
+                    }
+                }
+
+                return result;
+            });
+        }
+
+        public override long ScheduledCount()
         {
             return GetCountByStateName(ScheduledState.StateName);
         }
 
-        public long EnqueuedCount([NotNull] string queueName)
+        public override long EnqueuedCount([NotNull] string queueName)
         {
             if (queueName == null) throw new ArgumentNullException(nameof(queueName));
 
@@ -368,50 +398,67 @@ namespace Hangfire.InMemory
                 : 0);
         }
 
-        public long FetchedCount([NotNull] string queue)
+        public override long FetchedCount([NotNull] string queue)
         {
             if (queue == null) throw new ArgumentNullException(nameof(queue));
             return 0;
         }
 
-        public long FailedCount()
+        public override long FailedCount()
         {
             return GetCountByStateName(FailedState.StateName);
         }
 
-        public long ProcessingCount()
+        public override long ProcessingCount()
         {
             return GetCountByStateName(ProcessingState.StateName);
         }
 
-        public long SucceededListCount()
+        public override long SucceededListCount()
         {
+            // TODO: Replace with counter
             return GetCountByStateName(SucceededState.StateName);
         }
 
-        public long DeletedListCount()
+        public override long DeletedListCount()
         {
+            // TODO: Replace with counter
             return GetCountByStateName(DeletedState.StateName);
         }
 
-        public IDictionary<DateTime, long> SucceededByDatesCount()
+        public override long AwaitingCount()
+        {
+            return GetCountByStateName(AwaitingState.StateName);
+        }
+
+        public override IDictionary<DateTime, long> SucceededByDatesCount()
         {
             return _dispatcher.QueryAndWait(state => GetTimelineStats(state, "succeeded"));
         }
 
-        public IDictionary<DateTime, long> FailedByDatesCount()
+        public override IDictionary<DateTime, long> FailedByDatesCount()
         {
             return _dispatcher.QueryAndWait(state => GetTimelineStats(state, "failed"));
         }
 
-        public IDictionary<DateTime, long> HourlySucceededJobs()
+        public override IDictionary<DateTime, long> DeletedByDatesCount()
+        {
+            return _dispatcher.QueryAndWait(state => GetTimelineStats(state, "deleted"));
+        }
+
+        public override IDictionary<DateTime, long> HourlySucceededJobs()
         {
             return _dispatcher.QueryAndWait(state => GetHourlyTimelineStats(state, "succeeded"));
         }
 
-        public IDictionary<DateTime, long> HourlyFailedJobs()
+        public override IDictionary<DateTime, long> HourlyFailedJobs()
         {
             return _dispatcher.QueryAndWait(state => GetHourlyTimelineStats(state, "failed"));
+        }
+
+        public override IDictionary<DateTime, long> HourlyDeletedJobs()
+        {
+            return _dispatcher.QueryAndWait(state => GetHourlyTimelineStats(state, "deleted"));
         }
 
         private long GetCountByStateName(string stateName)
