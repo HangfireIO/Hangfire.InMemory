@@ -148,7 +148,7 @@ namespace Hangfire.InMemory
 
             if (Job != null)
             {
-                return new Job(Job.Type, Job.Method, Job.Args.ToArray());
+                return new Job(Job.Type, Job.Method, Job.Args.ToArray(), Job.Queue);
             }
 
             try

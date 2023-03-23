@@ -12,7 +12,7 @@ namespace Hangfire.InMemory
         private readonly Dictionary<string, bool> _features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
         {
             { "Storage.ExtendedApi", true },
-            { "Job.Queue", false },
+            { "Job.Queue", true },
             { "Connection.GetUtcDateTime", false },
             { "Connection.BatchedGetFirstByLowestScoreFromSet", true },
             { "Connection.GetSetContains", false },

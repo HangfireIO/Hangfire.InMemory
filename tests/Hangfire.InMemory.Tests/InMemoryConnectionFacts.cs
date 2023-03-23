@@ -120,6 +120,7 @@ namespace Hangfire.InMemory.Tests
                 Assert.Equal(data.Method, entry.InvocationData.Method);
                 Assert.Equal(data.ParameterTypes, entry.InvocationData.ParameterTypes);
                 Assert.Equal(data.Arguments, entry.InvocationData.Arguments);
+                Assert.Null(entry.InvocationData.Queue);
             });
         }
 
@@ -148,6 +149,18 @@ namespace Hangfire.InMemory.Tests
                 Assert.Equal(2, parameters.Count);
                 Assert.Equal("1", parameters["RetryCount"]);
                 Assert.Equal("en-US", parameters["CurrentCulture"]);
+            });
+        }
+
+        [Fact]
+        public void CreateExpiredJob_CapturesJobQueue_Field()
+        {
+            UseConnection(connection =>
+            {
+                var job = new Job(_job.Type, _job.Method, _job.Args, "critical");
+                var jobId = connection.CreateExpiredJob(job, _parameters, _now, TimeSpan.FromMinutes(30));
+                
+                Assert.Equal("critical", _state.Jobs[jobId].InvocationData.Queue);
             });
         }
 
@@ -338,6 +351,7 @@ namespace Hangfire.InMemory.Tests
                 Assert.Same(_job.Method, data.Job.Method);
                 Assert.Equal(_job.Args, data.Job.Args);
                 Assert.Null(data.State);
+                Assert.Null(data.Job.Queue);
             });
         }
 
@@ -378,6 +392,23 @@ namespace Hangfire.InMemory.Tests
                 Assert.Null(data.Job);
                 Assert.NotNull(data.LoadException);
                 Assert.Equal(_now, data.CreatedAt);
+            });
+        }
+
+        [Fact]
+        public void GetJobData_Populates_JobQueueProperty_WhenItIsStored()
+        {
+            UseConnection(connection =>
+            {
+                // Arrange
+                var job = new Job(_job.Type, _job.Method, _job.Args, "critical");
+                var jobId = connection.CreateExpiredJob(job, _parameters, _now, TimeSpan.FromMinutes(30));
+
+                // Act
+                var data = connection.GetJobData(jobId);
+
+                // Assert
+                Assert.Equal("critical", data.Job.Queue);
             });
         }
 

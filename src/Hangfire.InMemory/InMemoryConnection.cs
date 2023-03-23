@@ -106,7 +106,7 @@ namespace Hangfire.InMemory
             {
                 Key = Guid.NewGuid().ToString(), // TODO: Change with Long type
                 InvocationData = _options.DisableJobSerialization == false ? InvocationData.SerializeJob(job) : null,
-                Job = _options.DisableJobSerialization ? new Job(job.Type, job.Method, job.Args.ToArray()) : null,
+                Job = _options.DisableJobSerialization ? new Job(job.Type, job.Method, job.Args.ToArray(), job.Queue) : null,
                 Parameters = new ConcurrentDictionary<string, string>(parameters, StringComparer.Ordinal), // TODO: case sensitivity
                 CreatedAt = createdAt
             };
