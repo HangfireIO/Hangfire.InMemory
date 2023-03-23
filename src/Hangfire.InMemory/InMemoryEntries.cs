@@ -94,6 +94,32 @@ namespace Hangfire.InMemory
             }
         }
 
+        public List<string> GetViewBetween(double from, double to, int count)
+        {
+            var view = _value.GetViewBetween(
+                new SortedSetEntry<string>(null) { Score = from },
+                new SortedSetEntry<string>(null) { Score = to });
+
+            var result = new List<string>(view.Count);
+            foreach (var entry in view)
+            {
+                if (count-- == 0) break;
+                result.Add(entry.Value);
+            }
+
+            return result;
+        }
+        
+        public string GetFirstBetween(double from, double to)
+        {
+            var first = _value.GetViewBetween(
+                new SortedSetEntry<string>(null) { Score = from },
+                new SortedSetEntry<string>(null) { Score = to })
+                .FirstOrDefault();
+
+            return first?.Value;
+        }
+
         public void Remove(string value)
         {
             if (_hash.TryGetValue(value, out var entry))
@@ -217,7 +243,12 @@ namespace Hangfire.InMemory
             if (ReferenceEquals(null, x)) return -1;
 
             var scoreComparison = x.Score.CompareTo(y.Score);
-            if (scoreComparison != 0) return scoreComparison;
+            if (scoreComparison != 0 ||
+                ReferenceEquals(null, y.Value) ||
+                ReferenceEquals(null, x.Value))
+            {
+                return scoreComparison;
+            }
 
             return x.Value.CompareTo(y.Value);
         }

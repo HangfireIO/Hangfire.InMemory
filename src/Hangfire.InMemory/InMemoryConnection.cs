@@ -366,13 +366,7 @@ namespace Hangfire.InMemory
             {
                 if (state.Sets.TryGetValue(key, out var set))
                 {
-                    foreach (var entry in set)
-                    {
-                        if (entry.Score < fromScore) continue;
-                        if (entry.Score > toScore) break;
-
-                        return entry.Value;
-                    }
+                    return set.GetFirstBetween(fromScore, toScore);
                 }
 
                 return null;
@@ -385,22 +379,12 @@ namespace Hangfire.InMemory
 
             return _dispatcher.QueryAndWait(state =>
             {
-                var result = new List<string>();
-
                 if (state.Sets.TryGetValue(key, out var set))
                 {
-                    foreach (var entry in set)
-                    {
-                        if (entry.Score < fromScore) continue;
-                        if (entry.Score > toScore) break;
-
-                        result.Add(entry.Value);
-
-                        if (result.Count >= count) break;
-                    }
+                    return set.GetViewBetween(fromScore, toScore, count);
                 }
 
-                return result;
+                return new List<string>();
             });
         }
 
