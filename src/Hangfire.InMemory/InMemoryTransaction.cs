@@ -48,6 +48,23 @@ namespace Hangfire.InMemory
             return key;
         }
 
+        public override void SetJobParameter(
+            [NotNull] string id,
+            [NotNull] string name,
+            [CanBeNull] string value)
+        {
+            if (id == null) throw new ArgumentNullException(nameof(id));
+            if (name == null) throw new ArgumentNullException(nameof(name));
+
+            _actions.Add(state =>
+            {
+                if (state.Jobs.TryGetValue(id, out var jobEntry))
+                {
+                    jobEntry.Parameters[name] = value;
+                }
+            });
+        }
+
         public override void ExpireJob([NotNull] string jobId, TimeSpan expireIn)
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));

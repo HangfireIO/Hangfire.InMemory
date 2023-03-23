@@ -20,7 +20,7 @@ namespace Hangfire.InMemory
             { "BatchedGetFirstByLowestScoreFromSet", true },
             { "Transaction.AcquireDistributedLock", false },
             { "Transaction.CreateJob", true },
-            { "Transaction.SetJobParameter", false },
+            { "Transaction.SetJobParameter", true },
             { "TransactionalAcknowledge:InMemoryFetchedJob", false },
             { "Monitoring.DeletedStateGraphs", false },
             { "Monitoring.AwaitingJobs", false }

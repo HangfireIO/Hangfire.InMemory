@@ -157,6 +157,76 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void SetJobParameter_ThrowsAnException_WhenIdIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.SetJobParameter(null, "name", "value")));
+
+            Assert.Equal("id", exception.ParamName);
+        }
+
+        [Fact]
+        public void SetJobParameter_ThrowsAnException_WhenNameIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.SetJobParameter("id", null, "value")));
+
+            Assert.Equal("name", exception.ParamName);
+        }
+
+        [Fact]
+        public void SetJobParameter_DoesNotThrow_WhenValueIsNull()
+        {
+            string jobId = null;
+
+            Commit(transaction =>
+            {
+                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));
+                transaction.SetJobParameter(jobId, "name", null);
+            });
+
+            Assert.Null(_state.Jobs[jobId].Parameters["name"]);
+        }
+
+        [Fact]
+        public void SetJobParameter_DoesNotThrow_WhenBackgroundJobDoesNotExist()
+        {
+            Commit(transaction =>
+            {
+                transaction.SetJobParameter("some-id", "name", "value");
+            });
+        }
+
+        [Fact]
+        public void SetJobParameter_AppendsParameters_WithTheGivenValue()
+        {
+            string jobId = null;
+
+            Commit(transaction =>
+            {
+                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));
+                transaction.SetJobParameter(jobId, "CurrentCulture", "en-US");
+            });
+
+            Assert.Equal("en-US", _state.Jobs[jobId].Parameters["CurrentCulture"]);
+        }
+
+        [Fact]
+        public void SetJobParameter_OverwritesTheGivenParameter_WithTheNewValue()
+        {
+            _parameters.Add("RetryCount", "1");
+            string jobId = null;
+
+            Commit(transaction =>
+            {
+                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));
+                transaction.SetJobParameter(jobId, "RetryCount", "2");
+            });
+
+            Assert.Equal("2", _state.Jobs[jobId].Parameters["RetryCount"]);
+        }
+
+        [Fact]
         public void ExpireJob_ThrowsAnException_WhenJobIdIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(() => Commit(
