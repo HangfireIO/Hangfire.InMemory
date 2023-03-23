@@ -404,6 +404,17 @@ namespace Hangfire.InMemory
             });
         }
 
+        public override bool SetContains([NotNull] string key, [NotNull] string value)
+        {
+            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
+            return _dispatcher.QueryAndWait(state =>
+            {
+                return state.Sets.TryGetValue(key, out var set) && set.Contains(value);
+            });
+        }
+
         public override long GetSetCount([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));

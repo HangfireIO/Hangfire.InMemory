@@ -103,6 +103,11 @@ namespace Hangfire.InMemory
             }
         }
 
+        public bool Contains(string value)
+        {
+            return _hash.ContainsKey(value);
+        }
+
         public IEnumerator<SortedSetEntry<string>> GetEnumerator()
         {
             return _value.GetEnumerator();

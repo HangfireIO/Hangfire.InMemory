@@ -28,6 +28,7 @@ namespace Hangfire.InMemory.Tests
             Assert.True(_storage.HasFeature("Job.Queue"));
             Assert.True(_storage.HasFeature("Connection.BatchedGetFirstByLowestScoreFromSet"));
             Assert.True(_storage.HasFeature("Connection.GetUtcDateTime"));
+            Assert.True(_storage.HasFeature("Connection.GetSetContains"));
             Assert.False(_storage.HasFeature("SomeNonExistingFeature"));
         }
     }

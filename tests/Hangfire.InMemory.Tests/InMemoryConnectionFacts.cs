@@ -728,6 +728,91 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void GetSetContains_ThrowsAnException_WhenKeyIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.SetContains(null, "value"));
+
+                Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetSetContains_ThrowsAnException_WhenValueIsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.SetContains("key", null));
+
+                Assert.Equal("value", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetSetContains_ReturnsFalse_WhenGivenSetDoesNotExist()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.SetContains("non-existing-set", "1");
+                Assert.False(result);
+            });
+        }
+
+        [Fact]
+        public void GetSetContains_ReturnsTrue_WhenGivenSetExists_AndContainsTheValue()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("my-set", "1");
+                    x.AddToSet("my-set", "2");
+                });
+
+                var result = connection.SetContains("my-set", "2");
+
+                Assert.True(result);
+            });
+        }
+
+        [Fact]
+        public void GetSetContains_ReturnsFalse_WhenGivenSetExists_ButContainsOtherValues()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("my-set", "1");
+                    x.AddToSet("my-set", "2");
+                });
+
+                var result = connection.SetContains("my-set", "3");
+
+                Assert.False(result);
+            });
+        }
+
+        [Fact]
+        public void GetSetContains_ReturnsFalse_WhenAnotherSetContainsTheValue()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("my-set", "1");
+                    x.AddToSet("another-set", "2");
+                });
+
+                var result = connection.SetContains("my-set", "2");
+
+                Assert.False(result);
+            });
+        }
+
+        [Fact]
         public void GetSetCount_ThrowsAnException_WhenKeyIsNull()
         {
             UseConnection(connection =>

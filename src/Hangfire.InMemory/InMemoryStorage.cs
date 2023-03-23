@@ -15,7 +15,7 @@ namespace Hangfire.InMemory
             { "Job.Queue", true },
             { "Connection.GetUtcDateTime", true },
             { "Connection.BatchedGetFirstByLowestScoreFromSet", true },
-            { "Connection.GetSetContains", false },
+            { "Connection.GetSetContains", true },
             { "Connection.GetSetCount.Limited", false },
             { "BatchedGetFirstByLowestScoreFromSet", true },
             { "Transaction.AcquireDistributedLock", false },
