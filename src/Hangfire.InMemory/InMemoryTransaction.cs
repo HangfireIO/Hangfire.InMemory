@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Hangfire.Annotations;
+using Hangfire.Common;
 using Hangfire.States;
 using Hangfire.Storage;
 
@@ -12,10 +13,39 @@ namespace Hangfire.InMemory
         private readonly List<Action<InMemoryState>> _queueActions = new List<Action<InMemoryState>>();
         private readonly HashSet<QueueEntry> _enqueued = new HashSet<QueueEntry>();
         private readonly InMemoryDispatcherBase _dispatcher;
+        private readonly InMemoryStorageOptions _options;
 
-        public InMemoryTransaction([NotNull] InMemoryDispatcherBase dispatcher)
+        public InMemoryTransaction([NotNull] InMemoryDispatcherBase dispatcher, [NotNull] InMemoryStorageOptions options)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
+        }
+
+        public override string CreateJob([NotNull] Job job, [NotNull] IDictionary<string, string> parameters, [CanBeNull] TimeSpan? expireIn)
+        {
+            if (job == null) throw new ArgumentNullException(nameof(job));
+            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+
+            var key = Guid.NewGuid().ToString(); // TODO: Change with Long type
+
+            _actions.Add(state =>
+            {
+                var now = state.TimeResolver();
+                
+                // TODO: Precondition: jobId does not exist
+                var backgroundJob = BackgroundJobEntry.Create(
+                    key,
+                    job,
+                    parameters,
+                    now,
+                    expireIn.HasValue ? (DateTime?)now.Add(expireIn.Value) : null,
+                    _options.DisableJobSerialization);
+
+                // TODO: We need somehow to ensure that this entry isn't removed before initialization
+                state.JobCreate(backgroundJob);
+            });
+
+            return key;
         }
 
         public override void ExpireJob([NotNull] string jobId, TimeSpan expireIn)

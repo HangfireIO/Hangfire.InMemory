@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Hangfire.Common;
 using Hangfire.States;
+using Hangfire.Storage;
 using Moq;
 using Xunit;
 
@@ -21,18 +23,137 @@ namespace Hangfire.InMemory.Tests
     {
         private readonly InMemoryState _state;
         private readonly DateTime _now;
+        private readonly InMemoryStorageOptions _options;
+        private readonly Dictionary<string,string> _parameters;
+        private readonly Job _job;
 
         public InMemoryTransactionFacts()
         {
             _now = new DateTime(2020, 09, 29, 08, 05, 30, DateTimeKind.Utc);
             _state = new InMemoryState(() => _now);
+            _options = new InMemoryStorageOptions();
+            _parameters = new Dictionary<string, string>();
+            _job = Job.FromExpression(() => MyMethod("value"));
         }
 
         [Fact]
         public void Ctor_ThrowsAnException_WhenDispatcherIsNull()
         {
-            var exception = Assert.Throws<ArgumentNullException>(() => new InMemoryTransaction(null));
+            var exception = Assert.Throws<ArgumentNullException>(() => new InMemoryTransaction(null, _options));
             Assert.Equal("dispatcher", exception.ParamName);
+        }
+
+        [Fact]
+        public void Ctor_ThrowsAnException_WhenOptionsArgumentIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(() => new InMemoryTransaction(
+                new InMemoryDispatcher(_state),
+                null));
+
+            Assert.Equal("options", exception.ParamName);
+        }
+
+        [Fact]
+        public void CreateExpiredJob_ThrowsAnException_WhenJobIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.CreateJob(null, _parameters, TimeSpan.Zero)));
+
+            Assert.Equal("job", exception.ParamName);
+        }
+
+        [Fact]
+        public void CreateExpiredJob_ThrowsAnException_WhenParametersArgumentIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => Commit(x => x.CreateJob(_job, null, TimeSpan.Zero)));
+
+            Assert.Equal("parameters", exception.ParamName);
+        }
+
+        [Fact]
+        public void CreateExpiredJob_ReturnsUniqueBackgroundJobId_EachTime()
+        {
+            Commit(transaction =>
+            {
+                var id1 = transaction.CreateJob(_job, _parameters, TimeSpan.Zero);
+                var id2 = transaction.CreateJob(_job, _parameters, TimeSpan.Zero);
+
+                Assert.NotEqual(id1, id2);
+            });
+        }
+
+        [Fact]
+        public void CreateExpiredJob_CreatesCorrespondingBackgroundJobEntry()
+        {
+            string jobId = null;
+
+            // Act
+            Commit(transaction =>
+            {
+                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));                
+            });
+
+            // Assert
+            var entry = _state.Jobs[jobId];
+            var data = InvocationData.SerializeJob(_job);
+
+            Assert.Equal(jobId, entry.Key);
+            Assert.NotSame(_parameters, entry.Parameters);
+            Assert.Empty(entry.History);
+            Assert.Equal(_now, entry.CreatedAt);
+            Assert.Equal(_now.AddMinutes(30), entry.ExpireAt);
+            Assert.Equal(data.Type, entry.InvocationData.Type);
+            Assert.Equal(data.Method, entry.InvocationData.Method);
+            Assert.Equal(data.ParameterTypes, entry.InvocationData.ParameterTypes);
+            Assert.Equal(data.Arguments, entry.InvocationData.Arguments);
+            Assert.Null(entry.InvocationData.Queue);
+        }
+
+        [Fact]
+        public void CreateExpiredJob_AddsBackgroundJobEntry_ToExpirationIndex()
+        {
+            string jobId = null;
+
+            Commit(transaction =>
+            {
+                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));
+            });
+
+            Assert.Contains(_state.Jobs[jobId], _state._jobIndex);
+        }
+
+        [Fact]
+        public void CreateExpiredJob_PreservesAllTheGivenParameters()
+        {
+            string jobId = null;
+
+            Commit(transaction =>
+            {
+                _parameters.Add("RetryCount", "1");
+                _parameters.Add("CurrentCulture", "en-US");
+
+                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));
+            });
+
+            var parameters = _state.Jobs[jobId].Parameters;
+            Assert.Equal(2, parameters.Count);
+            Assert.Equal("1", parameters["RetryCount"]);
+            Assert.Equal("en-US", parameters["CurrentCulture"]);
+        }
+
+        [Fact]
+        public void CreateExpiredJob_CapturesJobQueue_Field()
+        {
+            string jobId = null;
+
+            Commit(transaction =>
+            {
+                var job = new Job(_job.Type, _job.Method, _job.Args, "critical");
+                jobId = transaction.CreateJob(job, _parameters, TimeSpan.FromMinutes(30));
+            });
+
+            Assert.Equal("critical", _state.Jobs[jobId].InvocationData.Queue);
         }
 
         [Fact]
@@ -1357,11 +1478,17 @@ namespace Hangfire.InMemory.Tests
 
         private void Commit(Action<InMemoryTransaction> action)
         {
-            using (var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state)))
+            using (var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state), _options))
             {
                 action(transaction);
                 transaction.Commit();
             }
+        }
+
+#pragma warning disable xUnit1013 // Public method should be marked as test
+        public void MyMethod(string arg)
+#pragma warning restore xUnit1013 // Public method should be marked as test
+        {
         }
     }
 }

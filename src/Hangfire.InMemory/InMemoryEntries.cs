@@ -161,6 +161,10 @@ namespace Hangfire.InMemory
     {
         private const int StateCountForRegularJob = 4; // (Scheduled) -> Enqueued -> Processing -> Succeeded
 
+        internal BackgroundJobEntry()
+        {
+        }
+
         public string Key { get; set; }
         public InvocationData InvocationData { get; set; }
         public Job Job { get; set; }
@@ -172,6 +176,25 @@ namespace Hangfire.InMemory
         public ICollection<StateEntry> History { get; set; } = new List<StateEntry>(StateCountForRegularJob);
         public DateTime CreatedAt { get; set; }
         public DateTime? ExpireAt { get; set; }
+
+        public static BackgroundJobEntry Create(
+            string key,
+            Job job,
+            IDictionary<string, string> parameters,
+            DateTime createdAt,
+            DateTime? expireAt,
+            bool disableSerialization)
+        {
+            return new BackgroundJobEntry
+            {
+                Key = key,
+                InvocationData = disableSerialization == false ? InvocationData.SerializeJob(job) : null,
+                Job = disableSerialization ? new Job(job.Type, job.Method, job.Args.ToArray(), job.Queue) : null,
+                Parameters = new ConcurrentDictionary<string, string>(parameters, StringComparer.Ordinal), // TODO: case sensitivity
+                CreatedAt = createdAt,
+                ExpireAt = expireAt
+            };
+        }
 
         public Job TryGetJob(out JobLoadException exception)
         {

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -25,7 +24,7 @@ namespace Hangfire.InMemory
 
         public override IWriteOnlyTransaction CreateWriteTransaction()
         {
-            return new InMemoryTransaction(_dispatcher);
+            return new InMemoryTransaction(_dispatcher, _options);
         }
 
         public override IDisposable AcquireDistributedLock([NotNull] string resource, TimeSpan timeout)
@@ -102,24 +101,26 @@ namespace Hangfire.InMemory
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            var backgroundJob = new BackgroundJobEntry
-            {
-                Key = Guid.NewGuid().ToString(), // TODO: Change with Long type
-                InvocationData = _options.DisableJobSerialization == false ? InvocationData.SerializeJob(job) : null,
-                Job = _options.DisableJobSerialization ? new Job(job.Type, job.Method, job.Args.ToArray(), job.Queue) : null,
-                Parameters = new ConcurrentDictionary<string, string>(parameters, StringComparer.Ordinal), // TODO: case sensitivity
-                CreatedAt = createdAt
-            };
+            var key = Guid.NewGuid().ToString(); // TODO: Change with Long type
 
-            // TODO: Precondition: jobId does not exist
             _dispatcher.QueryAndWait(state =>
             {
+                var now = state.TimeResolver();
+                
+                // TODO: Precondition: jobId does not exist
+                var backgroundJob = BackgroundJobEntry.Create(
+                    key,
+                    job,
+                    parameters,
+                    now,
+                    now.Add(expireIn),
+                    _options.DisableJobSerialization);
+
                 // TODO: We need somehow to ensure that this entry isn't removed before initialization
-                backgroundJob.ExpireAt = state.TimeResolver().Add(expireIn);
                 state.JobCreate(backgroundJob);
             });
 
-            return backgroundJob.Key;
+            return key;
         }
 
         public override IFetchedJob FetchNextJob([NotNull] string[] queues, CancellationToken cancellationToken)
