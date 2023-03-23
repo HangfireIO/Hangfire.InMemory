@@ -854,6 +854,96 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void GetSetCount_Limited_ThrowsAnException_WhenKeysArgument_IsNull()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => connection.GetSetCount(null, 1000));
+
+                Assert.Equal("keys", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetSetCount_Limited_ThrowsAnException_WhenLimit_IsNegative()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentOutOfRangeException>(
+                    () => connection.GetSetCount(new string[0], -10));
+
+                Assert.Equal("limit", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetSetCount_Limited_ReturnsEmptyResult_WhenKeysArgument_IsEmpty()
+        {
+            UseConnection(connection =>
+            {
+                var result = connection.GetSetCount(new string[0], 1000);
+                Assert.Empty(result);
+            });
+        }
+
+        [Fact]
+        public void GetSetCount_Limited_ReturnCorrectCounts_ForEachKey()
+        {
+            UseConnection(connection =>
+            {
+                // Arrange
+                Commit(connection, x =>
+                {
+                    x.AddToSet("set-1", "1");
+                    x.AddToSet("set-1", "2");
+                    x.AddToSet("set-1", "3");
+                    
+                    x.AddToSet("set-3", "1");
+                    
+                    x.AddToSet("set-4", "1");
+                    x.AddToSet("set-4", "2");
+                });
+
+                // Act
+                var result = connection.GetSetCount(new[] { "set-1", "set-2", "set-3" }, 1000);
+
+                // Assert
+                Assert.Equal(3, result.Length);
+
+                Assert.Equal("set-1", result[0].Key);
+                Assert.Equal(3, result[0].Value);
+
+                Assert.Equal("set-2", result[1].Key);
+                Assert.Equal(0, result[1].Value);
+
+                Assert.Equal("set-3", result[2].Key);
+                Assert.Equal(1, result[2].Value);
+            });
+        }
+
+        [Fact]
+        public void GetSetCount_Limited_AppliesLimit_WhenNecessary()
+        {
+            UseConnection(connection =>
+            {
+                // Arrange
+                Commit(connection, x =>
+                {
+                    x.AddToSet("set-1", "1");
+                    x.AddToSet("set-1", "2");
+                    x.AddToSet("set-1", "3");
+                });
+
+                // Act
+                var result = connection.GetSetCount(new[] { "set-1" }, 2);
+
+                // Assert
+                Assert.Equal(2, result[0].Value);
+            });
+        }
+
+        [Fact]
         public void GetRangeFromSet_ThrowsAnException_WhenKeyIsNull()
         {
             UseConnection(connection =>

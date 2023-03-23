@@ -409,6 +409,29 @@ namespace Hangfire.InMemory
                     : 0);
         }
 
+        public override KeyValuePair<string, long>[] GetSetCount([NotNull] string[] keys, int limit)
+        {
+            if (keys == null) throw new ArgumentNullException(nameof(keys));
+            if (limit < 0) throw new ArgumentOutOfRangeException(nameof(limit), "Value must be greater or equal to 0.");
+
+            return _dispatcher.QueryAndWait(state =>
+            {
+                var result = new KeyValuePair<string, long>[keys.Length];
+                for (var i = 0; i < keys.Length; i++)
+                {
+                    var count = state.Sets.TryGetValue(keys[i], out var set)
+                        ? set.Count
+                        : 0;
+
+                    result[i] = new KeyValuePair<string, long>(
+                        keys[i],
+                        Math.Min(count, limit));
+                }
+
+                return result;
+            });
+        }
+
         public override long GetListCount([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
