@@ -66,6 +66,7 @@ namespace Hangfire.InMemory
                 {
                     stateEntry.CreatedAt = memory.TimeResolver();
 
+                    // TODO: Limit this somehow
                     job.History.Add(stateEntry);
                     memory.JobSetState(job, stateEntry);
                 }
@@ -93,6 +94,7 @@ namespace Hangfire.InMemory
                 if (memory.Jobs.TryGetValue(jobId, out var job))
                 {
                     stateEntry.CreatedAt = memory.TimeResolver();
+                    // TODO: Limit this somehow
                     job.History.Add(stateEntry);
                 }
             });
