@@ -42,7 +42,7 @@ namespace Hangfire.InMemory.Tests
         public void Ctor_ThrowsAnException_WhenConnectionIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(() => new InMemoryTransaction(null));
-            Assert.Equal("dispatcher", exception.ParamName);
+            Assert.Equal("connection", exception.ParamName);
         }
 
         [Fact]
