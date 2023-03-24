@@ -12,13 +12,11 @@ namespace Hangfire.InMemory
         private readonly List<Action<InMemoryState>> _actions = new List<Action<InMemoryState>>();
         private readonly List<Action<InMemoryState>> _queueActions = new List<Action<InMemoryState>>();
         private readonly HashSet<QueueEntry> _enqueued = new HashSet<QueueEntry>();
-        private readonly InMemoryDispatcherBase _dispatcher;
-        private readonly InMemoryStorageOptions _options;
+        private readonly InMemoryConnection _connection;
 
-        public InMemoryTransaction([NotNull] InMemoryDispatcherBase dispatcher, [NotNull] InMemoryStorageOptions options)
+        public InMemoryTransaction([NotNull] InMemoryConnection connection)
         {
-            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
         }
 
         public override string CreateJob([NotNull] Job job, [NotNull] IDictionary<string, string> parameters, [CanBeNull] TimeSpan? expireIn)
@@ -39,7 +37,7 @@ namespace Hangfire.InMemory
                     parameters,
                     now,
                     expireIn.HasValue ? (DateTime?)now.Add(expireIn.Value) : null,
-                    _options.DisableJobSerialization);
+                    _connection.Options.DisableJobSerialization);
 
                 // TODO: We need somehow to ensure that this entry isn't removed before initialization
                 state.JobCreate(backgroundJob);
@@ -389,7 +387,7 @@ namespace Hangfire.InMemory
 
         public override void Commit()
         {
-            _dispatcher.QueryAndWait(state =>
+            _connection.Dispatcher.QueryAndWait(state =>
             {
                 foreach (var action in _actions)
                 {
@@ -406,7 +404,7 @@ namespace Hangfire.InMemory
 
             foreach (var queue in _enqueued)
             {
-                _dispatcher.SignalOneQueueWaitNode(queue);
+                _connection.Dispatcher.SignalOneQueueWaitNode(queue);
             }
         }
 

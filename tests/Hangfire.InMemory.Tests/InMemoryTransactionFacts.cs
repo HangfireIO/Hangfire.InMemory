@@ -23,7 +23,7 @@ namespace Hangfire.InMemory.Tests
     {
         private readonly InMemoryState _state;
         private readonly DateTime _now;
-        private readonly InMemoryStorageOptions _options;
+        private readonly InMemoryConnection _connection;
         private readonly Dictionary<string,string> _parameters;
         private readonly Job _job;
 
@@ -31,26 +31,18 @@ namespace Hangfire.InMemory.Tests
         {
             _now = new DateTime(2020, 09, 29, 08, 05, 30, DateTimeKind.Utc);
             _state = new InMemoryState(() => _now);
-            _options = new InMemoryStorageOptions();
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
-        }
-
-        [Fact]
-        public void Ctor_ThrowsAnException_WhenDispatcherIsNull()
-        {
-            var exception = Assert.Throws<ArgumentNullException>(() => new InMemoryTransaction(null, _options));
-            Assert.Equal("dispatcher", exception.ParamName);
-        }
-
-        [Fact]
-        public void Ctor_ThrowsAnException_WhenOptionsArgumentIsNull()
-        {
-            var exception = Assert.Throws<ArgumentNullException>(() => new InMemoryTransaction(
+            _connection = new InMemoryConnection(
                 new InMemoryDispatcher(_state),
-                null));
+                new InMemoryStorageOptions());
+        }
 
-            Assert.Equal("options", exception.ParamName);
+        [Fact]
+        public void Ctor_ThrowsAnException_WhenConnectionIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(() => new InMemoryTransaction(null));
+            Assert.Equal("dispatcher", exception.ParamName);
         }
 
         [Fact]
@@ -1548,7 +1540,7 @@ namespace Hangfire.InMemory.Tests
 
         private void Commit(Action<InMemoryTransaction> action)
         {
-            using (var transaction = new InMemoryTransaction(new InMemoryDispatcherBase(_state), _options))
+            using (var transaction = new InMemoryTransaction(_connection))
             {
                 action(transaction);
                 transaction.Commit();

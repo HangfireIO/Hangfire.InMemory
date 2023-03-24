@@ -11,20 +11,20 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryConnection : JobStorageConnection
     {
-        private readonly InMemoryDispatcherBase _dispatcher;
-        private readonly InMemoryStorageOptions _options;
-
         public InMemoryConnection(
             [NotNull] InMemoryDispatcherBase dispatcher,
             [NotNull] InMemoryStorageOptions options)
         {
-            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            Options = options ?? throw new ArgumentNullException(nameof(options));
         }
+
+        public InMemoryDispatcherBase Dispatcher { get; }
+        public InMemoryStorageOptions Options { get; }
 
         public override IWriteOnlyTransaction CreateWriteTransaction()
         {
-            return new InMemoryTransaction(_dispatcher, _options);
+            return new InMemoryTransaction(this);
         }
 
         public override IDisposable AcquireDistributedLock([NotNull] string resource, TimeSpan timeout)
@@ -32,9 +32,9 @@ namespace Hangfire.InMemory
             if (resource == null) throw new ArgumentNullException(nameof(resource));
 
             // TODO: Track acquired lock at a connection level and release them on dispose
-            if (_dispatcher.TryAcquireLockEntry(this, resource, out var entry))
+            if (Dispatcher.TryAcquireLockEntry(this, resource, out var entry))
             {
-                return new LockDisposable(_dispatcher, this, resource, entry);
+                return new LockDisposable(Dispatcher, this, resource, entry);
             }
 
             var timeoutMs = (int)timeout.TotalMilliseconds;
@@ -57,12 +57,12 @@ namespace Hangfire.InMemory
 
                     entry.Owner = this;
                     entry.Level = 1;
-                    return new LockDisposable(_dispatcher, this, resource, entry);
+                    return new LockDisposable(Dispatcher, this, resource, entry);
                 }
             }
             catch (DistributedLockTimeoutException)
             {
-                _dispatcher.CancelLockEntry(resource, entry);
+                Dispatcher.CancelLockEntry(resource, entry);
                 throw;
             }
         }
@@ -103,7 +103,7 @@ namespace Hangfire.InMemory
 
             var key = Guid.NewGuid().ToString(); // TODO: Change with Long type
 
-            _dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryAndWait(state =>
             {
                 var now = state.TimeResolver();
                 
@@ -114,7 +114,7 @@ namespace Hangfire.InMemory
                     parameters,
                     now,
                     now.Add(expireIn),
-                    _options.DisableJobSerialization);
+                    Options.DisableJobSerialization);
 
                 // TODO: We need somehow to ensure that this entry isn't removed before initialization
                 state.JobCreate(backgroundJob);
@@ -130,7 +130,7 @@ namespace Hangfire.InMemory
 
             using (var cancellationEvent = cancellationToken.GetCancellationEvent())
             {
-                var entries = _dispatcher.GetOrAddQueues(queues).ToArray();
+                var entries = Dispatcher.GetOrAddQueues(queues).ToArray();
                 var readyEvents = new WaitHandle[entries.Length + 1];
                 var waitAdded = new bool[entries.Length];
 
@@ -149,8 +149,8 @@ namespace Hangfire.InMemory
                         {
                             if (entry.Value.Queue.TryDequeue(out var jobId))
                             {
-                                _dispatcher.SignalOneQueueWaitNode(entry.Value);
-                                return new InMemoryFetchedJob(_dispatcher, entry.Key, jobId);
+                                Dispatcher.SignalOneQueueWaitNode(entry.Value);
+                                return new InMemoryFetchedJob(Dispatcher, entry.Key, jobId);
                             }
                         }
 
@@ -158,7 +158,7 @@ namespace Hangfire.InMemory
                         {
                             if (!waitAdded[i])
                             {
-                                _dispatcher.AddQueueWaitNode(entries[i].Value, new InMemoryQueueWaitNode((AutoResetEvent)readyEvents[i]));
+                                Dispatcher.AddQueueWaitNode(entries[i].Value, new InMemoryQueueWaitNode((AutoResetEvent)readyEvents[i]));
                                 waitAdded[i] = true;
                             }
                         }
@@ -191,7 +191,7 @@ namespace Hangfire.InMemory
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            _dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryAndWait(state =>
             {
                 if (state.Jobs.TryGetValue(id, out var jobEntry))
                 {
@@ -207,14 +207,14 @@ namespace Hangfire.InMemory
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            return _dispatcher.GetJobParameter(id, name);
+            return Dispatcher.GetJobParameter(id, name);
         }
 
         public override JobData GetJobData([NotNull] string jobId)
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
-            if (!_dispatcher.TryGetJobData(jobId, out var entry))
+            if (!Dispatcher.TryGetJobData(jobId, out var entry))
             {
                 return null;
             }
@@ -232,7 +232,7 @@ namespace Hangfire.InMemory
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 if (!state.Jobs.TryGetValue(jobId, out var jobEntry) || jobEntry.State == null)
                 {
@@ -254,7 +254,7 @@ namespace Hangfire.InMemory
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
             if (context == null) throw new ArgumentNullException(nameof(context));
 
-            _dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryAndWait(state =>
             {
                 if (!state.Servers.ContainsKey(serverId))
                 {
@@ -276,7 +276,7 @@ namespace Hangfire.InMemory
         {
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
-            _dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryAndWait(state =>
             {
                 state.ServerRemove(serverId);
                 return true;
@@ -287,7 +287,7 @@ namespace Hangfire.InMemory
         {
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
-            var result = _dispatcher.QueryAndWait(state =>
+            var result = Dispatcher.QueryAndWait(state =>
             {
                 if (state.Servers.TryGetValue(serverId, out var server))
                 {
@@ -311,7 +311,7 @@ namespace Hangfire.InMemory
                 throw new ArgumentException("The `timeout` value must be positive.", nameof(timeout));
             }
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 var serversToRemove = new List<string>();
                 var now = state.TimeResolver();
@@ -336,14 +336,14 @@ namespace Hangfire.InMemory
         public override DateTime GetUtcDateTime()
         {
             // TODO: Implement without touching the dispatcher
-            return _dispatcher.QueryAndWait(state => state.TimeResolver());
+            return Dispatcher.QueryAndWait(state => state.TimeResolver());
         }
 
         public override HashSet<string> GetAllItemsFromSet([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 var result = new HashSet<string>();
 
@@ -363,7 +363,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -378,7 +378,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -394,7 +394,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 return state.Sets.TryGetValue(key, out var set) && set.Contains(value);
             });
@@ -404,7 +404,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(
+            return Dispatcher.QueryAndWait(
                 state => state.Sets.TryGetValue(key, out var set)
                     ? set.Count
                     : 0);
@@ -415,7 +415,7 @@ namespace Hangfire.InMemory
             if (keys == null) throw new ArgumentNullException(nameof(keys));
             if (limit < 0) throw new ArgumentOutOfRangeException(nameof(limit), "Value must be greater or equal to 0.");
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 var result = new KeyValuePair<string, long>[keys.Length];
                 for (var i = 0; i < keys.Length; i++)
@@ -437,7 +437,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(
+            return Dispatcher.QueryAndWait(
                 state => state.Lists.TryGetValue(key, out var list)
                     ? list.Count
                     : 0);
@@ -447,7 +447,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(
+            return Dispatcher.QueryAndWait(
                 state => state.Counters.TryGetValue(key, out var counter)
                     ? counter.Value
                     : 0);
@@ -457,7 +457,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(
+            return Dispatcher.QueryAndWait(
                 state => state.Hashes.TryGetValue(key, out var hash)
                     ? hash.Value.Count 
                     : 0);
@@ -467,7 +467,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.ExpireAt.HasValue)
                 {
@@ -484,7 +484,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 if (state.Lists.TryGetValue(key, out var list) && list.ExpireAt.HasValue)
                 {
@@ -500,7 +500,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set) && set.ExpireAt.HasValue)
                 {
@@ -519,7 +519,7 @@ namespace Hangfire.InMemory
 
             // TODO Return early when keyValuePairs empty, can remove comparison and deletion when empty
 
-            _dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryAndWait(state =>
             {
                 // TODO: Avoid creating a hash when values are empty
                 var hash = state.HashGetOrAdd(key);
@@ -542,7 +542,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash))
                 {
@@ -559,7 +559,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.Value.TryGetValue(name, out var result))
                 {
@@ -574,7 +574,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 var result = new List<string>();
 
@@ -594,7 +594,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 var result = new List<string>();
 
@@ -617,7 +617,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return _dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait(state =>
             {
                 var result = new List<string>();
 
