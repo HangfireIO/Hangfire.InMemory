@@ -37,6 +37,7 @@ namespace Hangfire.InMemory
         }
 
         public InMemoryStorageOptions Options { get; }
+        public override bool LinearizableReads => true;
 
         public override bool HasFeature(string featureId)
         {

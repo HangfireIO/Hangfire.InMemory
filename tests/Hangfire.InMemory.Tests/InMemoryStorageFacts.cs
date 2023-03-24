@@ -13,6 +13,12 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void LinearizableRead_Property_ReturnsTrue()
+        {
+            Assert.True(_storage.LinearizableReads);
+        }
+
+        [Fact]
         public void HasFeature_ThrowsArgumentNullException_WhenFeatureIdIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
