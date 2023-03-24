@@ -13,6 +13,23 @@
     <copyright>Copyright © 2020–2022 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
+0.4.0-beta1
+• Breaking – Package now depends on Hangfire.Core version 1.8.0.
+• Breaking – Replace the `net45` target with `net451` one as the former is not supported.
+
+• Changed – Improve `GetFirstByLowestScoreFromSet` operations.
+• Changed – Implement the `Job.Queue` feature.
+• Changed – Implement the `Connection.GetUtcDateTime` feature.
+• Changed – Implement the `Connection.GetSetContains` feature.
+• Changed – Implement the `Connection.GetSetCount.Limited` feature.
+• Changed – Implement the `Connection.BatchedGetFirstByLowestScoreFromSet` feature for the storage.
+• Changed – Implement the `Transaction.AcquireDistributedLock` feature.
+• Changed – Implement the `Transaction.CreateJob` feature.
+• Changed – Implement the `Transaction.SetJobParameter` feature.
+• Changed – Implement the new monitoring features.
+• Changed – Populate the new properties in Monitoring API.
+• Changed – Populate the `Retries` metric in the `GetStatistics` method.
+
 0.3.7
 • Fixed – Throw `BackgroundJobServerGoneException` outside of dispatcher thread.
 
