@@ -13,10 +13,25 @@ namespace Hangfire.InMemory
         private readonly List<Action<InMemoryState>> _queueActions = new List<Action<InMemoryState>>();
         private readonly HashSet<QueueEntry> _enqueued = new HashSet<QueueEntry>();
         private readonly InMemoryConnection _connection;
+        private readonly List<IDisposable> _acquiredLocks = new List<IDisposable>();
 
         public InMemoryTransaction([NotNull] InMemoryConnection connection)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+        }
+
+        public override void Dispose()
+        {
+            foreach (var acquiredLock in _acquiredLocks)
+            {
+                acquiredLock.Dispose();
+            }
+        }
+
+        public override void AcquireDistributedLock(string resource, TimeSpan timeout)
+        {
+            var disposableLock = _connection.AcquireDistributedLock(resource, timeout);
+            _acquiredLocks.Add(disposableLock);
         }
 
         public override string CreateJob([NotNull] Job job, [NotNull] IDictionary<string, string> parameters, [CanBeNull] TimeSpan? expireIn)
@@ -389,16 +404,26 @@ namespace Hangfire.InMemory
         {
             _connection.Dispatcher.QueryAndWait(state =>
             {
-                foreach (var action in _actions)
+                try
                 {
-                    action(state);
-                }
+                    foreach (var action in _actions)
+                    {
+                        action(state);
+                    }
 
-                // We reorder queue actions and run them after all the other commands, because
-                // our GetJobData method is being reordered too
-                foreach (var action in _queueActions)
+                    // We reorder queue actions and run them after all the other commands, because
+                    // our GetJobData method is being reordered too
+                    foreach (var action in _queueActions)
+                    {
+                        action(state);
+                    }
+                }
+                finally
                 {
-                    action(state);
+                    foreach (var acquiredLock in _acquiredLocks)
+                    {
+                        acquiredLock.Dispose();
+                    }
                 }
             });
 

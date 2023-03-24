@@ -18,7 +18,7 @@ namespace Hangfire.InMemory
             { "Connection.GetSetContains", true },
             { "Connection.GetSetCount.Limited", true },
             { "BatchedGetFirstByLowestScoreFromSet", true },
-            { "Transaction.AcquireDistributedLock", false },
+            { "Transaction.AcquireDistributedLock", true },
             { "Transaction.CreateJob", true },
             { "Transaction.SetJobParameter", true },
             { "TransactionalAcknowledge:InMemoryFetchedJob", false },

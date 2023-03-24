@@ -33,9 +33,7 @@ namespace Hangfire.InMemory.Tests
             _state = new InMemoryState(() => _now);
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
-            _connection = new InMemoryConnection(
-                new InMemoryDispatcher(_state),
-                new InMemoryStorageOptions());
+            _connection = CreateConnection();
         }
 
         [Fact]
@@ -43,6 +41,115 @@ namespace Hangfire.InMemory.Tests
         {
             var exception = Assert.Throws<ArgumentNullException>(() => new InMemoryTransaction(null));
             Assert.Equal("connection", exception.ParamName);
+        }
+
+        [Fact]
+        public void AcquireDistributedLock_ThrowsAnException_WhenResourceIsNull()
+        {
+            Commit(transaction =>
+            {
+                var exception = Assert.Throws<ArgumentNullException>(
+                    () => transaction.AcquireDistributedLock(null, TimeSpan.Zero));
+
+                Assert.Equal("resource", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void AcquireDistributedLock_SameResource_DifferentTransactionConnections_CauseTimeout()
+        {
+            using (var connection1 = CreateConnection())
+            using (var connection2 = CreateConnection())
+            using (var transaction1 = new InMemoryTransaction(connection1))
+            using (var transaction2 = new InMemoryTransaction(connection2))
+            {
+                Assert.Throws<DistributedLockTimeoutException>(() =>
+                {
+                    transaction1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
+                    try
+                    {
+                        transaction2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
+                    }
+                    finally
+                    {
+                        transaction1.Commit();
+                    }
+                });
+            }
+        }
+
+        [Fact]
+        public void AcquireDistributedLock_Granted_OnDifferentResource()
+        {
+            using (var connection1 = CreateConnection())
+            using (var connection2 = CreateConnection())
+            using (var transaction1 = new InMemoryTransaction(connection1))
+            using (var transaction2 = new InMemoryTransaction(connection2))
+            {
+                transaction1.AcquireDistributedLock("resource1", TimeSpan.FromSeconds(1));
+                transaction2.AcquireDistributedLock("resource2", TimeSpan.FromSeconds(1));
+
+                transaction1.Commit();
+                transaction2.Commit();
+            }
+        }
+
+        [Fact]
+        public void AcquireDistributedLock_Granted_OnSameResource_AndSameTransaction()
+        {
+            Commit(transaction =>
+            {
+                transaction.AcquireDistributedLock("resource", TimeSpan.FromSeconds(5));
+                transaction.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
+            });
+        }
+
+        [Fact]
+        public void AcquireDistributedLock_Granted_OnSameResource_OnConnectionAndItsTransaction()
+        {
+            using (var connection = CreateConnection())
+            using (var transaction = new InMemoryTransaction(connection))
+            {
+                using (connection.AcquireDistributedLock("resource", TimeSpan.FromSeconds(5)))
+                {
+                    transaction.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
+                    transaction.Commit();
+                }
+            }
+        }
+
+        [Fact]
+        public void AcquireDistributedLock_EventuallyGranted_OnSameResource_DifferentTransactionConnections_AfterCommit()
+        {
+            using (var connection1 = CreateConnection())
+            using (var connection2 = CreateConnection())
+            using (var transaction1 = new InMemoryTransaction(connection1))
+            using (var transaction2 = new InMemoryTransaction(connection2))
+            {
+                transaction1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
+                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                cts.Token.Register(() => transaction1.Commit());
+
+                transaction2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(15));
+                transaction2.Commit();
+            }
+        }
+
+        [Fact]
+        public void AcquireDistributedLock_EventuallyGranted_OnSameResource_DifferentTransactionConnections_AfterDisposeWithoutCommit()
+        {
+            using (var connection1 = CreateConnection())
+            using (var connection2 = CreateConnection())
+            using (var transaction1 = new InMemoryTransaction(connection1))
+            using (var transaction2 = new InMemoryTransaction(connection2))
+            {
+                transaction1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
+                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                cts.Token.Register(() => transaction1.Dispose());
+
+                transaction2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(15));
+                transaction2.Commit();
+            }
         }
 
         [Fact]
@@ -1538,13 +1645,18 @@ namespace Hangfire.InMemory.Tests
             Commit(x => { });
         }
 
-        private void Commit(Action<InMemoryTransaction> action)
+        private void Commit(Action<InMemoryTransaction> action, InMemoryConnection connection = null)
         {
-            using (var transaction = new InMemoryTransaction(_connection))
+            using (var transaction = new InMemoryTransaction(connection ?? _connection))
             {
                 action(transaction);
                 transaction.Commit();
             }
+        }
+
+        private InMemoryConnection CreateConnection()
+        {
+            return new InMemoryConnection(new InMemoryDispatcher(_state), new InMemoryStorageOptions());
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test
