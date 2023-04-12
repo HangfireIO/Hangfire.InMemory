@@ -174,6 +174,11 @@ namespace Hangfire.InMemory
             });
         }
 
+        public override void RemoveFromQueue([NotNull] IFetchedJob fetchedJob)
+        {
+            // Nothing to do here
+        }
+
         public override void IncrementCounter([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
