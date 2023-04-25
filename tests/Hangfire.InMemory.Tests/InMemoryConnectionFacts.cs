@@ -733,7 +733,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 var exception = Assert.Throws<ArgumentNullException>(
-                    () => connection.SetContains(null, "value"));
+                    () => connection.GetSetContains(null, "value"));
 
                 Assert.Equal("key", exception.ParamName);
             });
@@ -745,7 +745,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 var exception = Assert.Throws<ArgumentNullException>(
-                    () => connection.SetContains("key", null));
+                    () => connection.GetSetContains("key", null));
 
                 Assert.Equal("value", exception.ParamName);
             });
@@ -756,7 +756,7 @@ namespace Hangfire.InMemory.Tests
         {
             UseConnection(connection =>
             {
-                var result = connection.SetContains("non-existing-set", "1");
+                var result = connection.GetSetContains("non-existing-set", "1");
                 Assert.False(result);
             });
         }
@@ -772,7 +772,7 @@ namespace Hangfire.InMemory.Tests
                     x.AddToSet("my-set", "2");
                 });
 
-                var result = connection.SetContains("my-set", "2");
+                var result = connection.GetSetContains("my-set", "2");
 
                 Assert.True(result);
             });
@@ -789,7 +789,7 @@ namespace Hangfire.InMemory.Tests
                     x.AddToSet("my-set", "2");
                 });
 
-                var result = connection.SetContains("my-set", "3");
+                var result = connection.GetSetContains("my-set", "3");
 
                 Assert.False(result);
             });
@@ -806,7 +806,7 @@ namespace Hangfire.InMemory.Tests
                     x.AddToSet("another-set", "2");
                 });
 
-                var result = connection.SetContains("my-set", "2");
+                var result = connection.GetSetContains("my-set", "2");
 
                 Assert.False(result);
             });
@@ -859,7 +859,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 var exception = Assert.Throws<ArgumentNullException>(
-                    () => connection.GetSetCount(null, 1000));
+                    () => connection.GetSetCount((IEnumerable<string>)null, 1000));
 
                 Assert.Equal("keys", exception.ParamName);
             });
@@ -871,7 +871,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 var exception = Assert.Throws<ArgumentOutOfRangeException>(
-                    () => connection.GetSetCount(new string[0], -10));
+                    () => connection.GetSetCount((IEnumerable<string>)new string[0], -10));
 
                 Assert.Equal("limit", exception.ParamName);
             });
@@ -882,8 +882,8 @@ namespace Hangfire.InMemory.Tests
         {
             UseConnection(connection =>
             {
-                var result = connection.GetSetCount(new string[0], 1000);
-                Assert.Empty(result);
+                var result = connection.GetSetCount((IEnumerable<string>)new string[0], 1000);
+                Assert.Equal(0, result);
             });
         }
 
@@ -906,19 +906,10 @@ namespace Hangfire.InMemory.Tests
                 });
 
                 // Act
-                var result = connection.GetSetCount(new[] { "set-1", "set-2", "set-3" }, 1000);
+                var result = connection.GetSetCount((IEnumerable<string>)new[] { "set-1", "set-2", "set-3" }, 1000);
 
                 // Assert
-                Assert.Equal(3, result.Length);
-
-                Assert.Equal("set-1", result[0].Key);
-                Assert.Equal(3, result[0].Value);
-
-                Assert.Equal("set-2", result[1].Key);
-                Assert.Equal(0, result[1].Value);
-
-                Assert.Equal("set-3", result[2].Key);
-                Assert.Equal(1, result[2].Value);
+                Assert.Equal(4, result);
             });
         }
 
@@ -936,10 +927,10 @@ namespace Hangfire.InMemory.Tests
                 });
 
                 // Act
-                var result = connection.GetSetCount(new[] { "set-1" }, 2);
+                var result = connection.GetSetCount((IEnumerable<string>)new[] { "set-1" }, 2);
 
                 // Assert
-                Assert.Equal(2, result[0].Value);
+                Assert.Equal(2, result);
             });
         }
 

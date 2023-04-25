@@ -34,7 +34,7 @@ namespace Hangfire.InMemory
             _acquiredLocks.Add(disposableLock);
         }
 
-        public override string CreateJob([NotNull] Job job, [NotNull] IDictionary<string, string> parameters, [CanBeNull] TimeSpan? expireIn)
+        public override string CreateJob([NotNull] Job job, [NotNull] IDictionary<string, string> parameters, DateTime createdAt, TimeSpan expireIn)
         {
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
@@ -43,15 +43,13 @@ namespace Hangfire.InMemory
 
             _actions.Add(state =>
             {
-                var now = state.TimeResolver();
-                
                 // TODO: Precondition: jobId does not exist
                 var backgroundJob = BackgroundJobEntry.Create(
                     key,
                     job,
                     parameters,
-                    now,
-                    expireIn.HasValue ? (DateTime?)now.Add(expireIn.Value) : null,
+                    createdAt,
+                    createdAt.Add(expireIn),
                     _connection.Options.DisableJobSerialization);
 
                 // TODO: We need somehow to ensure that this entry isn't removed before initialization

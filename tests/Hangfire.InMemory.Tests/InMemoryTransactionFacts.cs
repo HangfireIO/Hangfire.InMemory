@@ -156,7 +156,7 @@ namespace Hangfire.InMemory.Tests
         public void CreateExpiredJob_ThrowsAnException_WhenJobIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => Commit(x => x.CreateJob(null, _parameters, TimeSpan.Zero)));
+                () => Commit(x => x.CreateJob(null, _parameters, _now, TimeSpan.Zero)));
 
             Assert.Equal("job", exception.ParamName);
         }
@@ -165,7 +165,7 @@ namespace Hangfire.InMemory.Tests
         public void CreateExpiredJob_ThrowsAnException_WhenParametersArgumentIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => Commit(x => x.CreateJob(_job, null, TimeSpan.Zero)));
+                () => Commit(x => x.CreateJob(_job, null, _now, TimeSpan.Zero)));
 
             Assert.Equal("parameters", exception.ParamName);
         }
@@ -175,8 +175,8 @@ namespace Hangfire.InMemory.Tests
         {
             Commit(transaction =>
             {
-                var id1 = transaction.CreateJob(_job, _parameters, TimeSpan.Zero);
-                var id2 = transaction.CreateJob(_job, _parameters, TimeSpan.Zero);
+                var id1 = transaction.CreateJob(_job, _parameters, _now, TimeSpan.Zero);
+                var id2 = transaction.CreateJob(_job, _parameters, _now, TimeSpan.Zero);
 
                 Assert.NotEqual(id1, id2);
             });
@@ -190,7 +190,7 @@ namespace Hangfire.InMemory.Tests
             // Act
             Commit(transaction =>
             {
-                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));                
+                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));                
             });
 
             // Assert
@@ -216,7 +216,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(transaction =>
             {
-                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
             });
 
             Assert.Contains(_state.Jobs[jobId], _state._jobIndex);
@@ -232,7 +232,7 @@ namespace Hangfire.InMemory.Tests
                 _parameters.Add("RetryCount", "1");
                 _parameters.Add("CurrentCulture", "en-US");
 
-                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
             });
 
             var parameters = _state.Jobs[jobId].Parameters;
@@ -249,7 +249,7 @@ namespace Hangfire.InMemory.Tests
             Commit(transaction =>
             {
                 var job = new Job(_job.Type, _job.Method, _job.Args, "critical");
-                jobId = transaction.CreateJob(job, _parameters, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(job, _parameters, _now, TimeSpan.FromMinutes(30));
             });
 
             Assert.Equal("critical", _state.Jobs[jobId].InvocationData.Queue);
@@ -280,7 +280,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(transaction =>
             {
-                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
                 transaction.SetJobParameter(jobId, "name", null);
             });
 
@@ -303,7 +303,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(transaction =>
             {
-                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
                 transaction.SetJobParameter(jobId, "CurrentCulture", "en-US");
             });
 
@@ -318,7 +318,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(transaction =>
             {
-                jobId = transaction.CreateJob(_job, _parameters, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
                 transaction.SetJobParameter(jobId, "RetryCount", "2");
             });
 

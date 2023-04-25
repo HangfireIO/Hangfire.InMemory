@@ -389,7 +389,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override bool SetContains([NotNull] string key, [NotNull] string value)
+        public override bool GetSetContains([NotNull] string key, [NotNull] string value)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
@@ -410,26 +410,24 @@ namespace Hangfire.InMemory
                     : 0);
         }
 
-        public override KeyValuePair<string, long>[] GetSetCount([NotNull] string[] keys, int limit)
+        public override long GetSetCount([NotNull] IEnumerable<string> keys, int limit)
         {
             if (keys == null) throw new ArgumentNullException(nameof(keys));
             if (limit < 0) throw new ArgumentOutOfRangeException(nameof(limit), "Value must be greater or equal to 0.");
 
             return Dispatcher.QueryAndWait(state =>
             {
-                var result = new KeyValuePair<string, long>[keys.Length];
-                for (var i = 0; i < keys.Length; i++)
+                var count = 0;
+
+                foreach (var key in keys)
                 {
-                    var count = state.Sets.TryGetValue(keys[i], out var set)
+                    if (count >= limit) break;
+                    count += state.Sets.TryGetValue(key, out var set)
                         ? set.Count
                         : 0;
-
-                    result[i] = new KeyValuePair<string, long>(
-                        keys[i],
-                        Math.Min(count, limit));
                 }
 
-                return result;
+                return Math.Min(count, limit);
             });
         }
 
