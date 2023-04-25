@@ -13,6 +13,9 @@
     <copyright>Copyright © 2020–2023 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
+0.4.0-rc1
+• Changed – Bump the `Hangfire.Core` dependency to the 1.8.0-rc4 version.
+
 0.4.0-beta2
 • Fixed – `NotSupportedException` during background processing due to non-implemented method.
 
