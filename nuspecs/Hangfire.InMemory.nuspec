@@ -10,16 +10,10 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <licenseUrl>https://www.hangfire.io/licenses.html</licenseUrl>
     <description>In-memory job storage for Hangfire with transactional implementation.</description>
-    <copyright>Copyright © 2020–2023 Hangfire OÜ</copyright>
+    <copyright>Copyright © 2020-2023 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
-0.4.0-rc1
-• Changed – Bump the `Hangfire.Core` dependency to the 1.8.0-rc4 version.
-
-0.4.0-beta2
-• Fixed – `NotSupportedException` during background processing due to non-implemented method.
-
-0.4.0-beta1
+0.4.0
 • Breaking – Package now depends on Hangfire.Core version 1.8.0.
 • Breaking – Replace the `net45` target with `net451` one as the former is not supported.
 
@@ -78,10 +72,10 @@
 </releaseNotes>
     <dependencies>
       <group targetFramework="net451">
-        <dependency id="Hangfire.Core" version="1.8.0-rc2" />
+        <dependency id="Hangfire.Core" version="1.8.0" />
       </group>
       <group targetFramework="netstandard2.0">
-        <dependency id="Hangfire.Core" version="1.8.0-rc2" />
+        <dependency id="Hangfire.Core" version="1.8.0" />
       </group>
     </dependencies>
   </metadata>
