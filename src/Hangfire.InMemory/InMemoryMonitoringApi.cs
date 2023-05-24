@@ -149,8 +149,8 @@ namespace Hangfire.InMemory
                 Retries = state.Sets.TryGetValue("retries", out var retries)
                     ? retries.Count
                     : 0,
-                Awaiting = state.Sets.TryGetValue("awaiting", out var awaiting)
-                    ? awaiting.Count
+                Awaiting = state._jobStateIndex.TryGetValue(AwaitingState.StateName, out var indexEntry)
+                    ? indexEntry.Count
                     : 0,
             });
         }
