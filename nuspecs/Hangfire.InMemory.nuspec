@@ -13,6 +13,9 @@
     <copyright>Copyright © 2020-2023 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
+0.4.1
+• Fixed – "Awaiting Jobs" metric is now correctly populated with `Version180` compatibility level.
+
 0.4.0
 • Breaking – Package now depends on Hangfire.Core version 1.8.0.
 • Breaking – Replace the `net45` target with `net451` one as the former is not supported.
