@@ -39,6 +39,7 @@ namespace Hangfire.InMemory
         public void RemoveAll(string value)
         {
             // TODO: SQL Server implementation is key insensitive here, Redis one is sensitive
+            // TODO: Avoid allocation
             _value.RemoveAll(val => val.Equals(value, StringComparison.Ordinal));
         }
 
@@ -112,12 +113,11 @@ namespace Hangfire.InMemory
         
         public string GetFirstBetween(double from, double to)
         {
-            var first = _value.GetViewBetween(
+            var view = _value.GetViewBetween(
                 new SortedSetEntry<string>(null) { Score = from },
-                new SortedSetEntry<string>(null) { Score = to })
-                .FirstOrDefault();
+                new SortedSetEntry<string>(null) { Score = to });
 
-            return first?.Value;
+            return view.Count > 0 ? view.Min.Value : null;
         }
 
         public void Remove(string value)
@@ -237,11 +237,12 @@ namespace Hangfire.InMemory
         public InMemoryQueueWaitNode WaitHead = new InMemoryQueueWaitNode(null);
     }
 
-    internal sealed class SortedSetEntry<T>
+    internal struct SortedSetEntry<T>
     {
         public SortedSetEntry(T value)
         {
             Value = value;
+            Score = 0D;
         }
 
         public T Value { get; }
@@ -261,10 +262,6 @@ namespace Hangfire.InMemory
     {
         public int Compare(SortedSetEntry<T> x, SortedSetEntry<T> y)
         {
-            if (ReferenceEquals(x, y)) return 0;
-            if (ReferenceEquals(null, y)) return 1;
-            if (ReferenceEquals(null, x)) return -1;
-
             var scoreComparison = x.Score.CompareTo(y.Score);
             if (scoreComparison != 0 ||
                 ReferenceEquals(null, y.Value) ||
