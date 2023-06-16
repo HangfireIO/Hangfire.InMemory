@@ -6,12 +6,14 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryState
     {
-        // TODO: We can remove indexes when empty and re-create them when required to always have minimum size 
-        internal readonly SortedSet<BackgroundJobEntry> _jobIndex = new SortedSet<BackgroundJobEntry>(new ExpirableEntryComparer());
-        internal readonly SortedSet<CounterEntry> _counterIndex = new SortedSet<CounterEntry>(new ExpirableEntryComparer());
-        internal readonly SortedSet<HashEntry> _hashIndex = new SortedSet<HashEntry>(new ExpirableEntryComparer());
-        internal readonly SortedSet<ListEntry> _listIndex = new SortedSet<ListEntry>(new ExpirableEntryComparer());
-        internal readonly SortedSet<SetEntry> _setIndex = new SortedSet<SetEntry>(new ExpirableEntryComparer());
+        private static readonly ExpirableEntryComparer ExpirableEntryComparer = new ExpirableEntryComparer();
+        private static readonly BackgroundJobStateCreatedAtComparer BackgroundJobEntryComparer = new BackgroundJobStateCreatedAtComparer();
+
+        internal readonly SortedSet<BackgroundJobEntry> _jobIndex = new SortedSet<BackgroundJobEntry>(ExpirableEntryComparer);
+        internal readonly SortedSet<CounterEntry> _counterIndex = new SortedSet<CounterEntry>(ExpirableEntryComparer);
+        internal readonly SortedSet<HashEntry> _hashIndex = new SortedSet<HashEntry>(ExpirableEntryComparer);
+        internal readonly SortedSet<ListEntry> _listIndex = new SortedSet<ListEntry>(ExpirableEntryComparer);
+        internal readonly SortedSet<SetEntry> _setIndex = new SortedSet<SetEntry>(ExpirableEntryComparer);
 
         internal readonly IDictionary<string, SortedSet<BackgroundJobEntry>> _jobStateIndex = new Dictionary<string, SortedSet<BackgroundJobEntry>>(StringComparer.OrdinalIgnoreCase);
 
@@ -73,7 +75,7 @@ namespace Hangfire.InMemory
 
             if (!_jobStateIndex.TryGetValue(state.Name, out indexEntry))
             {
-                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<BackgroundJobEntry>(new BackgroundJobStateCreatedAtComparer()));
+                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<BackgroundJobEntry>(BackgroundJobEntryComparer));
             }
 
             indexEntry.Add(job);

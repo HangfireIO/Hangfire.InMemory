@@ -64,9 +64,11 @@ namespace Hangfire.InMemory
 
     internal sealed class SetEntry : IExpirableEntry, IEnumerable<SortedSetEntry<string>>
     {
+        private static readonly SortedSetEntryComparer<string> EntryComparer = new SortedSetEntryComparer<string>();
+        
         // TODO: What about case sensitivity here?
         private readonly IDictionary<string, SortedSetEntry<string>> _hash = new Dictionary<string, SortedSetEntry<string>>();
-        private readonly SortedSet<SortedSetEntry<string>> _value = new SortedSet<SortedSetEntry<string>>(new SortedSetEntryComparer<string>());
+        private readonly SortedSet<SortedSetEntry<string>> _value = new SortedSet<SortedSetEntry<string>>(EntryComparer);
 
         public SetEntry(string id)
         {
