@@ -430,6 +430,7 @@ namespace Hangfire.InMemory
                 }
             });
 
+            // TODO: QueryAndWait can throw TimeoutException, in this case queue will be unsignaled
             foreach (var queue in _enqueued)
             {
                 _connection.Dispatcher.SignalOneQueueWaitNode(queue);
