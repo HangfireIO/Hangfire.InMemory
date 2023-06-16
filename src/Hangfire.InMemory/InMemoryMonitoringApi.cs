@@ -495,13 +495,11 @@ namespace Hangfire.InMemory
 
         public override long SucceededListCount()
         {
-            // TODO: Replace with counter
             return GetCountByStateName(SucceededState.StateName);
         }
 
         public override long DeletedListCount()
         {
-            // TODO: Replace with counter
             return GetCountByStateName(DeletedState.StateName);
         }
 
