@@ -256,7 +256,7 @@ namespace Hangfire.InMemory
         public string Name { get; set; }
         public string Reason { get; set; }
         // TODO: Encapsulate modification to ensure comparisons performed correctly
-        public IDictionary<string, string> Data { get; }
+        public IDictionary<string, string> Data { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 
