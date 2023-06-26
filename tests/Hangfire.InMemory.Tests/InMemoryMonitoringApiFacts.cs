@@ -18,7 +18,7 @@ namespace Hangfire.InMemory.Tests
         public InMemoryMonitoringApiFacts()
         {
             _now = new DateTime(2020, 09, 29, 08, 05, 30, DateTimeKind.Utc);
-            _state = new InMemoryState(() => _now);
+            _state = new InMemoryState(() => _now, StringComparer.Ordinal);
         }
 
         [Fact]

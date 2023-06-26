@@ -7,8 +7,9 @@ namespace Hangfire.InMemory
 {
     public sealed class InMemoryStorage : JobStorage
     {
-        private readonly InMemoryDispatcherBase _dispatcher = new InMemoryDispatcher(new InMemoryState(() => DateTime.UtcNow));
+        private readonly InMemoryDispatcherBase _dispatcher;
 
+        // These options don't relate to the defined storage comparison options
         private readonly Dictionary<string, bool> _features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
         {
             { "Storage.ExtendedApi", true },
@@ -34,6 +35,8 @@ namespace Hangfire.InMemory
         public InMemoryStorage([NotNull] InMemoryStorageOptions options)
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
+
+            _dispatcher = new InMemoryDispatcher(new InMemoryState(() => DateTime.UtcNow, Options.StringComparer));
         }
 
         public InMemoryStorageOptions Options { get; }

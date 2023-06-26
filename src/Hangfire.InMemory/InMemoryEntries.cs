@@ -17,10 +17,12 @@ namespace Hangfire.InMemory
 
     internal sealed class ListEntry : IExpirableEntry
     {
+        private readonly StringComparer _stringComparer;
         private List<string> _value = new List<string>();
 
-        public ListEntry(string id)
+        public ListEntry(string id, StringComparer stringComparer)
         {
+            _stringComparer = stringComparer;
             Key = id;
         }
 
@@ -38,11 +40,10 @@ namespace Hangfire.InMemory
 
         public void RemoveAll(string value)
         {
-            // TODO: SQL Server implementation is key insensitive here, Redis one is sensitive
-            // TODO: Avoid allocation
-            _value.RemoveAll(val => val.Equals(value, StringComparison.Ordinal));
+            _value.RemoveAll(other => _stringComparer.Equals(value, other));
         }
 
+        // TODO: Try everything to remove this strange operation
         internal void Update(List<string> value)
         {
             _value = value;
@@ -51,27 +52,26 @@ namespace Hangfire.InMemory
 
     internal sealed class HashEntry : IExpirableEntry
     {
-        public HashEntry(string id)
+        public HashEntry(string id, StringComparer comparer)
         {
             Key = id;
+            Value = new Dictionary<string, string>(comparer);
         }
 
         public string Key { get; }
-        // TODO: What about case sensitivity here?
-        public IDictionary<string, string> Value { get; } = new Dictionary<string, string>();
+        public IDictionary<string, string> Value { get; }
         public DateTime? ExpireAt { get; set; }
     }
 
-    internal sealed class SetEntry : IExpirableEntry, IEnumerable<SortedSetEntry<string>>
+    internal sealed class SetEntry : IExpirableEntry, IEnumerable<SortedSetEntry>
     {
-        private static readonly SortedSetEntryComparer<string> EntryComparer = new SortedSetEntryComparer<string>();
-        
-        // TODO: What about case sensitivity here?
-        private readonly IDictionary<string, SortedSetEntry<string>> _hash = new Dictionary<string, SortedSetEntry<string>>();
-        private readonly SortedSet<SortedSetEntry<string>> _value = new SortedSet<SortedSetEntry<string>>(EntryComparer);
+        private readonly IDictionary<string, SortedSetEntry> _hash;
+        private readonly SortedSet<SortedSetEntry> _value;
 
-        public SetEntry(string id)
+        public SetEntry(string id, StringComparer stringComparer)
         {
+            _hash = new Dictionary<string, SortedSetEntry>(stringComparer);
+            _value = new SortedSet<SortedSetEntry>(new SortedSetEntryComparer(stringComparer));
             Key = id;
         }
 
@@ -84,7 +84,7 @@ namespace Hangfire.InMemory
         {
             if (!_hash.TryGetValue(value, out var entry))
             {
-                entry = new SortedSetEntry<string>(value) { Score = score };
+                entry = new SortedSetEntry(value) { Score = score };
                 _value.Add(entry);
                 _hash.Add(value, entry);
             }
@@ -100,8 +100,8 @@ namespace Hangfire.InMemory
         public List<string> GetViewBetween(double from, double to, int count)
         {
             var view = _value.GetViewBetween(
-                new SortedSetEntry<string>(null) { Score = from },
-                new SortedSetEntry<string>(null) { Score = to });
+                new SortedSetEntry(null) { Score = from },
+                new SortedSetEntry(null) { Score = to });
 
             var result = new List<string>(view.Count);
             foreach (var entry in view)
@@ -116,8 +116,8 @@ namespace Hangfire.InMemory
         public string GetFirstBetween(double from, double to)
         {
             var view = _value.GetViewBetween(
-                new SortedSetEntry<string>(null) { Score = from },
-                new SortedSetEntry<string>(null) { Score = to });
+                new SortedSetEntry(null) { Score = from },
+                new SortedSetEntry(null) { Score = to });
 
             return view.Count > 0 ? view.Min.Value : null;
         }
@@ -136,7 +136,7 @@ namespace Hangfire.InMemory
             return _hash.ContainsKey(value);
         }
 
-        public IEnumerator<SortedSetEntry<string>> GetEnumerator()
+        public IEnumerator<SortedSetEntry> GetEnumerator()
         {
             return _value.GetEnumerator();
         }
@@ -167,16 +167,15 @@ namespace Hangfire.InMemory
         {
         }
 
-        public string Key { get; set; }
-        public InvocationData InvocationData { get; set; }
-        public Job Job { get; set; }
+        public string Key { get; private set; }
+        public InvocationData InvocationData { get; internal set; }
+        public Job Job { get; private set; }
 
-        // TODO What case sensitivity to use here?
-        public ConcurrentDictionary<string, string> Parameters { get; set; }
+        public ConcurrentDictionary<string, string> Parameters { get; private set; }
 
         public StateEntry State { get; set; }
-        public ICollection<StateEntry> History { get; set; } = new List<StateEntry>(StateCountForRegularJob);
-        public DateTime CreatedAt { get; set; }
+        public ICollection<StateEntry> History { get; } = new List<StateEntry>(StateCountForRegularJob);
+        public DateTime CreatedAt { get; private set; }
         public DateTime? ExpireAt { get; set; }
 
         public static BackgroundJobEntry Create(
@@ -185,14 +184,15 @@ namespace Hangfire.InMemory
             IDictionary<string, string> parameters,
             DateTime createdAt,
             DateTime? expireAt,
-            bool disableSerialization)
+            bool disableSerialization,
+            StringComparer comparer)
         {
             return new BackgroundJobEntry
             {
                 Key = key,
                 InvocationData = disableSerialization == false ? InvocationData.SerializeJob(job) : null,
                 Job = disableSerialization ? new Job(job.Type, job.Method, job.Args.ToArray(), job.Queue) : null,
-                Parameters = new ConcurrentDictionary<string, string>(parameters, StringComparer.Ordinal), // TODO: case sensitivity
+                Parameters = new ConcurrentDictionary<string, string>(parameters, comparer),
                 CreatedAt = createdAt,
                 ExpireAt = expireAt
             };
@@ -239,15 +239,15 @@ namespace Hangfire.InMemory
         public InMemoryQueueWaitNode WaitHead = new InMemoryQueueWaitNode(null);
     }
 
-    internal struct SortedSetEntry<T>
+    internal struct SortedSetEntry
     {
-        public SortedSetEntry(T value)
+        public SortedSetEntry(string value)
         {
             Value = value;
             Score = 0D;
         }
 
-        public T Value { get; }
+        public string Value { get; }
         public double Score { get; set; }
     }
 
@@ -255,14 +255,21 @@ namespace Hangfire.InMemory
     {
         public string Name { get; set; }
         public string Reason { get; set; }
-        public IDictionary<string, string> Data { get; set; }
+        // TODO: Encapsulate modification to ensure comparisons performed correctly
+        public IDictionary<string, string> Data { get; }
         public DateTime CreatedAt { get; set; }
     }
 
-    internal sealed class SortedSetEntryComparer<T> : IComparer<SortedSetEntry<T>>
-        where T : IComparable<T>
+    internal sealed class SortedSetEntryComparer : IComparer<SortedSetEntry>
     {
-        public int Compare(SortedSetEntry<T> x, SortedSetEntry<T> y)
+        private readonly StringComparer _stringComparer;
+
+        public SortedSetEntryComparer(StringComparer stringComparer)
+        {
+            _stringComparer = stringComparer;
+        }
+
+        public int Compare(SortedSetEntry x, SortedSetEntry y)
         {
             var scoreComparison = x.Score.CompareTo(y.Score);
             if (scoreComparison != 0 ||
@@ -272,12 +279,19 @@ namespace Hangfire.InMemory
                 return scoreComparison;
             }
 
-            return x.Value.CompareTo(y.Value);
+            return _stringComparer.Compare(x.Value, y.Value);
         }
     }
 
     internal sealed class BackgroundJobStateCreatedAtComparer : IComparer<BackgroundJobEntry>
     {
+        private readonly StringComparer _stringComparer;
+
+        public BackgroundJobStateCreatedAtComparer(StringComparer stringComparer)
+        {
+            _stringComparer = stringComparer;
+        }
+
         public int Compare(BackgroundJobEntry x, BackgroundJobEntry y)
         {
             if (ReferenceEquals(x, y)) return 0;
@@ -290,13 +304,19 @@ namespace Hangfire.InMemory
             var createdAtComparison = x.CreatedAt.CompareTo(y.CreatedAt);
             if (createdAtComparison != 0) return createdAtComparison;
 
-            // TODO: Case sensitivity
-            return String.Compare(x.Key, y.Key, StringComparison.Ordinal);
+            return _stringComparer.Compare(x.Key, y.Key);
         }
     }
 
     internal sealed class ExpirableEntryComparer : IComparer<IExpirableEntry>
     {
+        private readonly StringComparer _stringComparer;
+
+        public ExpirableEntryComparer(StringComparer stringComparer)
+        {
+            _stringComparer = stringComparer;
+        }
+
         public int Compare(IExpirableEntry x, IExpirableEntry y)
         {
             if (ReferenceEquals(x, y)) return 0;
@@ -319,7 +339,7 @@ namespace Hangfire.InMemory
             var expirationCompare = x.ExpireAt.Value.CompareTo(y.ExpireAt.Value);
             if (expirationCompare != 0) return expirationCompare;
 
-            return String.Compare(x.Key, y.Key, StringComparison.Ordinal);
+            return _stringComparer.Compare(x.Key, y.Key);
         }
     }
 }

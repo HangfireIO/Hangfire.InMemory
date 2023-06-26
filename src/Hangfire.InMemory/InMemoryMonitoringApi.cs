@@ -57,7 +57,7 @@ namespace Hangfire.InMemory
                             InEnqueuedState = inEnqueuedState,
                             EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt : null,
                             StateData = inEnqueuedState && jobEntry?.State?.Data != null
-                                ? new Dictionary<string, string>(jobEntry.State.Data, StringComparer.OrdinalIgnoreCase)
+                                ? new Dictionary<string, string>(jobEntry.State.Data, state.StringComparer)
                                 : null
                         }));
                     }
@@ -70,8 +70,7 @@ namespace Hangfire.InMemory
                     });
                 }
 
-                // TODO: Case sensitivity
-                return result.OrderBy(x => x.Name).ToList();
+                return result.OrderBy(x => x.Name, state.StringComparer).ToList();
             });
         }
 
@@ -80,6 +79,7 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryAndWait(state =>
             {
                 var result = new List<ServerDto>(state.Servers.Count);
+
                 foreach (var entry in state.Servers)
                 {
                     result.Add(new ServerDto
@@ -92,8 +92,7 @@ namespace Hangfire.InMemory
                     });
                 }
 
-                // TODO: Case sensitivity
-                return result.OrderBy(x => x.Name).ToList();
+                return result.OrderBy(x => x.Name, state.StringComparer).ToList();
             });
         }
 
@@ -117,15 +116,13 @@ namespace Hangfire.InMemory
                     Job = job,
                     InvocationData = entry.InvocationData,
                     LoadException = loadException,
-                    // TODO: Case sensitivity
-                    Properties = entry.Parameters.ToDictionary(x => x.Key, x => x.Value),
+                    Properties = entry.Parameters.ToDictionary(x => x.Key, x => x.Value, state.StringComparer),
                     History = entry.History.Select(x => new StateHistoryDto
                     {
                         CreatedAt = x.CreatedAt,
                         StateName = x.Name,
                         Reason = x.Reason,
-                        // TODO: Case sensitivity
-                        Data = x.Data.ToDictionary(y => y.Key, y => y.Value)
+                        Data = x.Data.ToDictionary(y => y.Key, y => y.Value, state.StringComparer)
                     }).Reverse().ToList()
                 };
             });
@@ -155,7 +152,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override JobList<EnqueuedJobDto> EnqueuedJobs([NotNull] string queueName, int @from, int perPage)
+        public override JobList<EnqueuedJobDto> EnqueuedJobs([NotNull] string queueName, int from, int perPage)
         {
             if (queueName == null) throw new ArgumentNullException(nameof(queueName));
 
@@ -194,7 +191,7 @@ namespace Hangfire.InMemory
                             InEnqueuedState = inEnqueuedState,
                             EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt : null,
                             StateData = inEnqueuedState && jobEntry?.State?.Data != null
-                                ? new Dictionary<string, string>(jobEntry.State.Data, StringComparer.OrdinalIgnoreCase)
+                                ? new Dictionary<string, string>(jobEntry.State.Data, state.StringComparer)
                                 : null
                         }));
 
@@ -206,13 +203,13 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override JobList<FetchedJobDto> FetchedJobs([NotNull] string queueName, int @from, int perPage)
+        public override JobList<FetchedJobDto> FetchedJobs([NotNull] string queueName, int from, int perPage)
         {
             if (queueName == null) throw new ArgumentNullException(nameof(queueName));
             return new JobList<FetchedJobDto>(Enumerable.Empty<KeyValuePair<string, FetchedJobDto>>());
         }
 
-        public override JobList<ProcessingJobDto> ProcessingJobs(int @from, int count)
+        public override JobList<ProcessingJobDto> ProcessingJobs(int from, int count)
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -240,7 +237,7 @@ namespace Hangfire.InMemory
                             InProcessingState = inProcessingState,
                             StartedAt = entry.State?.CreatedAt,
                             StateData = inProcessingState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, StringComparer.OrdinalIgnoreCase)
+                                ? new Dictionary<string, string>(entry.State.Data, state.StringComparer)
                                 : null
                         }));
 
@@ -252,7 +249,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override JobList<ScheduledJobDto> ScheduledJobs(int @from, int count)
+        public override JobList<ScheduledJobDto> ScheduledJobs(int from, int count)
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -287,7 +284,7 @@ namespace Hangfire.InMemory
                             InScheduledState = inScheduledState,
                             ScheduledAt = backgroundJob?.State?.CreatedAt,
                             StateData = inScheduledState && backgroundJob?.State?.Data != null
-                                ? new Dictionary<string, string>(backgroundJob.State.Data, StringComparer.OrdinalIgnoreCase)
+                                ? new Dictionary<string, string>(backgroundJob.State.Data, state.StringComparer)
                                 : null
                         }));
 
@@ -299,7 +296,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override JobList<SucceededJobDto> SucceededJobs(int @from, int count)
+        public override JobList<SucceededJobDto> SucceededJobs(int from, int count)
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -330,7 +327,7 @@ namespace Hangfire.InMemory
                             InSucceededState = inSucceededState,
                             SucceededAt = entry.State?.CreatedAt,
                             StateData = inSucceededState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, StringComparer.OrdinalIgnoreCase)
+                                ? new Dictionary<string, string>(entry.State.Data, state.StringComparer)
                                 : null
                         }));
 
@@ -342,7 +339,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override JobList<FailedJobDto> FailedJobs(int @from, int count)
+        public override JobList<FailedJobDto> FailedJobs(int from, int count)
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -373,7 +370,7 @@ namespace Hangfire.InMemory
                             InFailedState = inFailedState,
                             FailedAt = entry.State?.CreatedAt,
                             StateData = inFailedState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, StringComparer.OrdinalIgnoreCase)
+                                ? new Dictionary<string, string>(entry.State.Data, state.StringComparer)
                                 : null
                         }));
 
@@ -385,7 +382,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override JobList<DeletedJobDto> DeletedJobs(int @from, int count)
+        public override JobList<DeletedJobDto> DeletedJobs(int from, int count)
         {
             return _dispatcher.QueryAndWait(state =>
             {
@@ -412,7 +409,7 @@ namespace Hangfire.InMemory
                             InDeletedState = inDeletedState,
                             DeletedAt = entry.State?.CreatedAt,
                             StateData = inDeletedState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, StringComparer.OrdinalIgnoreCase)
+                                ? new Dictionary<string, string>(entry.State.Data, state.StringComparer)
                                 : null
                         }));
 
@@ -451,7 +448,7 @@ namespace Hangfire.InMemory
                             InAwaitingState = inAwaitingState,
                             AwaitingAt = entry.State?.CreatedAt,
                             StateData = inAwaitingState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, StringComparer.OrdinalIgnoreCase)
+                                ? new Dictionary<string, string>(entry.State.Data, state.StringComparer)
                                 : null
                         }));
 
@@ -553,7 +550,7 @@ namespace Hangfire.InMemory
             return 0;
         }
 
-        private Dictionary<DateTime, long> GetHourlyTimelineStats(InMemoryState state, string type)
+        private static Dictionary<DateTime, long> GetHourlyTimelineStats(InMemoryState state, string type)
         {
             var endDate = state.TimeResolver();
             var dates = new List<DateTime>();
@@ -575,7 +572,7 @@ namespace Hangfire.InMemory
             return result;
         }
 
-        private Dictionary<DateTime, long> GetTimelineStats(InMemoryState state, string type)
+        private static Dictionary<DateTime, long> GetTimelineStats(InMemoryState state, string type)
         {
             var endDate = state.TimeResolver().Date;
             var startDate = endDate.AddDays(-7);

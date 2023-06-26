@@ -6,33 +6,53 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryState
     {
-        private static readonly ExpirableEntryComparer ExpirableEntryComparer = new ExpirableEntryComparer();
-        private static readonly BackgroundJobStateCreatedAtComparer BackgroundJobEntryComparer = new BackgroundJobStateCreatedAtComparer();
+        private readonly BackgroundJobStateCreatedAtComparer _backgroundJobEntryComparer;
 
-        internal readonly SortedSet<BackgroundJobEntry> _jobIndex = new SortedSet<BackgroundJobEntry>(ExpirableEntryComparer);
-        internal readonly SortedSet<CounterEntry> _counterIndex = new SortedSet<CounterEntry>(ExpirableEntryComparer);
-        internal readonly SortedSet<HashEntry> _hashIndex = new SortedSet<HashEntry>(ExpirableEntryComparer);
-        internal readonly SortedSet<ListEntry> _listIndex = new SortedSet<ListEntry>(ExpirableEntryComparer);
-        internal readonly SortedSet<SetEntry> _setIndex = new SortedSet<SetEntry>(ExpirableEntryComparer);
+        internal readonly SortedSet<BackgroundJobEntry> _jobIndex;
+        internal readonly SortedSet<CounterEntry> _counterIndex;
+        internal readonly SortedSet<HashEntry> _hashIndex;
+        internal readonly SortedSet<ListEntry> _listIndex;
+        internal readonly SortedSet<SetEntry> _setIndex;
 
+        // State index uses case-insensitive comparisons, despite of the current settings. SQL Server
+        // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
         internal readonly IDictionary<string, SortedSet<BackgroundJobEntry>> _jobStateIndex = new Dictionary<string, SortedSet<BackgroundJobEntry>>(StringComparer.OrdinalIgnoreCase);
 
-        // TODO: We can remove dictionaries when empty and re-create them when required to always have minimum size
-        internal readonly IDictionary<string, LockEntry> _locks = CreateDictionary<LockEntry>();
-        private readonly ConcurrentDictionary<string, BackgroundJobEntry> _jobs = CreateConcurrentDictionary<BackgroundJobEntry>();
-        private readonly Dictionary<string, HashEntry> _hashes = CreateDictionary<HashEntry>();
-        private readonly Dictionary<string, ListEntry> _lists = CreateDictionary<ListEntry>();
-        private readonly Dictionary<string, SetEntry> _sets = CreateDictionary<SetEntry>();
-        private readonly Dictionary<string, CounterEntry> _counters = CreateDictionary<CounterEntry>();
-        private readonly ConcurrentDictionary<string, QueueEntry> _queues = CreateConcurrentDictionary<QueueEntry>();
-        private readonly Dictionary<string, ServerEntry> _servers = CreateDictionary<ServerEntry>();
+        internal readonly IDictionary<string, LockEntry> _locks;
+        private readonly ConcurrentDictionary<string, BackgroundJobEntry> _jobs;
+        private readonly Dictionary<string, HashEntry> _hashes;
+        private readonly Dictionary<string, ListEntry> _lists;
+        private readonly Dictionary<string, SetEntry> _sets;
+        private readonly Dictionary<string, CounterEntry> _counters;
+        private readonly ConcurrentDictionary<string, QueueEntry> _queues;
+        private readonly Dictionary<string, ServerEntry> _servers;
 
-        public InMemoryState(Func<DateTime> timeResolver)
+        public InMemoryState(Func<DateTime> timeResolver, StringComparer stringComparer)
         {
             TimeResolver = timeResolver;
+            StringComparer = stringComparer;
+
+            _backgroundJobEntryComparer = new BackgroundJobStateCreatedAtComparer(stringComparer);
+
+            var expirableEntryComparer = new ExpirableEntryComparer(stringComparer);
+            _jobIndex = new SortedSet<BackgroundJobEntry>(expirableEntryComparer);
+            _counterIndex = new SortedSet<CounterEntry>(expirableEntryComparer);
+            _hashIndex = new SortedSet<HashEntry>(expirableEntryComparer);
+            _listIndex = new SortedSet<ListEntry>(expirableEntryComparer);
+            _setIndex = new SortedSet<SetEntry>(expirableEntryComparer);
+
+            _locks = CreateDictionary<LockEntry>(stringComparer);
+            _jobs = CreateConcurrentDictionary<BackgroundJobEntry>(stringComparer);
+            _hashes = CreateDictionary<HashEntry>(stringComparer);
+            _lists = CreateDictionary<ListEntry>(stringComparer);
+            _sets = CreateDictionary<SetEntry>(stringComparer);
+            _counters = CreateDictionary<CounterEntry>(stringComparer);
+            _queues = CreateConcurrentDictionary<QueueEntry>(stringComparer);
+            _servers = CreateDictionary<ServerEntry>(stringComparer);
         }
 
         public Func<DateTime> TimeResolver { get; }
+        public StringComparer StringComparer { get; }
 
         public ConcurrentDictionary<string, BackgroundJobEntry> Jobs => _jobs; // TODO Implement workaround for net45 to return IReadOnlyDictionary (and the same for _queues)
         public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
@@ -75,7 +95,7 @@ namespace Hangfire.InMemory
 
             if (!_jobStateIndex.TryGetValue(state.Name, out indexEntry))
             {
-                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<BackgroundJobEntry>(BackgroundJobEntryComparer));
+                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<BackgroundJobEntry>(_backgroundJobEntryComparer));
             }
 
             indexEntry.Add(job);
@@ -106,7 +126,7 @@ namespace Hangfire.InMemory
         {
             if (!_hashes.TryGetValue(key, out var hash))
             {
-                _hashes.Add(key, hash = new HashEntry(key));
+                _hashes.Add(key, hash = new HashEntry(key, StringComparer));
             }
 
             return hash;
@@ -130,7 +150,7 @@ namespace Hangfire.InMemory
         {
             if (!_sets.TryGetValue(key, out var set))
             {
-                _sets.Add(key, set = new SetEntry(key));
+                _sets.Add(key, set = new SetEntry(key, StringComparer));
             }
 
             return set;
@@ -155,7 +175,7 @@ namespace Hangfire.InMemory
         {
             if (!_lists.TryGetValue(key, out var list))
             {
-                _lists.Add(key, list = new ListEntry(key));
+                _lists.Add(key, list = new ListEntry(key, StringComparer));
             }
 
             return list;
@@ -230,14 +250,14 @@ namespace Hangfire.InMemory
             }
         }
 
-        private static Dictionary<string, T> CreateDictionary<T>()
+        private static Dictionary<string, T> CreateDictionary<T>(StringComparer comparer)
         {
-            return new Dictionary<string, T>(StringComparer.Ordinal);
+            return new Dictionary<string, T>(comparer);
         }
 
-        private static ConcurrentDictionary<string, T> CreateConcurrentDictionary<T>()
+        private static ConcurrentDictionary<string, T> CreateConcurrentDictionary<T>(StringComparer comparer)
         {
-            return new ConcurrentDictionary<string, T>(StringComparer.Ordinal);
+            return new ConcurrentDictionary<string, T>(comparer);
         }
     }
 }

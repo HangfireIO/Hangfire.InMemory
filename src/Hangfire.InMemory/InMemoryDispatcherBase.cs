@@ -19,7 +19,7 @@ namespace Hangfire.InMemory
         {
             if (queueNames == null) throw new ArgumentNullException(nameof(queueNames));
 
-            var entries = new Dictionary<string, QueueEntry>(queueNames.Count);
+            var entries = new Dictionary<string, QueueEntry>(queueNames.Count, _state.StringComparer);
             foreach (var queueName in queueNames)
             {
                 if (!entries.ContainsKey(queueName))
@@ -87,7 +87,7 @@ namespace Hangfire.InMemory
         {
             lock (_state._locks)
             {
-                if (!_state._locks.TryGetValue(resource, out var current2) || !ReferenceEquals(current2, entry))
+                if (!_state._locks.TryGetValue(resource, out var current) || !ReferenceEquals(current, entry))
                 {
                     throw new InvalidOperationException("Precondition failed when decrementing a lock");
                 }
@@ -222,7 +222,7 @@ namespace Hangfire.InMemory
             ExpireJobIndex(now, _state);
         }
 
-        protected static void ExpireIndex<T>(DateTime now, SortedSet<T> index, Action<T> action)
+        private static void ExpireIndex<T>(DateTime now, SortedSet<T> index, Action<T> action)
             where T : IExpirableEntry
         {
             T entry;
@@ -233,7 +233,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        protected void ExpireJobIndex(DateTime now, InMemoryState state)
+        private static void ExpireJobIndex(DateTime now, InMemoryState state)
         {
             BackgroundJobEntry entry;
 

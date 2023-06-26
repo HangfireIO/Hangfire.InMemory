@@ -114,7 +114,8 @@ namespace Hangfire.InMemory
                     parameters,
                     now,
                     now.Add(expireIn),
-                    Options.DisableJobSerialization);
+                    Options.DisableJobSerialization, // TODO: Can move this to state
+                    state.StringComparer);
 
                 // TODO: We need somehow to ensure that this entry isn't removed before initialization
                 state.JobCreate(backgroundJob);
@@ -130,6 +131,7 @@ namespace Hangfire.InMemory
 
             using (var cancellationEvent = cancellationToken.GetCancellationEvent())
             {
+                // TODO: Remove double allocation, can get array immediately
                 var entries = Dispatcher.GetOrAddQueues(queues).ToArray();
                 var readyEvents = new WaitHandle[entries.Length + 1];
                 var waitAdded = new bool[entries.Length];
@@ -243,8 +245,7 @@ namespace Hangfire.InMemory
                 {
                     Name = jobEntry.State.Name,
                     Reason = jobEntry.State.Reason,
-                    // TODO Case sensitivity
-                    Data = jobEntry.State.Data.ToDictionary(x => x.Key, x => x.Value)
+                    Data = jobEntry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer)
                 };
             });
         }
@@ -320,6 +321,7 @@ namespace Hangfire.InMemory
                 {
                     if (now > server.Value.HeartbeatAt + timeout)
                     {
+                        // TODO: Can remove without adding to the list
                         serversToRemove.Add(server.Key);
                     }
                 }
@@ -335,7 +337,7 @@ namespace Hangfire.InMemory
 
         public override DateTime GetUtcDateTime()
         {
-            // TODO: Implement without touching the dispatcher
+            // TODO: Implement without touching the dispatcher?
             return Dispatcher.QueryAndWait(state => state.TimeResolver());
         }
 
@@ -345,7 +347,7 @@ namespace Hangfire.InMemory
 
             return Dispatcher.QueryAndWait(state =>
             {
-                var result = new HashSet<string>();
+                var result = new HashSet<string>(state.StringComparer);
 
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -544,8 +546,7 @@ namespace Hangfire.InMemory
             {
                 if (state.Hashes.TryGetValue(key, out var hash))
                 {
-                    // TODO: Don't forget about case sensitivity
-                    return hash.Value.ToDictionary(x => x.Key, x => x.Value);
+                    return hash.Value.ToDictionary(x => x.Key, x => x.Value, state.StringComparer);
                 }
 
                 return null;

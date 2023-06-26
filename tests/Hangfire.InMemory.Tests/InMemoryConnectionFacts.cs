@@ -25,7 +25,7 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions();
             _now = new DateTime(2020, 09, 29, 08, 05, 30, DateTimeKind.Utc);
-            _state = new InMemoryState(() => _now);
+            _state = new InMemoryState(() => _now, StringComparer.Ordinal);
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
         }
