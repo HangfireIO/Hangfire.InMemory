@@ -84,7 +84,7 @@ namespace Hangfire.InMemory
         {
             if (!_hash.TryGetValue(value, out var entry))
             {
-                entry = new SortedSetEntry(value) { Score = score };
+                entry = new SortedSetEntry(value, score);
                 _value.Add(entry);
                 _hash.Add(value, entry);
             }
@@ -92,16 +92,18 @@ namespace Hangfire.InMemory
             {
                 // Element already exists, just need to add a score value – re-create it.
                 _value.Remove(entry);
-                entry.Score = score;
+
+                entry = new SortedSetEntry(value, score);
                 _value.Add(entry);
+                _hash[value] = entry;
             }
         }
 
         public List<string> GetViewBetween(double from, double to, int count)
         {
             var view = _value.GetViewBetween(
-                new SortedSetEntry(null) { Score = from },
-                new SortedSetEntry(null) { Score = to });
+                new SortedSetEntry(null, from),
+                new SortedSetEntry(null, to));
 
             var result = new List<string>(view.Count);
             foreach (var entry in view)
@@ -116,8 +118,8 @@ namespace Hangfire.InMemory
         public string GetFirstBetween(double from, double to)
         {
             var view = _value.GetViewBetween(
-                new SortedSetEntry(null) { Score = from },
-                new SortedSetEntry(null) { Score = to });
+                new SortedSetEntry(null, from),
+                new SortedSetEntry(null, to));
 
             return view.Count > 0 ? view.Min.Value : null;
         }
@@ -239,16 +241,34 @@ namespace Hangfire.InMemory
         public InMemoryQueueWaitNode WaitHead = new InMemoryQueueWaitNode(null);
     }
 
-    internal struct SortedSetEntry
+    internal readonly struct SortedSetEntry : IEquatable<SortedSetEntry>
     {
-        public SortedSetEntry(string value)
+        public SortedSetEntry(string value, double score)
         {
             Value = value;
-            Score = 0D;
+            Score = score;
         }
 
         public string Value { get; }
-        public double Score { get; set; }
+        public double Score { get; }
+
+        public bool Equals(SortedSetEntry other)
+        {
+            return Value == other.Value && Score.Equals(other.Score);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SortedSetEntry other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return ((Value != null ? Value.GetHashCode() : 0) * 397) ^ Score.GetHashCode();
+            }
+        }
     }
 
     internal sealed class StateEntry
@@ -271,6 +291,10 @@ namespace Hangfire.InMemory
 
         public int Compare(SortedSetEntry x, SortedSetEntry y)
         {
+            if (ReferenceEquals(x, y)) return 0;
+            if (ReferenceEquals(null, y)) return 1;
+            if (ReferenceEquals(null, x)) return -1;
+
             var scoreComparison = x.Score.CompareTo(y.Score);
             if (scoreComparison != 0 ||
                 ReferenceEquals(null, y.Value) ||
