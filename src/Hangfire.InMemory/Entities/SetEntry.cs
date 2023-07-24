@@ -4,15 +4,15 @@ using System.Collections.Generic;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class SetEntry : IExpirableEntry, IEnumerable<SortedSetEntry>
+    internal sealed class SetEntry : IExpirableEntry, IEnumerable<SortedSetItem>
     {
-        private readonly IDictionary<string, SortedSetEntry> _hash;
-        private readonly SortedSet<SortedSetEntry> _value;
+        private readonly IDictionary<string, SortedSetItem> _hash;
+        private readonly SortedSet<SortedSetItem> _value;
 
         public SetEntry(string id, StringComparer stringComparer)
         {
-            _hash = new Dictionary<string, SortedSetEntry>(stringComparer);
-            _value = new SortedSet<SortedSetEntry>(new SortedSetEntryComparer(stringComparer));
+            _hash = new Dictionary<string, SortedSetItem>(stringComparer);
+            _value = new SortedSet<SortedSetItem>(new SortedSetItemComparer(stringComparer));
             Key = id;
         }
 
@@ -25,7 +25,7 @@ namespace Hangfire.InMemory.Entities
         {
             if (!_hash.TryGetValue(value, out var entry))
             {
-                entry = new SortedSetEntry(value, score);
+                entry = new SortedSetItem(value, score);
                 _value.Add(entry);
                 _hash.Add(value, entry);
             }
@@ -34,7 +34,7 @@ namespace Hangfire.InMemory.Entities
                 // Element already exists, just need to add a score value – re-create it.
                 _value.Remove(entry);
 
-                entry = new SortedSetEntry(value, score);
+                entry = new SortedSetItem(value, score);
                 _value.Add(entry);
                 _hash[value] = entry;
             }
@@ -43,8 +43,8 @@ namespace Hangfire.InMemory.Entities
         public List<string> GetViewBetween(double from, double to, int count)
         {
             var view = _value.GetViewBetween(
-                new SortedSetEntry(null, from),
-                new SortedSetEntry(null, to));
+                new SortedSetItem(null, from),
+                new SortedSetItem(null, to));
 
             var result = new List<string>(view.Count);
             foreach (var entry in view)
@@ -59,8 +59,8 @@ namespace Hangfire.InMemory.Entities
         public string GetFirstBetween(double from, double to)
         {
             var view = _value.GetViewBetween(
-                new SortedSetEntry(null, from),
-                new SortedSetEntry(null, to));
+                new SortedSetItem(null, from),
+                new SortedSetItem(null, to));
 
             return view.Count > 0 ? view.Min.Value : null;
         }
@@ -79,7 +79,7 @@ namespace Hangfire.InMemory.Entities
             return _hash.ContainsKey(value);
         }
 
-        public IEnumerator<SortedSetEntry> GetEnumerator()
+        public IEnumerator<SortedSetItem> GetEnumerator()
         {
             return _value.GetEnumerator();
         }

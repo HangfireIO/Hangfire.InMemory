@@ -2,9 +2,9 @@ using System;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal readonly struct SortedSetEntry : IEquatable<SortedSetEntry>
+    internal readonly struct SortedSetItem : IEquatable<SortedSetItem>
     {
-        public SortedSetEntry(string value, double score)
+        public SortedSetItem(string value, double score)
         {
             Value = value;
             Score = score;
@@ -13,14 +13,14 @@ namespace Hangfire.InMemory.Entities
         public string Value { get; }
         public double Score { get; }
 
-        public bool Equals(SortedSetEntry other)
+        public bool Equals(SortedSetItem other)
         {
             return Value == other.Value && Score.Equals(other.Score);
         }
 
         public override bool Equals(object obj)
         {
-            return obj is SortedSetEntry other && Equals(other);
+            return obj is SortedSetItem other && Equals(other);
         }
 
         public override int GetHashCode()
