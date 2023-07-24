@@ -168,6 +168,7 @@ namespace Hangfire.InMemory
 
             if (set.ExpireAt.HasValue)
             {
+                // TODO: Ensure entity removal always deals with expiration indexes
                 _setIndex.Remove(set);
             }
         }
