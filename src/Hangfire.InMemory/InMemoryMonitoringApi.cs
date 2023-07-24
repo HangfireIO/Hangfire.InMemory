@@ -22,7 +22,6 @@ namespace Hangfire.InMemory
         {
             return _dispatcher.QueryAndWait(state =>
             {
-                // TODO: Move all allocations outside of dispatcher thread, just in case it helps
                 var result = new List<QueueWithTopEnqueuedJobsDto>();
 
                 foreach (var queueEntry in state.Queues)
