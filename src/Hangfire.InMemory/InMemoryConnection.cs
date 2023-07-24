@@ -257,12 +257,9 @@ namespace Hangfire.InMemory
                 {
                     var now = state.TimeResolver();
 
-                    state.ServerAdd(serverId, new ServerEntry
-                    {
-                        Context = new ServerContext { Queues = context.Queues?.ToArray(), WorkerCount = context.WorkerCount },
-                        StartedAt = now,
-                        HeartbeatAt = now,
-                    });
+                    state.ServerAdd(serverId, new ServerEntry(
+                        new ServerContext { Queues = context.Queues?.ToArray(), WorkerCount = context.WorkerCount },
+                        now));
                 }
 
                 return true;

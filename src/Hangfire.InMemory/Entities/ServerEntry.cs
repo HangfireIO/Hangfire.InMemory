@@ -5,8 +5,15 @@ namespace Hangfire.InMemory.Entities
 {
     internal sealed class ServerEntry
     {
-        public ServerContext Context { get; set; }
-        public DateTime StartedAt { get; set; }
+        public ServerEntry(ServerContext context, DateTime startedAt)
+        {
+            Context = context;
+            StartedAt = startedAt;
+            HeartbeatAt = startedAt;
+        }
+
+        public ServerContext Context { get; }
+        public DateTime StartedAt { get; }
         public DateTime HeartbeatAt { get; set; }
     }
 }
