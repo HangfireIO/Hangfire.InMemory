@@ -240,7 +240,7 @@ namespace Hangfire.InMemory
                 {
                     Name = jobEntry.State.Name,
                     Reason = jobEntry.State.Reason,
-                    Data = jobEntry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer)
+                    Data = jobEntry.State.GetData()
                 };
             });
         }

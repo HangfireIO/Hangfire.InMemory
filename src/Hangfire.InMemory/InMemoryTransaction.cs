@@ -112,18 +112,18 @@ namespace Hangfire.InMemory
             // TODO: Add test to ensure state.Name doesn't throw inside dispatcher
             // TODO: Add test to ensure state.SerializeData doesn't throw inside dispatcher
 
-            var stateEntry = new StateEntry
-            {
-                Name = state.Name,
-                Reason = state.Reason,
-                Data = state.SerializeData()
-            };
+            var data = state.SerializeData();
 
             _actions.Add(memory =>
             {
                 if (memory.Jobs.TryGetValue(jobId, out var job))
                 {
-                    stateEntry.CreatedAt = memory.TimeResolver();
+                    var stateEntry = new StateEntry(
+                        state.Name,
+                        state.Reason,
+                        data,
+                        memory.TimeResolver(),
+                        memory.Options.StringComparer);
 
                     // TODO: Limit this somehow
                     job.History.Add(stateEntry);
@@ -141,18 +141,19 @@ namespace Hangfire.InMemory
             // TODO: Add test to ensure state.Name doesn't throw inside dispatcher
             // TODO: Add test to ensure state.SerializeData doesn't throw inside dispatcher
 
-            var stateEntry = new StateEntry
-            {
-                Name = state.Name,
-                Reason = state.Reason,
-                Data = state.SerializeData()
-            };
+            var data = state.SerializeData();
 
             _actions.Add(memory =>
             {
                 if (memory.Jobs.TryGetValue(jobId, out var job))
                 {
-                    stateEntry.CreatedAt = memory.TimeResolver();
+                    var stateEntry = new StateEntry(
+                        state.Name,
+                        state.Reason,
+                        data,
+                        memory.TimeResolver(),
+                        memory.Options.StringComparer);
+
                     // TODO: Limit this somehow
                     job.History.Add(stateEntry);
                 }

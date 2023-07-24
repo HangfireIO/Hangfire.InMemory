@@ -283,11 +283,26 @@ namespace Hangfire.InMemory
 
     internal sealed class StateEntry
     {
-        public string Name { get; set; }
-        public string Reason { get; set; }
-        // TODO: Encapsulate modification to ensure comparisons performed correctly
-        public IDictionary<string, string> Data { get; set; }
-        public DateTime CreatedAt { get; set; }
+        private readonly Dictionary<string, string> _data;
+
+        public StateEntry(string name, string reason, IDictionary<string, string> data, DateTime createdAt, StringComparer comparer)
+        {
+            _data = data != null ? new Dictionary<string, string>(data, comparer) : null;
+            Name = name;
+            Reason = reason;
+            CreatedAt = createdAt;
+        }
+
+        public string Name { get; }
+        public string Reason { get; }
+        public DateTime CreatedAt { get; }
+
+        public IDictionary<string, string> GetData()
+        {
+            return _data != null 
+                ? new Dictionary<string, string>(_data, _data.Comparer)
+                : null;
+        }
     }
 
     internal sealed class SortedSetEntryComparer : IComparer<SortedSetEntry>

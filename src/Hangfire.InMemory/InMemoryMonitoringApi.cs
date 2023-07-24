@@ -56,8 +56,8 @@ namespace Hangfire.InMemory
                             State = stateName,
                             InEnqueuedState = inEnqueuedState,
                             EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt : null,
-                            StateData = inEnqueuedState && jobEntry?.State?.Data != null
-                                ? new Dictionary<string, string>(jobEntry.State.Data, state.Options.StringComparer)
+                            StateData = inEnqueuedState && jobEntry?.State != null
+                                ? jobEntry.State.GetData()
                                 : null
                         }));
                     }
@@ -122,7 +122,7 @@ namespace Hangfire.InMemory
                         CreatedAt = x.CreatedAt,
                         StateName = x.Name,
                         Reason = x.Reason,
-                        Data = x.Data.ToDictionary(y => y.Key, y => y.Value, state.Options.StringComparer)
+                        Data = x.GetData()
                     }).Reverse().ToList()
                 };
             });
@@ -190,8 +190,8 @@ namespace Hangfire.InMemory
                             State = stateName,
                             InEnqueuedState = inEnqueuedState,
                             EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt : null,
-                            StateData = inEnqueuedState && jobEntry?.State?.Data != null
-                                ? new Dictionary<string, string>(jobEntry.State.Data, state.Options.StringComparer)
+                            StateData = inEnqueuedState && jobEntry?.State != null
+                                ? jobEntry.State.GetData()
                                 : null
                         }));
 
@@ -227,17 +227,18 @@ namespace Hangfire.InMemory
                         var inProcessingState = ProcessingState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
+                        var data = entry.State?.GetData();
 
                         result.Add(new KeyValuePair<string, ProcessingJobDto>(entry.Key, new ProcessingJobDto
                         {
-                            ServerId = entry.State?.Data.ContainsKey("ServerId") ?? false ? entry.State.Data["ServerId"] : null,
+                            ServerId = data?.ContainsKey("ServerId") ?? false ? data["ServerId"] : null,
                             Job = job,
                             InvocationData = entry.InvocationData,
                             LoadException = loadException,
                             InProcessingState = inProcessingState,
                             StartedAt = entry.State?.CreatedAt,
-                            StateData = inProcessingState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, state.Options.StringComparer)
+                            StateData = inProcessingState && data != null
+                                ? data
                                 : null
                         }));
 
@@ -283,8 +284,8 @@ namespace Hangfire.InMemory
                             LoadException = loadException,
                             InScheduledState = inScheduledState,
                             ScheduledAt = backgroundJob?.State?.CreatedAt,
-                            StateData = inScheduledState && backgroundJob?.State?.Data != null
-                                ? new Dictionary<string, string>(backgroundJob.State.Data, state.Options.StringComparer)
+                            StateData = inScheduledState && backgroundJob?.State != null
+                                ? backgroundJob.State.GetData()
                                 : null
                         }));
 
@@ -314,20 +315,21 @@ namespace Hangfire.InMemory
                         var inSucceededState = SucceededState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
+                        var data = entry.State?.GetData();
 
                         result.Add(new KeyValuePair<string, SucceededJobDto>(entry.Key, new SucceededJobDto
                         {
-                            Result = entry.State?.Data.ContainsKey("Result") ?? false ? entry.State.Data["Result"] : null,
-                            TotalDuration = (entry.State?.Data.ContainsKey("PerformanceDuration") ?? false) && (entry.State?.Data.ContainsKey("Latency") ?? false) 
-                                ? long.Parse(entry.State.Data["PerformanceDuration"]) + long.Parse(entry.State.Data["Latency"])
+                            Result = data?.ContainsKey("Result") ?? false ? data["Result"] : null,
+                            TotalDuration = (data?.ContainsKey("PerformanceDuration") ?? false) && (data?.ContainsKey("Latency") ?? false) 
+                                ? long.Parse(data["PerformanceDuration"]) + long.Parse(data["Latency"])
                                 : (long?)null,
                             Job = job,
                             InvocationData = entry.InvocationData,
                             LoadException = loadException,
                             InSucceededState = inSucceededState,
                             SucceededAt = entry.State?.CreatedAt,
-                            StateData = inSucceededState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, state.Options.StringComparer)
+                            StateData = inSucceededState && data != null
+                                ? data
                                 : null
                         }));
 
@@ -357,20 +359,21 @@ namespace Hangfire.InMemory
                         var inFailedState = FailedState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
+                        var data = entry.State?.GetData();
 
                         result.Add(new KeyValuePair<string, FailedJobDto>(entry.Key, new FailedJobDto
                         {
                             Job = job,
                             InvocationData = entry.InvocationData,
                             LoadException = loadException,
-                            ExceptionDetails = entry.State?.Data.ContainsKey("ExceptionDetails") ?? false ? entry.State.Data["ExceptionDetails"] : null,
-                            ExceptionType = entry.State?.Data.ContainsKey("ExceptionType") ?? false ? entry.State.Data["ExceptionType"] : null,
-                            ExceptionMessage = entry.State?.Data.ContainsKey("ExceptionMessage") ?? false ? entry.State.Data["ExceptionMessage"] : null,
+                            ExceptionDetails = data?.ContainsKey("ExceptionDetails") ?? false ? data["ExceptionDetails"] : null,
+                            ExceptionType = data?.ContainsKey("ExceptionType") ?? false ? data["ExceptionType"] : null,
+                            ExceptionMessage = data?.ContainsKey("ExceptionMessage") ?? false ? data["ExceptionMessage"] : null,
                             Reason = entry.State?.Reason,
                             InFailedState = inFailedState,
                             FailedAt = entry.State?.CreatedAt,
-                            StateData = inFailedState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, state.Options.StringComparer)
+                            StateData = inFailedState && data != null
+                                ? data
                                 : null
                         }));
 
@@ -408,8 +411,8 @@ namespace Hangfire.InMemory
                             LoadException = loadException,
                             InDeletedState = inDeletedState,
                             DeletedAt = entry.State?.CreatedAt,
-                            StateData = inDeletedState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, state.Options.StringComparer)
+                            StateData = inDeletedState && entry.State != null
+                                ? entry.State.GetData()
                                 : null
                         }));
 
@@ -447,8 +450,8 @@ namespace Hangfire.InMemory
                             LoadException = loadException,
                             InAwaitingState = inAwaitingState,
                             AwaitingAt = entry.State?.CreatedAt,
-                            StateData = inAwaitingState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, state.Options.StringComparer)
+                            StateData = inAwaitingState && entry.State != null
+                                ? entry.State.GetData()
                                 : null
                         }));
 

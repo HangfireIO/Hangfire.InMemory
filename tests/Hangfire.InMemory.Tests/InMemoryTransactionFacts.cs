@@ -476,7 +476,7 @@ namespace Hangfire.InMemory.Tests
             Assert.NotNull(entry.State);
             Assert.Equal("SomeState", entry.State.Name);
             Assert.Equal("SomeReason", entry.State.Reason);
-            Assert.Equal("Value", entry.State.Data["Key"]);
+            Assert.Equal("Value", entry.State.GetData()["Key"]);
             Assert.Equal(_now, entry.State.CreatedAt);
         }
 
@@ -557,7 +557,7 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal("SomeName", entry.Name);
             Assert.Equal("SomeReason", entry.Reason);
-            Assert.Equal("Value", entry.Data["Key"]);
+            Assert.Equal("Value", entry.GetData()["Key"]);
             Assert.Equal(_now, entry.CreatedAt);
         }
 
