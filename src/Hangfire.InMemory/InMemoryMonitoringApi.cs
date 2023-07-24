@@ -57,7 +57,7 @@ namespace Hangfire.InMemory
                             InEnqueuedState = inEnqueuedState,
                             EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt : null,
                             StateData = inEnqueuedState && jobEntry?.State?.Data != null
-                                ? new Dictionary<string, string>(jobEntry.State.Data, state.StringComparer)
+                                ? new Dictionary<string, string>(jobEntry.State.Data, state.Options.StringComparer)
                                 : null
                         }));
                     }
@@ -70,7 +70,7 @@ namespace Hangfire.InMemory
                     });
                 }
 
-                return result.OrderBy(x => x.Name, state.StringComparer).ToList();
+                return result.OrderBy(x => x.Name, state.Options.StringComparer).ToList();
             });
         }
 
@@ -92,7 +92,7 @@ namespace Hangfire.InMemory
                     });
                 }
 
-                return result.OrderBy(x => x.Name, state.StringComparer).ToList();
+                return result.OrderBy(x => x.Name, state.Options.StringComparer).ToList();
             });
         }
 
@@ -116,13 +116,13 @@ namespace Hangfire.InMemory
                     Job = job,
                     InvocationData = entry.InvocationData,
                     LoadException = loadException,
-                    Properties = entry.Parameters.ToDictionary(x => x.Key, x => x.Value, state.StringComparer),
+                    Properties = entry.Parameters.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer),
                     History = entry.History.Select(x => new StateHistoryDto
                     {
                         CreatedAt = x.CreatedAt,
                         StateName = x.Name,
                         Reason = x.Reason,
-                        Data = x.Data.ToDictionary(y => y.Key, y => y.Value, state.StringComparer)
+                        Data = x.Data.ToDictionary(y => y.Key, y => y.Value, state.Options.StringComparer)
                     }).Reverse().ToList()
                 };
             });
@@ -191,7 +191,7 @@ namespace Hangfire.InMemory
                             InEnqueuedState = inEnqueuedState,
                             EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt : null,
                             StateData = inEnqueuedState && jobEntry?.State?.Data != null
-                                ? new Dictionary<string, string>(jobEntry.State.Data, state.StringComparer)
+                                ? new Dictionary<string, string>(jobEntry.State.Data, state.Options.StringComparer)
                                 : null
                         }));
 
@@ -237,7 +237,7 @@ namespace Hangfire.InMemory
                             InProcessingState = inProcessingState,
                             StartedAt = entry.State?.CreatedAt,
                             StateData = inProcessingState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, state.StringComparer)
+                                ? new Dictionary<string, string>(entry.State.Data, state.Options.StringComparer)
                                 : null
                         }));
 
@@ -284,7 +284,7 @@ namespace Hangfire.InMemory
                             InScheduledState = inScheduledState,
                             ScheduledAt = backgroundJob?.State?.CreatedAt,
                             StateData = inScheduledState && backgroundJob?.State?.Data != null
-                                ? new Dictionary<string, string>(backgroundJob.State.Data, state.StringComparer)
+                                ? new Dictionary<string, string>(backgroundJob.State.Data, state.Options.StringComparer)
                                 : null
                         }));
 
@@ -327,7 +327,7 @@ namespace Hangfire.InMemory
                             InSucceededState = inSucceededState,
                             SucceededAt = entry.State?.CreatedAt,
                             StateData = inSucceededState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, state.StringComparer)
+                                ? new Dictionary<string, string>(entry.State.Data, state.Options.StringComparer)
                                 : null
                         }));
 
@@ -370,7 +370,7 @@ namespace Hangfire.InMemory
                             InFailedState = inFailedState,
                             FailedAt = entry.State?.CreatedAt,
                             StateData = inFailedState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, state.StringComparer)
+                                ? new Dictionary<string, string>(entry.State.Data, state.Options.StringComparer)
                                 : null
                         }));
 
@@ -409,7 +409,7 @@ namespace Hangfire.InMemory
                             InDeletedState = inDeletedState,
                             DeletedAt = entry.State?.CreatedAt,
                             StateData = inDeletedState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, state.StringComparer)
+                                ? new Dictionary<string, string>(entry.State.Data, state.Options.StringComparer)
                                 : null
                         }));
 
@@ -448,7 +448,7 @@ namespace Hangfire.InMemory
                             InAwaitingState = inAwaitingState,
                             AwaitingAt = entry.State?.CreatedAt,
                             StateData = inAwaitingState && entry.State?.Data != null
-                                ? new Dictionary<string, string>(entry.State.Data, state.StringComparer)
+                                ? new Dictionary<string, string>(entry.State.Data, state.Options.StringComparer)
                                 : null
                         }));
 

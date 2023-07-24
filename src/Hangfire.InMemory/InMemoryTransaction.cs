@@ -50,8 +50,8 @@ namespace Hangfire.InMemory
                     parameters,
                     createdAt,
                     createdAt.Add(expireIn),
-                    _connection.Options.DisableJobSerialization, // TODO: Can move this to state
-                    state.StringComparer);
+                    state.Options.DisableJobSerialization,
+                    state.Options.StringComparer);
 
                 // TODO: We need somehow to ensure that this entry isn't removed before initialization
                 state.JobCreate(backgroundJob);

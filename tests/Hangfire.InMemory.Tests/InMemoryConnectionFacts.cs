@@ -25,7 +25,7 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions();
             _now = new DateTime(2020, 09, 29, 08, 05, 30, DateTimeKind.Utc);
-            _state = new InMemoryState(() => _now, StringComparer.Ordinal);
+            _state = new InMemoryState(() => _now, _options);
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
         }
@@ -34,19 +34,9 @@ namespace Hangfire.InMemory.Tests
         public void Ctor_ThrowsAnException_WhenDispatcherIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new InMemoryConnection(null, _options));
+                () => new InMemoryConnection(null));
 
             Assert.Equal("dispatcher", exception.ParamName);
-        }
-
-        [Fact]
-        public void Ctor_ThrowsAnException_WhenOptionsIsNull()
-        {
-            var exception = Assert.Throws<ArgumentNullException>(
-                () => new InMemoryConnection(
-                    new InMemoryDispatcherBase(_state), null));
-
-            Assert.Equal("options", exception.ParamName);
         }
 
         [Fact]
@@ -2177,7 +2167,7 @@ namespace Hangfire.InMemory.Tests
 
         private InMemoryConnection CreateConnection()
         {
-            return new InMemoryConnection(new InMemoryDispatcherBase(_state), _options);
+            return new InMemoryConnection(new InMemoryDispatcherBase(_state));
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test

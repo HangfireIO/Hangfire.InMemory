@@ -12,13 +12,15 @@ namespace Hangfire.InMemory.Tests
 {
     public class InMemoryMonitoringApiFacts
     {
+        private readonly InMemoryStorageOptions _options;
         private readonly InMemoryState _state;
         private DateTime _now;
 
         public InMemoryMonitoringApiFacts()
         {
+            _options = new InMemoryStorageOptions { StringComparer = StringComparer.Ordinal };
             _now = new DateTime(2020, 09, 29, 08, 05, 30, DateTimeKind.Utc);
-            _state = new InMemoryState(() => _now, StringComparer.Ordinal);
+            _state = new InMemoryState(() => _now, _options);
         }
 
         [Fact]
@@ -942,9 +944,7 @@ namespace Hangfire.InMemory.Tests
 
         private T UseConnection<T>(Func<InMemoryConnection, T> action)
         {
-            using (var connection = new InMemoryConnection(
-                new InMemoryDispatcherBase(_state),
-                new InMemoryStorageOptions()))
+            using (var connection = new InMemoryConnection(new InMemoryDispatcherBase(_state)))
             {
                 return action(connection);
             }

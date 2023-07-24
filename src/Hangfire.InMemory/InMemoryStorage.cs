@@ -36,7 +36,7 @@ namespace Hangfire.InMemory
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
 
-            _dispatcher = new InMemoryDispatcher(new InMemoryState(() => DateTime.UtcNow, Options.StringComparer));
+            _dispatcher = new InMemoryDispatcher(new InMemoryState(() => DateTime.UtcNow, Options));
         }
 
         public InMemoryStorageOptions Options { get; }
@@ -58,7 +58,7 @@ namespace Hangfire.InMemory
 
         public override IStorageConnection GetConnection()
         {
-            return new InMemoryConnection(_dispatcher, Options);
+            return new InMemoryConnection(_dispatcher);
         }
 
         public override string ToString()

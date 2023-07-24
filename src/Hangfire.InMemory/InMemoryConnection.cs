@@ -11,16 +11,12 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryConnection : JobStorageConnection
     {
-        public InMemoryConnection(
-            [NotNull] InMemoryDispatcherBase dispatcher,
-            [NotNull] InMemoryStorageOptions options)
+        public InMemoryConnection([NotNull] InMemoryDispatcherBase dispatcher)
         {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
-            Options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         public InMemoryDispatcherBase Dispatcher { get; }
-        public InMemoryStorageOptions Options { get; }
 
         public override IWriteOnlyTransaction CreateWriteTransaction()
         {
@@ -114,8 +110,8 @@ namespace Hangfire.InMemory
                     parameters,
                     now,
                     now.Add(expireIn),
-                    Options.DisableJobSerialization, // TODO: Can move this to state
-                    state.StringComparer);
+                    state.Options.DisableJobSerialization,
+                    state.Options.StringComparer);
 
                 // TODO: We need somehow to ensure that this entry isn't removed before initialization
                 state.JobCreate(backgroundJob);
@@ -244,7 +240,7 @@ namespace Hangfire.InMemory
                 {
                     Name = jobEntry.State.Name,
                     Reason = jobEntry.State.Reason,
-                    Data = jobEntry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer)
+                    Data = jobEntry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer)
                 };
             });
         }
@@ -346,7 +342,7 @@ namespace Hangfire.InMemory
 
             return Dispatcher.QueryAndWait(state =>
             {
-                var result = new HashSet<string>(state.StringComparer);
+                var result = new HashSet<string>(state.Options.StringComparer);
 
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -545,7 +541,7 @@ namespace Hangfire.InMemory
             {
                 if (state.Hashes.TryGetValue(key, out var hash))
                 {
-                    return hash.Value.ToDictionary(x => x.Key, x => x.Value, state.StringComparer);
+                    return hash.Value.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer);
                 }
 
                 return null;

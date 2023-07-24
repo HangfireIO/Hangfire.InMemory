@@ -21,6 +21,7 @@ namespace Hangfire.InMemory.Tests
 {
     public class InMemoryTransactionFacts
     {
+        private readonly InMemoryStorageOptions _options;
         private readonly InMemoryState _state;
         private readonly DateTime _now;
         private readonly InMemoryConnection _connection;
@@ -29,8 +30,9 @@ namespace Hangfire.InMemory.Tests
 
         public InMemoryTransactionFacts()
         {
+            _options = new InMemoryStorageOptions { StringComparer = StringComparer.Ordinal };
             _now = new DateTime(2020, 09, 29, 08, 05, 30, DateTimeKind.Utc);
-            _state = new InMemoryState(() => _now, StringComparer.Ordinal);
+            _state = new InMemoryState(() => _now, _options);
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
             _connection = CreateConnection();
@@ -1656,7 +1658,7 @@ namespace Hangfire.InMemory.Tests
 
         private InMemoryConnection CreateConnection()
         {
-            return new InMemoryConnection(new InMemoryDispatcher(_state), new InMemoryStorageOptions());
+            return new InMemoryConnection(new InMemoryDispatcher(_state));
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test

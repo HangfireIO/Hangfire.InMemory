@@ -27,32 +27,32 @@ namespace Hangfire.InMemory
         private readonly ConcurrentDictionary<string, QueueEntry> _queues;
         private readonly Dictionary<string, ServerEntry> _servers;
 
-        public InMemoryState(Func<DateTime> timeResolver, StringComparer stringComparer)
+        public InMemoryState(Func<DateTime> timeResolver, InMemoryStorageOptions options)
         {
             TimeResolver = timeResolver;
-            StringComparer = stringComparer;
+            Options = options;
 
-            _backgroundJobEntryComparer = new BackgroundJobStateCreatedAtComparer(stringComparer);
+            _backgroundJobEntryComparer = new BackgroundJobStateCreatedAtComparer(options.StringComparer);
 
-            var expirableEntryComparer = new ExpirableEntryComparer(stringComparer);
+            var expirableEntryComparer = new ExpirableEntryComparer(options.StringComparer);
             _jobIndex = new SortedSet<BackgroundJobEntry>(expirableEntryComparer);
             _counterIndex = new SortedSet<CounterEntry>(expirableEntryComparer);
             _hashIndex = new SortedSet<HashEntry>(expirableEntryComparer);
             _listIndex = new SortedSet<ListEntry>(expirableEntryComparer);
             _setIndex = new SortedSet<SetEntry>(expirableEntryComparer);
 
-            _locks = CreateDictionary<LockEntry>(stringComparer);
-            _jobs = CreateConcurrentDictionary<BackgroundJobEntry>(stringComparer);
-            _hashes = CreateDictionary<HashEntry>(stringComparer);
-            _lists = CreateDictionary<ListEntry>(stringComparer);
-            _sets = CreateDictionary<SetEntry>(stringComparer);
-            _counters = CreateDictionary<CounterEntry>(stringComparer);
-            _queues = CreateConcurrentDictionary<QueueEntry>(stringComparer);
-            _servers = CreateDictionary<ServerEntry>(stringComparer);
+            _locks = CreateDictionary<LockEntry>(options.StringComparer);
+            _jobs = CreateConcurrentDictionary<BackgroundJobEntry>(options.StringComparer);
+            _hashes = CreateDictionary<HashEntry>(options.StringComparer);
+            _lists = CreateDictionary<ListEntry>(options.StringComparer);
+            _sets = CreateDictionary<SetEntry>(options.StringComparer);
+            _counters = CreateDictionary<CounterEntry>(options.StringComparer);
+            _queues = CreateConcurrentDictionary<QueueEntry>(options.StringComparer);
+            _servers = CreateDictionary<ServerEntry>(options.StringComparer);
         }
 
         public Func<DateTime> TimeResolver { get; }
-        public StringComparer StringComparer { get; }
+        public InMemoryStorageOptions Options { get; }
 
         public ConcurrentDictionary<string, BackgroundJobEntry> Jobs => _jobs; // TODO Implement workaround for net45 to return IReadOnlyDictionary (and the same for _queues)
         public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
@@ -126,7 +126,7 @@ namespace Hangfire.InMemory
         {
             if (!_hashes.TryGetValue(key, out var hash))
             {
-                _hashes.Add(key, hash = new HashEntry(key, StringComparer));
+                _hashes.Add(key, hash = new HashEntry(key, Options.StringComparer));
             }
 
             return hash;
@@ -150,7 +150,7 @@ namespace Hangfire.InMemory
         {
             if (!_sets.TryGetValue(key, out var set))
             {
-                _sets.Add(key, set = new SetEntry(key, StringComparer));
+                _sets.Add(key, set = new SetEntry(key, Options.StringComparer));
             }
 
             return set;
@@ -175,7 +175,7 @@ namespace Hangfire.InMemory
         {
             if (!_lists.TryGetValue(key, out var list))
             {
-                _lists.Add(key, list = new ListEntry(key, StringComparer));
+                _lists.Add(key, list = new ListEntry(key, Options.StringComparer));
             }
 
             return list;
