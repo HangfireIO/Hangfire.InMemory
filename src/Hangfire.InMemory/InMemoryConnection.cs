@@ -34,28 +34,14 @@ namespace Hangfire.InMemory
                 return new LockDisposable(Dispatcher, this, resource, entry);
             }
 
-            var timeoutMs = (int)timeout.TotalMilliseconds;
-            var started = Environment.TickCount;
-
             try
             {
-                lock (entry)
+                if (!entry.WaitUntilAcquired(this, timeout))
                 {
-                    while (entry.Owner != null)
-                    {
-                        var remaining = timeoutMs - unchecked(Environment.TickCount - started);
-                        if (remaining < 0)
-                        {
-                            throw new DistributedLockTimeoutException(resource);
-                        }
-
-                        Monitor.Wait(entry, remaining);
-                    }
-
-                    entry.Owner = this;
-                    entry.Level = 1;
-                    return new LockDisposable(Dispatcher, this, resource, entry);
+                    throw new DistributedLockTimeoutException(resource);
                 }
+
+                return new LockDisposable(Dispatcher, this, resource, entry);
             }
             catch (DistributedLockTimeoutException)
             {

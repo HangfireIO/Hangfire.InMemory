@@ -61,24 +61,12 @@ namespace Hangfire.InMemory
             {
                 if (!_state._locks.TryGetValue(resource, out entry))
                 {
-                    _state._locks.Add(resource, entry = new LockEntry { Owner = connection, ReferenceCount = 1, Level = 1 });
-                    acquired = true;
-                }
-                else if (entry.Owner == connection)
-                {
-                    lock (entry)
-                    {
-                        entry.Level++;
-                    }
+                    _state._locks.Add(resource, entry = new LockEntry(connection));
                     acquired = true;
                 }
                 else
                 {
-                    lock (entry)
-                    {
-                        // TODO: Ensure ReferenceCount is updated only under _state._locks
-                        entry.ReferenceCount++;
-                    }
+                    entry.TryAcquire(connection, ref acquired);
                 }
             }
 
@@ -94,47 +82,27 @@ namespace Hangfire.InMemory
                     throw new InvalidOperationException("Precondition failed when decrementing a lock");
                 }
 
-                lock (entry)
-                {
-                    entry.ReferenceCount--;
+                entry.Cancel();
 
-                    if (entry.ReferenceCount == 0)
-                    {
-                        _state._locks.Remove(resource);
-                    }
+                if (entry.Finalized)
+                {
+                    _state._locks.Remove(resource);
                 }
             }
         }
 
         public void ReleaseLockEntry(InMemoryConnection connection, string resource, LockEntry entry)
         {
-            // TODO: Ensure lock ordering to avoid deadlocks
             lock (_state._locks)
             {
                 if (!_state._locks.TryGetValue(resource, out var current)) throw new InvalidOperationException("Does not contain a lock");
                 if (!ReferenceEquals(current, entry)) throw new InvalidOperationException("Does not contain a correct lock entry");
+                
+                entry.Release(connection);
 
-                lock (entry)
+                if (entry.Finalized)
                 {
-                    if (!ReferenceEquals(entry.Owner, connection)) throw new InvalidOperationException("Wrong entry owner");
-                    if (entry.Level <= 0) throw new InvalidOperationException("Wrong level");
-
-                    entry.Level--;
-
-                    if (entry.Level == 0)
-                    {
-                        entry.Owner = null;
-                        entry.ReferenceCount--;
-
-                        if (entry.ReferenceCount == 0)
-                        {
-                            _state._locks.Remove(resource);
-                        }
-                        else
-                        {
-                            Monitor.Pulse(entry);
-                        }
-                    }
+                    _state._locks.Remove(resource);
                 }
             }
         }
