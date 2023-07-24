@@ -4,7 +4,7 @@ namespace Hangfire.InMemory.Entities
 {
     internal sealed class QueueEntry
     {
-        public readonly ConcurrentQueue<string> Queue = new ConcurrentQueue<string>();
-        public readonly InMemoryQueueWaitNode WaitHead = new InMemoryQueueWaitNode(null);
+        public ConcurrentQueue<string> Queue { get; } = new ConcurrentQueue<string>();
+        public InMemoryQueueWaitNode WaitHead { get; } = new InMemoryQueueWaitNode(null);
     }
 }
