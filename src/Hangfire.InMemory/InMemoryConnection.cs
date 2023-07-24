@@ -131,8 +131,7 @@ namespace Hangfire.InMemory
 
             using (var cancellationEvent = cancellationToken.GetCancellationEvent())
             {
-                // TODO: Remove double allocation, can get array immediately
-                var entries = Dispatcher.GetOrAddQueues(queues).ToArray();
+                var entries = Dispatcher.GetOrAddQueues(queues);
                 var readyEvents = new WaitHandle[entries.Length + 1];
                 var waitAdded = new bool[entries.Length];
 

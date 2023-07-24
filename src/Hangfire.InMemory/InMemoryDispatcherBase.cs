@@ -15,17 +15,18 @@ namespace Hangfire.InMemory
             _state = state ?? throw new ArgumentNullException(nameof(state));
         }
 
-        public IReadOnlyDictionary<string, QueueEntry> GetOrAddQueues([NotNull] IReadOnlyCollection<string> queueNames)
+        public KeyValuePair<string, QueueEntry>[] GetOrAddQueues([NotNull] IReadOnlyCollection<string> queueNames)
         {
             if (queueNames == null) throw new ArgumentNullException(nameof(queueNames));
 
-            var entries = new Dictionary<string, QueueEntry>(queueNames.Count, _state.StringComparer);
+            var entries = new KeyValuePair<string, QueueEntry>[queueNames.Count];
+            var index = 0;
+
             foreach (var queueName in queueNames)
             {
-                if (!entries.ContainsKey(queueName))
-                {
-                    entries.Add(queueName, _state.QueueGetOrCreate(queueName));
-                }
+                entries[index++] = new KeyValuePair<string, QueueEntry>(
+                    queueName,
+                    _state.QueueGetOrCreate(queueName));
             }
 
             return entries;
