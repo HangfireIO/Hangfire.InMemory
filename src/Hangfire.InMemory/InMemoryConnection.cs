@@ -316,7 +316,7 @@ namespace Hangfire.InMemory
                 {
                     if (now > server.Value.HeartbeatAt + timeout)
                     {
-                        // TODO: Can remove without adding to the list
+                        // Adding for removal first, to avoid breaking the iterator
                         serversToRemove.Add(server.Key);
                     }
                 }

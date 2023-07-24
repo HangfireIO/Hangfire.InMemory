@@ -43,10 +43,20 @@ namespace Hangfire.InMemory
             _value.RemoveAll(other => _stringComparer.Equals(value, other));
         }
 
-        // TODO: Try everything to remove this strange operation
-        internal void Update(List<string> value)
+        public int Trim(int keepStartingFrom, int keepEndingAt)
         {
-            _value = value;
+            var from = Math.Max(0, keepStartingFrom);
+            var to = Math.Min(_value.Count - 1, keepEndingAt);
+
+            var result = new List<string>();
+
+            for (var index = to; index >= from; index--)
+            {
+                result.Add(this[index]);
+            }
+
+            _value = result;
+            return _value.Count;
         }
     }
 

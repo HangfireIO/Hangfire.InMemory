@@ -260,22 +260,7 @@ namespace Hangfire.InMemory
             {
                 if (!state.Lists.TryGetValue(key, out var list)) return;
 
-                var result = new List<string>(); // TODO: Create only when really necessary
-
-                for (var index = list.Count - 1; index >= 0; index--)
-                {
-                    if (index >= keepStartingFrom && index <= keepEndingAt)
-                    {
-                        result.Add(list[index]);
-                    }
-                }
-
-                if (result.Count > 0)
-                {
-                    // TODO: Replace with better version
-                    list.Update(result);
-                }
-                else
+                if (list.Trim(keepStartingFrom, keepEndingAt) == 0)
                 {
                     state.ListDelete(list);
                 }
