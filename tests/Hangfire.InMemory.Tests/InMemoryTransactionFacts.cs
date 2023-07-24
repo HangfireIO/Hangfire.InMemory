@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Hangfire.Common;
+using Hangfire.InMemory.Entities;
 using Hangfire.States;
 using Hangfire.Storage;
 using Moq;

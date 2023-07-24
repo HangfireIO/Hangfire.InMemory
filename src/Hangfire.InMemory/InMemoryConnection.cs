@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using Hangfire.Annotations;
 using Hangfire.Common;
+using Hangfire.InMemory.Entities;
 using Hangfire.Server;
 using Hangfire.Storage;
 

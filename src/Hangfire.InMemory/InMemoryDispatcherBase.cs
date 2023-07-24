@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Hangfire.Annotations;
+using Hangfire.InMemory.Entities;
 
 namespace Hangfire.InMemory
 {

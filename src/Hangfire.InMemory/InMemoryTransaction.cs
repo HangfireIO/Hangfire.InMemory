@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Hangfire.Annotations;
 using Hangfire.Common;
+using Hangfire.InMemory.Entities;
 using Hangfire.States;
 using Hangfire.Storage;
 
