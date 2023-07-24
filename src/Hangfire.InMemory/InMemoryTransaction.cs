@@ -274,11 +274,8 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (keyValuePairs == null) throw new ArgumentNullException(nameof(keyValuePairs));
 
-            // TODO Return early when keyValuePairs empty, can remove comparison and deletion when empty
-
             _actions.Add(state =>
             {
-                // TODO: Avoid creating a hash when values are empty
                 var hash = state.HashGetOrAdd(key);
 
                 foreach (var valuePair in keyValuePairs)
