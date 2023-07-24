@@ -44,7 +44,7 @@ namespace Hangfire.InMemory
             _actions.Add(state =>
             {
                 // TODO: Precondition: jobId does not exist
-                var backgroundJob = BackgroundJobEntry.Create(
+                var backgroundJob = new BackgroundJobEntry(
                     key,
                     job,
                     parameters,

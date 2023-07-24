@@ -104,7 +104,7 @@ namespace Hangfire.InMemory
                 var now = state.TimeResolver();
                 
                 // TODO: Precondition: jobId does not exist
-                var backgroundJob = BackgroundJobEntry.Create(
+                var backgroundJob = new BackgroundJobEntry(
                     key,
                     job,
                     parameters,
