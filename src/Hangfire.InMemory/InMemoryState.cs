@@ -50,7 +50,7 @@ namespace Hangfire.InMemory
         public Func<DateTime> TimeResolver { get; }
         public InMemoryStorageOptions Options { get; }
 
-        public ConcurrentDictionary<string, BackgroundJobEntry> Jobs => _jobs; // TODO Implement workaround for net45 to return IReadOnlyDictionary (and the same for _queues)
+        public ConcurrentDictionary<string, BackgroundJobEntry> Jobs => _jobs; // net451 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
         public IDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
         public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
         public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
