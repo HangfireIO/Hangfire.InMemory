@@ -30,13 +30,6 @@ namespace Hangfire.InMemory
 
             _backgroundJobEntryComparer = new BackgroundJobStateCreatedAtComparer(options.StringComparer);
 
-            var expirableEntryComparer = new ExpirableEntryComparer(options.StringComparer);
-            ExpiringJobsIndex = new SortedSet<BackgroundJobEntry>(expirableEntryComparer);
-            ExpiringCountersIndex = new SortedSet<CounterEntry>(expirableEntryComparer);
-            ExpiringHashesIndex = new SortedSet<HashEntry>(expirableEntryComparer);
-            ExpiringListsIndex = new SortedSet<ListEntry>(expirableEntryComparer);
-            ExpiringSetsIndex = new SortedSet<SetEntry>(expirableEntryComparer);
-
             _locks = CreateDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
             _jobs = CreateConcurrentDictionary<BackgroundJobEntry>(options.StringComparer);
             _hashes = CreateDictionary<HashEntry>(options.StringComparer);
@@ -45,6 +38,13 @@ namespace Hangfire.InMemory
             _counters = CreateDictionary<CounterEntry>(options.StringComparer);
             _queues = CreateConcurrentDictionary<QueueEntry>(options.StringComparer);
             _servers = CreateDictionary<ServerEntry>(options.StringComparer);
+
+            var expirableEntryComparer = new ExpirableEntryComparer(options.StringComparer);
+            ExpiringJobsIndex = new SortedSet<BackgroundJobEntry>(expirableEntryComparer);
+            ExpiringCountersIndex = new SortedSet<CounterEntry>(expirableEntryComparer);
+            ExpiringHashesIndex = new SortedSet<HashEntry>(expirableEntryComparer);
+            ExpiringListsIndex = new SortedSet<ListEntry>(expirableEntryComparer);
+            ExpiringSetsIndex = new SortedSet<SetEntry>(expirableEntryComparer);
         }
 
         public Func<DateTime> TimeResolver { get; }
