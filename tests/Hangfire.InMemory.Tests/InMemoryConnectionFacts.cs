@@ -2121,6 +2121,22 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void AcquireDistributedLock_Granted_WhenConnectionIsClosed_WithoutExplicitDispose()
+        {
+            using (var connection1 = CreateConnection())
+            {
+                connection1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
+            }
+
+            using (var connection2 = CreateConnection())
+            {
+                using (connection2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1)))
+                {
+                }
+            }
+        }
+
+        [Fact]
         public void AcquireDistributedLock_Granted_OnSameResource_AndSameConnections()
         {
             UseConnection(connection =>

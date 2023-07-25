@@ -12,12 +12,25 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryConnection : JobStorageConnection
     {
+        private readonly HashSet<IDisposable> _acquiredLocks = new HashSet<IDisposable>();
+
         public InMemoryConnection([NotNull] InMemoryDispatcherBase dispatcher)
         {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
 
         public InMemoryDispatcherBase Dispatcher { get; }
+
+        public override void Dispose()
+        {
+            if (_acquiredLocks.Count > 0)
+            {
+                foreach (var acquiredLock in _acquiredLocks.ToArray())
+                {
+                    acquiredLock.Dispose();
+                }
+            }
+        }
 
         public override IWriteOnlyTransaction CreateWriteTransaction()
         {
@@ -28,10 +41,9 @@ namespace Hangfire.InMemory
         {
             if (resource == null) throw new ArgumentNullException(nameof(resource));
 
-            // TODO: Track acquired lock at a connection level and release them on dispose
             if (Dispatcher.TryAcquireLockEntry(this, resource, out var entry))
             {
-                return new LockDisposable(Dispatcher, this, resource, entry);
+                return new LockDisposable(this, resource, entry);
             }
 
             try
@@ -41,7 +53,7 @@ namespace Hangfire.InMemory
                     throw new DistributedLockTimeoutException(resource);
                 }
 
-                return new LockDisposable(Dispatcher, this, resource, entry);
+                return new LockDisposable(this, resource, entry);
             }
             catch (DistributedLockTimeoutException)
             {
@@ -592,18 +604,17 @@ namespace Hangfire.InMemory
 
         private sealed class LockDisposable : IDisposable
         {
-            private readonly InMemoryDispatcherBase _dispatcher;
-            private readonly JobStorageConnection _reference;
+            private readonly InMemoryConnection _reference;
             private readonly string _resource;
             private readonly LockEntry<JobStorageConnection> _entry;
             private bool _disposed;
 
-            public LockDisposable(InMemoryDispatcherBase dispatcher, JobStorageConnection reference, string resource, LockEntry<JobStorageConnection> entry)
+            public LockDisposable(InMemoryConnection reference, string resource, LockEntry<JobStorageConnection> entry)
             {
-                _dispatcher = dispatcher;
                 _reference = reference;
                 _resource = resource;
                 _entry = entry ?? throw new ArgumentNullException(nameof(entry));
+                _reference._acquiredLocks.Add(this);
             }
 
             public void Dispose()
@@ -611,7 +622,14 @@ namespace Hangfire.InMemory
                 if (_disposed) return;
                 _disposed = true;
 
-                _dispatcher.ReleaseLockEntry(_reference, _resource, _entry);
+                try
+                {
+                    _reference.Dispatcher.ReleaseLockEntry(_reference, _resource, _entry);
+                }
+                finally
+                {
+                    _reference._acquiredLocks.Remove(this);
+                }
             }
         }
     }

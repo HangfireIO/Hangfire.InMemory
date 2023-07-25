@@ -13,6 +13,7 @@ namespace Hangfire.InMemory.Entities
         }
 
         public ServerContext Context { get; }
+        // TODO: Consider replacing DateTime with monotonic clocks almost everywhere
         public DateTime StartedAt { get; }
         public DateTime HeartbeatAt { get; set; }
     }
