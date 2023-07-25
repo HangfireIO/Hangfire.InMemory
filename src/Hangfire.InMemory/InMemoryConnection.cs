@@ -611,8 +611,8 @@ namespace Hangfire.InMemory
 
             public LockDisposable(InMemoryConnection reference, string resource, LockEntry<JobStorageConnection> entry)
             {
-                _reference = reference;
-                _resource = resource;
+                _reference = reference ?? throw new ArgumentNullException(nameof(reference));
+                _resource = resource ?? throw new ArgumentNullException(nameof(resource));
                 _entry = entry ?? throw new ArgumentNullException(nameof(entry));
                 _reference._acquiredLocks.Add(this);
             }
