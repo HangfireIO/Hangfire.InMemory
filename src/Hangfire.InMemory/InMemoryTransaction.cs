@@ -110,9 +110,10 @@ namespace Hangfire.InMemory
             if (state == null) throw new ArgumentNullException(nameof(state));
             if (state.Name == null) throw new ArgumentException("Name property must not return null.", nameof(state));
 
-            // TODO: Add test to ensure state.Name doesn't throw inside dispatcher
-            // TODO: Add test to ensure state.SerializeData doesn't throw inside dispatcher
-
+            // IState can be implemented by user, and potentially can throw exceptions.
+            // Getting data here, out of the dispatcher thread, to avoid killing it.
+            var name = state.Name ?? throw new InvalidOperationException("state.Name returned null");
+            var reason = state.Reason;
             var data = state.SerializeData();
 
             _actions.Add(memory =>
@@ -120,8 +121,8 @@ namespace Hangfire.InMemory
                 if (memory.Jobs.TryGetValue(jobId, out var job))
                 {
                     var stateEntry = new StateEntry(
-                        state.Name,
-                        state.Reason,
+                        name,
+                        reason,
                         data,
                         memory.TimeResolver(),
                         memory.Options.StringComparer);
@@ -138,10 +139,10 @@ namespace Hangfire.InMemory
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
             if (state == null) throw new ArgumentNullException(nameof(state));
 
-            // TODO: Add non-null state.Name check
-            // TODO: Add test to ensure state.Name doesn't throw inside dispatcher
-            // TODO: Add test to ensure state.SerializeData doesn't throw inside dispatcher
-
+            // IState can be implemented by user, and potentially can throw exceptions.
+            // Getting data here, out of the dispatcher thread, to avoid killing it.
+            var name = state.Name ?? throw new InvalidOperationException("state.Name returned null");
+            var reason = state.Reason;
             var data = state.SerializeData();
 
             _actions.Add(memory =>
@@ -149,8 +150,8 @@ namespace Hangfire.InMemory
                 if (memory.Jobs.TryGetValue(jobId, out var job))
                 {
                     var stateEntry = new StateEntry(
-                        state.Name,
-                        state.Reason,
+                        name,
+                        reason,
                         data,
                         memory.TimeResolver(),
                         memory.Options.StringComparer);
