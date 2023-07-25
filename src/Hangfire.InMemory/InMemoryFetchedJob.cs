@@ -1,4 +1,5 @@
-﻿using Hangfire.Storage;
+﻿using System;
+using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
@@ -17,14 +18,6 @@ namespace Hangfire.InMemory
         public string QueueName { get; }
         public string JobId { get; }
 
-        public void Dispose()
-        {
-        }
-
-        public void RemoveFromQueue()
-        {
-        }
-
         public void Requeue()
         {
             var entry = _dispatcher.QueryAndWait(state =>
@@ -35,6 +28,14 @@ namespace Hangfire.InMemory
             });
 
             _dispatcher.SignalOneQueueWaitNode(entry);
+        }
+
+        void IDisposable.Dispose()
+        {
+        }
+
+        void IFetchedJob.RemoveFromQueue()
+        {
         }
     }
 }
