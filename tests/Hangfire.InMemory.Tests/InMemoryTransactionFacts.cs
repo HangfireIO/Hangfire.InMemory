@@ -517,7 +517,7 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.SetJobState("myjob", state.Object));
 
             // Assert
-            Assert.Same(entry, _state._jobStateIndex["SomeState"].Single());
+            Assert.Same(entry, _state.JobStateIndex["SomeState"].Single());
         }
 
         [Fact]

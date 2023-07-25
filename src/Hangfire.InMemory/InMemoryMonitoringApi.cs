@@ -145,7 +145,7 @@ namespace Hangfire.InMemory
                 Retries = state.Sets.TryGetValue("retries", out var retries)
                     ? retries.Count
                     : 0,
-                Awaiting = state._jobStateIndex.TryGetValue(AwaitingState.StateName, out var indexEntry)
+                Awaiting = state.JobStateIndex.TryGetValue(AwaitingState.StateName, out var indexEntry)
                     ? indexEntry.Count
                     : 0,
             });
@@ -213,7 +213,7 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryAndWait(state =>
             {
                 var result = new JobList<ProcessingJobDto>(Enumerable.Empty<KeyValuePair<string, ProcessingJobDto>>());
-                if (state._jobStateIndex.TryGetValue(ProcessingState.StateName, out var indexEntry))
+                if (state.JobStateIndex.TryGetValue(ProcessingState.StateName, out var indexEntry))
                 {
                     var index = 0;
 
@@ -301,7 +301,7 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryAndWait(state =>
             {
                 var result = new JobList<SucceededJobDto>(Enumerable.Empty<KeyValuePair<string, SucceededJobDto>>());
-                if (state._jobStateIndex.TryGetValue(SucceededState.StateName, out var indexEntry))
+                if (state.JobStateIndex.TryGetValue(SucceededState.StateName, out var indexEntry))
                 {
                     var index = 0;
 
@@ -345,7 +345,7 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryAndWait(state =>
             {
                 var result = new JobList<FailedJobDto>(Enumerable.Empty<KeyValuePair<string, FailedJobDto>>());
-                if (state._jobStateIndex.TryGetValue(FailedState.StateName, out var indexEntry))
+                if (state.JobStateIndex.TryGetValue(FailedState.StateName, out var indexEntry))
                 {
                     var index = 0;
 
@@ -389,7 +389,7 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryAndWait(state =>
             {
                 var result = new JobList<DeletedJobDto>(Enumerable.Empty<KeyValuePair<string, DeletedJobDto>>());
-                if (state._jobStateIndex.TryGetValue(DeletedState.StateName, out var indexEntry))
+                if (state.JobStateIndex.TryGetValue(DeletedState.StateName, out var indexEntry))
                 {
                     var index = 0;
 
@@ -428,7 +428,7 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryAndWait(state =>
             {
                 var result = new JobList<AwaitingJobDto>(Enumerable.Empty<KeyValuePair<string, AwaitingJobDto>>());
-                if (state._jobStateIndex.TryGetValue(AwaitingState.StateName, out var indexEntry))
+                if (state.JobStateIndex.TryGetValue(AwaitingState.StateName, out var indexEntry))
                 {
                     var index = 0;
 
@@ -544,7 +544,7 @@ namespace Hangfire.InMemory
 
         private static int GetCountByStateName(string stateName, InMemoryState state)
         {
-            if (state._jobStateIndex.TryGetValue(stateName, out var index))
+            if (state.JobStateIndex.TryGetValue(stateName, out var index))
             {
                 return index.Count;
             }

@@ -51,11 +51,11 @@ namespace Hangfire.InMemory
         {
             var acquired = false;
 
-            lock (_state._locks)
+            lock (_state.Locks)
             {
-                if (!_state._locks.TryGetValue(resource, out entry))
+                if (!_state.Locks.TryGetValue(resource, out entry))
                 {
-                    _state._locks.Add(resource, entry = new LockEntry<JobStorageConnection>(owner));
+                    _state.Locks.Add(resource, entry = new LockEntry<JobStorageConnection>(owner));
                     acquired = true;
                 }
                 else
@@ -69,9 +69,9 @@ namespace Hangfire.InMemory
 
         public void CancelLockEntry(string resource, LockEntry<JobStorageConnection> entry)
         {
-            lock (_state._locks)
+            lock (_state.Locks)
             {
-                if (!_state._locks.TryGetValue(resource, out var current) || !ReferenceEquals(current, entry))
+                if (!_state.Locks.TryGetValue(resource, out var current) || !ReferenceEquals(current, entry))
                 {
                     throw new InvalidOperationException("Precondition failed when decrementing a lock");
                 }
@@ -80,23 +80,23 @@ namespace Hangfire.InMemory
 
                 if (entry.Finalized)
                 {
-                    _state._locks.Remove(resource);
+                    _state.Locks.Remove(resource);
                 }
             }
         }
 
         public void ReleaseLockEntry(JobStorageConnection owner, string resource, LockEntry<JobStorageConnection> entry)
         {
-            lock (_state._locks)
+            lock (_state.Locks)
             {
-                if (!_state._locks.TryGetValue(resource, out var current)) throw new InvalidOperationException("Does not contain a lock");
+                if (!_state.Locks.TryGetValue(resource, out var current)) throw new InvalidOperationException("Does not contain a lock");
                 if (!ReferenceEquals(current, entry)) throw new InvalidOperationException("Does not contain a correct lock entry");
                 
                 entry.Release(owner);
 
                 if (entry.Finalized)
                 {
-                    _state._locks.Remove(resource);
+                    _state.Locks.Remove(resource);
                 }
             }
         }

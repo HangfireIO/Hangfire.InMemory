@@ -18,9 +18,9 @@ namespace Hangfire.InMemory
 
         // State index uses case-insensitive comparisons, despite of the current settings. SQL Server
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
-        internal readonly IDictionary<string, SortedSet<BackgroundJobEntry>> _jobStateIndex = new Dictionary<string, SortedSet<BackgroundJobEntry>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, SortedSet<BackgroundJobEntry>> _jobStateIndex = new Dictionary<string, SortedSet<BackgroundJobEntry>>(StringComparer.OrdinalIgnoreCase);
 
-        internal readonly IDictionary<string, LockEntry<JobStorageConnection>> _locks;
+        private readonly Dictionary<string, LockEntry<JobStorageConnection>> _locks;
         private readonly ConcurrentDictionary<string, BackgroundJobEntry> _jobs;
         private readonly Dictionary<string, HashEntry> _hashes;
         private readonly Dictionary<string, ListEntry> _lists;
@@ -57,12 +57,15 @@ namespace Hangfire.InMemory
         public InMemoryStorageOptions Options { get; }
 
         public ConcurrentDictionary<string, BackgroundJobEntry> Jobs => _jobs; // TODO Implement workaround for net45 to return IReadOnlyDictionary (and the same for _queues)
+        public IDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
         public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
         public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
         public IReadOnlyDictionary<string, SetEntry> Sets => _sets;
         public IReadOnlyDictionary<string, CounterEntry> Counters => _counters;
         public ConcurrentDictionary<string, QueueEntry> Queues => _queues; // net451 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
         public IReadOnlyDictionary<string, ServerEntry> Servers => _servers;
+
+        public IReadOnlyDictionary<string, SortedSet<BackgroundJobEntry>> JobStateIndex => _jobStateIndex;
 
         public QueueEntry QueueGetOrCreate(string name)
         {
