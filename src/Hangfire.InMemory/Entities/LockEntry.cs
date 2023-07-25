@@ -3,14 +3,14 @@ using System.Threading;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class LockEntry
+    internal sealed class LockEntry<T> where T : class
     {
-        private object _owner;
+        private T _owner;
         private int _referenceCount;
         private int _level;
         private bool _finalized;
 
-        public LockEntry(object owner)
+        public LockEntry(T owner)
         {
             _owner = owner ?? throw new ArgumentNullException(nameof(owner));
             _referenceCount = 1;
@@ -20,7 +20,7 @@ namespace Hangfire.InMemory.Entities
 
         public bool Finalized => _finalized;
 
-        public void TryAcquire(object owner, ref bool acquired)
+        public void TryAcquire(T owner, ref bool acquired)
         {
             lock (this)
             {
@@ -39,7 +39,7 @@ namespace Hangfire.InMemory.Entities
             }
         }
 
-        public bool WaitUntilAcquired(object owner, TimeSpan timeout)
+        public bool WaitUntilAcquired(T owner, TimeSpan timeout)
         {
             lock (this)
             {
@@ -81,7 +81,7 @@ namespace Hangfire.InMemory.Entities
             }
         }
 
-        public void Release(object owner)
+        public void Release(T owner)
         {
             lock (this)
             {

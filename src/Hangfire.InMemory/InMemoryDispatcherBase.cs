@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Hangfire.Annotations;
 using Hangfire.InMemory.Entities;
+using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
@@ -53,7 +54,7 @@ namespace Hangfire.InMemory
             return null;
         }
 
-        public bool TryAcquireLockEntry(InMemoryConnection connection, string resource, out LockEntry entry)
+        public bool TryAcquireLockEntry(JobStorageConnection owner, string resource, out LockEntry<JobStorageConnection> entry)
         {
             var acquired = false;
 
@@ -61,19 +62,19 @@ namespace Hangfire.InMemory
             {
                 if (!_state._locks.TryGetValue(resource, out entry))
                 {
-                    _state._locks.Add(resource, entry = new LockEntry(connection));
+                    _state._locks.Add(resource, entry = new LockEntry<JobStorageConnection>(owner));
                     acquired = true;
                 }
                 else
                 {
-                    entry.TryAcquire(connection, ref acquired);
+                    entry.TryAcquire(owner, ref acquired);
                 }
             }
 
             return acquired;
         }
 
-        public void CancelLockEntry(string resource, LockEntry entry)
+        public void CancelLockEntry(string resource, LockEntry<JobStorageConnection> entry)
         {
             lock (_state._locks)
             {
@@ -91,14 +92,14 @@ namespace Hangfire.InMemory
             }
         }
 
-        public void ReleaseLockEntry(InMemoryConnection connection, string resource, LockEntry entry)
+        public void ReleaseLockEntry(JobStorageConnection owner, string resource, LockEntry<JobStorageConnection> entry)
         {
             lock (_state._locks)
             {
                 if (!_state._locks.TryGetValue(resource, out var current)) throw new InvalidOperationException("Does not contain a lock");
                 if (!ReferenceEquals(current, entry)) throw new InvalidOperationException("Does not contain a correct lock entry");
                 
-                entry.Release(connection);
+                entry.Release(owner);
 
                 if (entry.Finalized)
                 {

@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Hangfire.InMemory.Entities;
+using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
@@ -19,7 +20,7 @@ namespace Hangfire.InMemory
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
         internal readonly IDictionary<string, SortedSet<BackgroundJobEntry>> _jobStateIndex = new Dictionary<string, SortedSet<BackgroundJobEntry>>(StringComparer.OrdinalIgnoreCase);
 
-        internal readonly IDictionary<string, LockEntry> _locks;
+        internal readonly IDictionary<string, LockEntry<JobStorageConnection>> _locks;
         private readonly ConcurrentDictionary<string, BackgroundJobEntry> _jobs;
         private readonly Dictionary<string, HashEntry> _hashes;
         private readonly Dictionary<string, ListEntry> _lists;
@@ -42,7 +43,7 @@ namespace Hangfire.InMemory
             _listIndex = new SortedSet<ListEntry>(expirableEntryComparer);
             _setIndex = new SortedSet<SetEntry>(expirableEntryComparer);
 
-            _locks = CreateDictionary<LockEntry>(options.StringComparer);
+            _locks = CreateDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
             _jobs = CreateConcurrentDictionary<BackgroundJobEntry>(options.StringComparer);
             _hashes = CreateDictionary<HashEntry>(options.StringComparer);
             _lists = CreateDictionary<ListEntry>(options.StringComparer);

@@ -53,12 +53,12 @@ namespace Hangfire.InMemory
         private sealed class LockDisposable : IDisposable
         {
             private readonly InMemoryDispatcherBase _dispatcher;
-            private readonly InMemoryConnection _reference;
+            private readonly JobStorageConnection _reference;
             private readonly string _resource;
-            private readonly LockEntry _entry;
+            private readonly LockEntry<JobStorageConnection> _entry;
             private bool _disposed;
 
-            public LockDisposable(InMemoryDispatcherBase dispatcher, InMemoryConnection reference, string resource, LockEntry entry)
+            public LockDisposable(InMemoryDispatcherBase dispatcher, JobStorageConnection reference, string resource, LockEntry<JobStorageConnection> entry)
             {
                 _dispatcher = dispatcher;
                 _reference = reference;
