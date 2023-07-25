@@ -50,31 +50,6 @@ namespace Hangfire.InMemory
             }
         }
 
-        private sealed class LockDisposable : IDisposable
-        {
-            private readonly InMemoryDispatcherBase _dispatcher;
-            private readonly JobStorageConnection _reference;
-            private readonly string _resource;
-            private readonly LockEntry<JobStorageConnection> _entry;
-            private bool _disposed;
-
-            public LockDisposable(InMemoryDispatcherBase dispatcher, JobStorageConnection reference, string resource, LockEntry<JobStorageConnection> entry)
-            {
-                _dispatcher = dispatcher;
-                _reference = reference;
-                _resource = resource;
-                _entry = entry ?? throw new ArgumentNullException(nameof(entry));
-            }
-
-            public void Dispose()
-            {
-                if (_disposed) return;
-                _disposed = true;
-
-                _dispatcher.ReleaseLockEntry(_reference, _resource, _entry);
-            }
-        }
-
         public override string CreateExpiredJob(
             [NotNull] Job job,
             [NotNull] IDictionary<string, string> parameters,
@@ -613,6 +588,31 @@ namespace Hangfire.InMemory
 
                 return result;
             });
+        }
+
+        private sealed class LockDisposable : IDisposable
+        {
+            private readonly InMemoryDispatcherBase _dispatcher;
+            private readonly JobStorageConnection _reference;
+            private readonly string _resource;
+            private readonly LockEntry<JobStorageConnection> _entry;
+            private bool _disposed;
+
+            public LockDisposable(InMemoryDispatcherBase dispatcher, JobStorageConnection reference, string resource, LockEntry<JobStorageConnection> entry)
+            {
+                _dispatcher = dispatcher;
+                _reference = reference;
+                _resource = resource;
+                _entry = entry ?? throw new ArgumentNullException(nameof(entry));
+            }
+
+            public void Dispose()
+            {
+                if (_disposed) return;
+                _disposed = true;
+
+                _dispatcher.ReleaseLockEntry(_reference, _resource, _entry);
+            }
         }
     }
 }
