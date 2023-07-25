@@ -112,7 +112,7 @@ namespace Hangfire.InMemory
 
             // IState can be implemented by user, and potentially can throw exceptions.
             // Getting data here, out of the dispatcher thread, to avoid killing it.
-            var name = state.Name ?? throw new InvalidOperationException("state.Name returned null");
+            var name = state.Name;
             var reason = state.Reason;
             var data = state.SerializeData();
 
@@ -141,7 +141,7 @@ namespace Hangfire.InMemory
 
             // IState can be implemented by user, and potentially can throw exceptions.
             // Getting data here, out of the dispatcher thread, to avoid killing it.
-            var name = state.Name ?? throw new InvalidOperationException("state.Name returned null");
+            var name = state.Name;
             var reason = state.Reason;
             var data = state.SerializeData();
 
