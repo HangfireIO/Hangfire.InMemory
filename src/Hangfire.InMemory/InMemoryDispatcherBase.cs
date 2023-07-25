@@ -17,10 +17,8 @@ namespace Hangfire.InMemory
             _state = state ?? throw new ArgumentNullException(nameof(state));
         }
 
-        public KeyValuePair<string, QueueEntry>[] GetOrAddQueues([NotNull] IReadOnlyCollection<string> queueNames)
+        public KeyValuePair<string, QueueEntry>[] GetOrAddQueues(IReadOnlyCollection<string> queueNames)
         {
-            if (queueNames == null) throw new ArgumentNullException(nameof(queueNames));
-
             var entries = new KeyValuePair<string, QueueEntry>[queueNames.Count];
             var index = 0;
 
@@ -34,18 +32,13 @@ namespace Hangfire.InMemory
             return entries;
         }
 
-        public bool TryGetJobData([NotNull] string jobId, out BackgroundJobEntry entry)
+        public bool TryGetJobData(string jobId, out BackgroundJobEntry entry)
         {
-            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
             return _state.Jobs.TryGetValue(jobId, out entry);
         }
 
-        public string GetJobParameter([NotNull] string jobId, [NotNull] string name)
+        public string GetJobParameter(string jobId, string name)
         {
-            // TODO: Consider removing guard statements below and from other method and delegate checks to Connection and Transaction instead
-            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
-            if (name == null) throw new ArgumentNullException(nameof(name));
-
             if (_state.Jobs.TryGetValue(jobId, out var jobEntry) && jobEntry.Parameters.TryGetValue(name, out var result))
             {
                 return result;
