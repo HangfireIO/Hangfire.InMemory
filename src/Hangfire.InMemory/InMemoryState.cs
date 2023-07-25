@@ -10,12 +10,6 @@ namespace Hangfire.InMemory
     {
         private readonly BackgroundJobStateCreatedAtComparer _backgroundJobEntryComparer;
 
-        internal readonly SortedSet<BackgroundJobEntry> _jobIndex;
-        internal readonly SortedSet<CounterEntry> _counterIndex;
-        internal readonly SortedSet<HashEntry> _hashIndex;
-        internal readonly SortedSet<ListEntry> _listIndex;
-        internal readonly SortedSet<SetEntry> _setIndex;
-
         // State index uses case-insensitive comparisons, despite of the current settings. SQL Server
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
         private readonly Dictionary<string, SortedSet<BackgroundJobEntry>> _jobStateIndex = new Dictionary<string, SortedSet<BackgroundJobEntry>>(StringComparer.OrdinalIgnoreCase);
@@ -37,11 +31,11 @@ namespace Hangfire.InMemory
             _backgroundJobEntryComparer = new BackgroundJobStateCreatedAtComparer(options.StringComparer);
 
             var expirableEntryComparer = new ExpirableEntryComparer(options.StringComparer);
-            _jobIndex = new SortedSet<BackgroundJobEntry>(expirableEntryComparer);
-            _counterIndex = new SortedSet<CounterEntry>(expirableEntryComparer);
-            _hashIndex = new SortedSet<HashEntry>(expirableEntryComparer);
-            _listIndex = new SortedSet<ListEntry>(expirableEntryComparer);
-            _setIndex = new SortedSet<SetEntry>(expirableEntryComparer);
+            JobExpirationIndex = new SortedSet<BackgroundJobEntry>(expirableEntryComparer);
+            CounterExpirationIndex = new SortedSet<CounterEntry>(expirableEntryComparer);
+            HashExpirationIndex = new SortedSet<HashEntry>(expirableEntryComparer);
+            ListExpirationIndex = new SortedSet<ListEntry>(expirableEntryComparer);
+            SetExpirationIndex = new SortedSet<SetEntry>(expirableEntryComparer);
 
             _locks = CreateDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
             _jobs = CreateConcurrentDictionary<BackgroundJobEntry>(options.StringComparer);
@@ -67,6 +61,12 @@ namespace Hangfire.InMemory
 
         public IReadOnlyDictionary<string, SortedSet<BackgroundJobEntry>> JobStateIndex => _jobStateIndex;
 
+        public SortedSet<BackgroundJobEntry> JobExpirationIndex { get; }
+        public SortedSet<CounterEntry> CounterExpirationIndex { get; }
+        public SortedSet<HashEntry> HashExpirationIndex { get; }
+        public SortedSet<ListEntry> ListExpirationIndex { get; }
+        public SortedSet<SetEntry> SetExpirationIndex { get; }
+
         public QueueEntry QueueGetOrCreate(string name)
         {
             if (!_queues.TryGetValue(name, out var entry))
@@ -84,7 +84,7 @@ namespace Hangfire.InMemory
                 // TODO: Panic
             }
 
-            _jobIndex.Add(job);
+            JobExpirationIndex.Add(job);
         }
 
         public void JobSetState(BackgroundJobEntry job, StateEntry state)
@@ -107,14 +107,14 @@ namespace Hangfire.InMemory
 
         public void JobExpire(BackgroundJobEntry job, TimeSpan? expireIn)
         {
-            EntryExpire(job, _jobIndex, expireIn);
+            EntryExpire(job, JobExpirationIndex, expireIn);
         }
 
         public void JobDelete(BackgroundJobEntry entry)
         {
             if (entry.ExpireAt.HasValue)
             {
-                _jobIndex.Remove(entry);
+                JobExpirationIndex.Remove(entry);
             }
 
             _jobs.TryRemove(entry.Key, out _);
@@ -138,7 +138,7 @@ namespace Hangfire.InMemory
 
         public void HashExpire(HashEntry hash, TimeSpan? expireIn)
         {
-            EntryExpire(hash, _hashIndex, expireIn);
+            EntryExpire(hash, HashExpirationIndex, expireIn);
         }
 
         public void HashDelete(HashEntry hash)
@@ -146,7 +146,7 @@ namespace Hangfire.InMemory
             _hashes.Remove(hash.Key);
             if (hash.ExpireAt.HasValue)
             {
-                _hashIndex.Remove(hash);
+                HashExpirationIndex.Remove(hash);
             }
         }
 
@@ -162,7 +162,7 @@ namespace Hangfire.InMemory
 
         public void SetExpire(SetEntry set, TimeSpan? expireIn)
         {
-            EntryExpire(set, _setIndex, expireIn);
+            EntryExpire(set, SetExpirationIndex, expireIn);
         }
 
         public void SetDelete(SetEntry set)
@@ -172,7 +172,7 @@ namespace Hangfire.InMemory
             if (set.ExpireAt.HasValue)
             {
                 // TODO: Ensure entity removal always deals with expiration indexes
-                _setIndex.Remove(set);
+                SetExpirationIndex.Remove(set);
             }
         }
 
@@ -188,7 +188,7 @@ namespace Hangfire.InMemory
 
         public void ListExpire(ListEntry entry, TimeSpan? expireIn)
         {
-            EntryExpire(entry, _listIndex, expireIn);
+            EntryExpire(entry, ListExpirationIndex, expireIn);
         }
 
         public void ListDelete(ListEntry list)
@@ -197,7 +197,7 @@ namespace Hangfire.InMemory
 
             if (list.ExpireAt.HasValue)
             {
-                _listIndex.Remove(list);
+                ListExpirationIndex.Remove(list);
             }
         }
 
@@ -213,7 +213,7 @@ namespace Hangfire.InMemory
 
         public void CounterExpire(CounterEntry counter, TimeSpan? expireIn)
         {
-            EntryExpire(counter, _counterIndex, expireIn);
+            EntryExpire(counter, CounterExpirationIndex, expireIn);
         }
 
         public void CounterDelete(CounterEntry entry)
@@ -222,7 +222,7 @@ namespace Hangfire.InMemory
 
             if (entry.ExpireAt.HasValue)
             {
-                _counterIndex.Remove(entry);
+                CounterExpirationIndex.Remove(entry);
             }
         }
 

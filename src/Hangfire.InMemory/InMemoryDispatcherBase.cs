@@ -179,10 +179,10 @@ namespace Hangfire.InMemory
             var now = _state.TimeResolver();
 
             // TODO: Think how to expire under memory pressure and limit the collection to avoid OOM exceptions
-            ExpireIndex(now, _state._counterIndex, entry => _state.CounterDelete(entry));
-            ExpireIndex(now, _state._hashIndex, entry => _state.HashDelete(entry));
-            ExpireIndex(now, _state._listIndex, entry => _state.ListDelete(entry));
-            ExpireIndex(now, _state._setIndex, entry => _state.SetDelete(entry));
+            ExpireIndex(now, _state.CounterExpirationIndex, entry => _state.CounterDelete(entry));
+            ExpireIndex(now, _state.HashExpirationIndex, entry => _state.HashDelete(entry));
+            ExpireIndex(now, _state.ListExpirationIndex, entry => _state.ListDelete(entry));
+            ExpireIndex(now, _state.SetExpirationIndex, entry => _state.SetDelete(entry));
             ExpireJobIndex(now, _state);
         }
 
@@ -202,7 +202,7 @@ namespace Hangfire.InMemory
             BackgroundJobEntry entry;
 
             // TODO: Replace with actual expiration rules
-            while (state._jobIndex.Count > 0 && (entry = state._jobIndex.Min).ExpireAt.HasValue && now >= entry.ExpireAt)
+            while (state.JobExpirationIndex.Count > 0 && (entry = state.JobExpirationIndex.Min).ExpireAt.HasValue && now >= entry.ExpireAt)
             {
                 state.JobDelete(entry);
             }
