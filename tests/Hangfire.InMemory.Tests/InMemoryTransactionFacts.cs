@@ -222,7 +222,7 @@ namespace Hangfire.InMemory.Tests
                 jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
             });
 
-            Assert.Contains(_state.Jobs[jobId], _state.JobExpirationIndex);
+            Assert.Contains(_state.Jobs[jobId], _state.ExpiringJobsIndex);
         }
 
         [Fact]
@@ -367,7 +367,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
 
-            Assert.Same(entry, _state.JobExpirationIndex.First());
+            Assert.Same(entry, _state.ExpiringJobsIndex.First());
         }
 
         [Fact]
@@ -408,13 +408,13 @@ namespace Hangfire.InMemory.Tests
                 ExpireAt = _now
             };
             _state.Jobs.TryAdd("myjob", entry);
-            _state.JobExpirationIndex.Add(entry);
+            _state.ExpiringJobsIndex.Add(entry);
 
             // Act
             Commit(x => x.PersistJob("myjob"));
 
             // Assert
-            Assert.Empty(_state.JobExpirationIndex);
+            Assert.Empty(_state.ExpiringJobsIndex);
         }
 
         [Fact]
@@ -1434,7 +1434,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.ExpireHash("key", TimeSpan.FromMinutes(30)));
 
-            Assert.Equal("key", _state.HashExpirationIndex.Single().Key);
+            Assert.Equal("key", _state.ExpiringHashesIndex.Single().Key);
         }
 
         [Fact]
@@ -1475,7 +1475,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.ExpireList("key", TimeSpan.FromMinutes(30)));
 
-            Assert.Equal("key", _state.ListExpirationIndex.Single().Key);
+            Assert.Equal("key", _state.ExpiringListsIndex.Single().Key);
         }
 
         [Fact]
@@ -1516,7 +1516,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.ExpireSet("key", TimeSpan.FromMinutes(30)));
 
-            Assert.Equal("key", _state.SetExpirationIndex.Single().Key);
+            Assert.Equal("key", _state.ExpiringSetsIndex.Single().Key);
         }
 
         [Fact]
@@ -1553,13 +1553,13 @@ namespace Hangfire.InMemory.Tests
             // Arrange
             Commit(x => x.SetRangeInHash("key", new Dictionary<string, string> { { "field", "value" } }));
             Commit(x => x.ExpireHash("key", TimeSpan.FromMinutes(30)));
-            Assert.NotEmpty(_state.HashExpirationIndex);
+            Assert.NotEmpty(_state.ExpiringHashesIndex);
 
             // Act
             Commit(x => x.PersistHash("key"));
 
             // Assert
-            Assert.Empty(_state.HashExpirationIndex);
+            Assert.Empty(_state.ExpiringHashesIndex);
         }
 
         [Fact]
@@ -1596,13 +1596,13 @@ namespace Hangfire.InMemory.Tests
             // Arrange
             Commit(x => x.InsertToList("key", "value"));
             Commit(x => x.ExpireList("key", TimeSpan.FromMinutes(30)));
-            Assert.NotEmpty(_state.ListExpirationIndex);
+            Assert.NotEmpty(_state.ExpiringListsIndex);
 
             // Act
             Commit(x => x.PersistList("key"));
 
             // Assert
-            Assert.Empty(_state.ListExpirationIndex);
+            Assert.Empty(_state.ExpiringListsIndex);
         }
 
         [Fact]
@@ -1639,13 +1639,13 @@ namespace Hangfire.InMemory.Tests
             // Arrange
             Commit(x => x.AddToSet("key", "value"));
             Commit(x => x.ExpireSet("key", TimeSpan.FromMinutes(30)));
-            Assert.NotEmpty(_state.SetExpirationIndex);
+            Assert.NotEmpty(_state.ExpiringSetsIndex);
 
             // Act
             Commit(x => x.PersistSet("key"));
 
             // Assert
-            Assert.Empty(_state.SetExpirationIndex);
+            Assert.Empty(_state.ExpiringSetsIndex);
         }
 
         [Fact]

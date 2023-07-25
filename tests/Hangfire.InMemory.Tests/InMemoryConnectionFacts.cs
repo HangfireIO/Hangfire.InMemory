@@ -121,7 +121,7 @@ namespace Hangfire.InMemory.Tests
             {
                 var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
 
-                Assert.Contains(_state.Jobs[jobId], _state.JobExpirationIndex);
+                Assert.Contains(_state.Jobs[jobId], _state.ExpiringJobsIndex);
             });
         }
 
