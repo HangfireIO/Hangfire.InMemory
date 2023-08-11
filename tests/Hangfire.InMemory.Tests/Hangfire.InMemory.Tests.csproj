@@ -15,6 +15,8 @@
     <PackageReference Include="xunit" Version="2.4.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
     <PackageReference Include="coverlet.collector" Version="1.2.0" />
+
+    <!-- Don't upgrade to 4.20 or higher, please refer to https://github.com/HangfireIO/Hangfire/issues/2266 -->
     <PackageReference Include="Moq" Version="4.14.5" />
   </ItemGroup>
 
