@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Hangfire.Annotations;
 using Hangfire.Common;
@@ -320,7 +321,7 @@ namespace Hangfire.InMemory
                         {
                             Result = data?.ContainsKey("Result") ?? false ? data["Result"] : null,
                             TotalDuration = (data?.ContainsKey("PerformanceDuration") ?? false) && (data?.ContainsKey("Latency") ?? false) 
-                                ? long.Parse(data["PerformanceDuration"]) + long.Parse(data["Latency"])
+                                ? long.Parse(data["PerformanceDuration"], CultureInfo.InvariantCulture) + long.Parse(data["Latency"], CultureInfo.InvariantCulture)
                                 : (long?)null,
                             Job = job,
                             InvocationData = entry.InvocationData,
@@ -586,7 +587,7 @@ namespace Hangfire.InMemory
                 endDate = endDate.AddDays(-1);
             }
 
-            var stringDates = dates.Select(x => x.ToString("yyyy-MM-dd")).ToList();
+            var stringDates = dates.Select(x => x.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).ToList();
             var keys = stringDates.Select(x => $"stats:{type}:{x}").ToArray();
             var valuesMap = keys.Select(key => state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
 
