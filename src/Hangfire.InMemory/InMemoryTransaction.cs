@@ -27,6 +27,8 @@ namespace Hangfire.InMemory
             {
                 acquiredLock.Dispose();
             }
+
+            base.Dispose();
         }
 
         public override void AcquireDistributedLock(string resource, TimeSpan timeout)
