@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
-using Hangfire.Annotations;
 using Hangfire.InMemory.Entities;
 using Hangfire.Storage;
 
@@ -9,7 +7,6 @@ namespace Hangfire.InMemory
 {
     internal class InMemoryDispatcherBase
     {
-        private static readonly InMemoryQueueWaitNode Tombstone = new InMemoryQueueWaitNode(null);
         private readonly InMemoryState _state;
 
         public InMemoryDispatcherBase(InMemoryState state)
@@ -97,59 +94,6 @@ namespace Hangfire.InMemory
                 if (entry.Finalized)
                 {
                     _state.Locks.Remove(resource);
-                }
-            }
-        }
-
-        public void AddQueueWaitNode(QueueEntry entry, InMemoryQueueWaitNode node)
-        {
-            var headNext = node.Next = null;
-            var spinWait = new SpinWait();
-
-            while (true)
-            {
-                var newNext = Interlocked.CompareExchange(ref entry.WaitHead.Next, node, headNext);
-                if (newNext == headNext) break;
-
-                headNext = node.Next = newNext;
-                spinWait.SpinOnce();
-            }
-        }
-
-        public void SignalOneQueueWaitNode(QueueEntry entry)
-        {
-            if (Volatile.Read(ref entry.WaitHead.Next) == null) return;
-            SignalOneQueueWaitNodeSlow(entry);
-        }
-
-        private static void SignalOneQueueWaitNodeSlow(QueueEntry entry)
-        {
-            while (true)
-            {
-                var node = Interlocked.Exchange(ref entry.WaitHead.Next, null);
-                if (node == null) return;
-
-                var tailNode = Interlocked.Exchange(ref node.Next, Tombstone);
-                if (tailNode != null)
-                {
-                    var waitHead = entry.WaitHead;
-                    do
-                    {
-                        waitHead = Interlocked.CompareExchange(ref waitHead.Next, tailNode, null);
-                        if (ReferenceEquals(waitHead, Tombstone))
-                        {
-                            waitHead = entry.WaitHead;
-                        }
-                    } while (waitHead != null);
-                }
-
-                try
-                {
-                    node.Value.Set();
-                    return;
-                }
-                catch (ObjectDisposedException)
-                {
                 }
             }
         }

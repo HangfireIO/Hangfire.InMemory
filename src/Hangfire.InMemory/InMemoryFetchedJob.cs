@@ -27,7 +27,7 @@ namespace Hangfire.InMemory
                 return value;
             });
 
-            _dispatcher.SignalOneQueueWaitNode(entry);
+            entry.SignalOneWaitNode();
         }
 
         void IDisposable.Dispose()
