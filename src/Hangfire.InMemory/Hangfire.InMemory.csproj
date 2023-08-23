@@ -5,10 +5,6 @@
     <DebugType>portable</DebugType>    
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFramework)'=='net451' or '$(TargetFramework)'=='net46'">
-    <DebugType>full</DebugType>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Hangfire.Core" Version="1.8.0" />
   </ItemGroup>  
