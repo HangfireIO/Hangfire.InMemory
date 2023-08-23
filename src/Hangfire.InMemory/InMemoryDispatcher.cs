@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Hangfire.Logging;
 
 namespace Hangfire.InMemory
 {
+    [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Instances of this class aren't meant to be disposed.")]
     internal sealed class InMemoryDispatcher : InMemoryDispatcherBase
     {
         private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(15);
