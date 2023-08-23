@@ -30,6 +30,8 @@ namespace Hangfire.InMemory
                     acquiredLock.Dispose();
                 }
             }
+
+            base.Dispose();
         }
 
         public override IWriteOnlyTransaction CreateWriteTransaction()
