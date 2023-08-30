@@ -10,8 +10,8 @@
 #    environment configuration    #
 #---------------------------------#
 
-# Don't edit manually! Use `build.bat version` command instead!
-version: 0.5.1-build-0{build}
+# Please don't edit it manually, use the `build.bat version` command instead.
+version: 0.6.0-build-0{build}
 
 os: Visual Studio 2019
 
