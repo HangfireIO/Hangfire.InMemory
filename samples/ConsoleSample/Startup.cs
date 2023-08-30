@@ -14,6 +14,8 @@ namespace ConsoleSample
                 .UseIgnoredAssemblyVersionTypeResolver()
                 .UseInMemoryStorage());
 
+            services.AddHangfireServer(options => options.Queues = new[] { "critical", "default" });
+
             services.AddHostedService<HarnessHostedService>();
         }
 
@@ -21,11 +23,6 @@ namespace ConsoleSample
         {
             app.UseDeveloperExceptionPage();
             app.UseHangfireDashboard(String.Empty);
-
-            app.UseHangfireServer(new BackgroundJobServerOptions
-            {
-                Queues = new [] { "critical", "default" }
-            });
         }
     }
 }
