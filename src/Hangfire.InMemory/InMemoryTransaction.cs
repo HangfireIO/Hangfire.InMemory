@@ -144,8 +144,7 @@ namespace Hangfire.InMemory
                         memory.TimeResolver(),
                         memory.Options.StringComparer);
 
-                    // TODO: Limit this somehow
-                    job.History.Add(stateEntry);
+                    job.AddHistoryEntry(stateEntry);
                     memory.JobSetState(job, stateEntry);
                 }
             });
@@ -173,8 +172,7 @@ namespace Hangfire.InMemory
                         memory.TimeResolver(),
                         memory.Options.StringComparer);
 
-                    // TODO: Limit this somehow
-                    job.History.Add(stateEntry);
+                    job.AddHistoryEntry(stateEntry);
                 }
             });
         }

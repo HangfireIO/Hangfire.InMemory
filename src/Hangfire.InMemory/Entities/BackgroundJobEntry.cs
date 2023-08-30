@@ -25,6 +25,7 @@ namespace Hangfire.InMemory.Entities
     internal sealed class BackgroundJobEntry : IExpirableEntry
     {
         private const int StateCountForRegularJob = 4; // (Scheduled) -> Enqueued -> Processing -> Succeeded
+        private List<StateEntry> _history = new List<StateEntry>(StateCountForRegularJob);
 
         public BackgroundJobEntry(
             string key,
@@ -50,7 +51,7 @@ namespace Hangfire.InMemory.Entities
         public ConcurrentDictionary<string, string> Parameters { get; }
 
         public StateEntry State { get; set; }
-        public ICollection<StateEntry> History { get; } = new List<StateEntry>(StateCountForRegularJob);
+        public IEnumerable<StateEntry> History => _history;
         public DateTime CreatedAt { get; }
         public DateTime? ExpireAt { get; set; }
 
@@ -72,6 +73,13 @@ namespace Hangfire.InMemory.Entities
                 exception = ex;
                 return null;
             }
+        }
+
+        public void AddHistoryEntry(StateEntry entry)
+        {
+            if (entry == null) throw new ArgumentNullException(nameof(entry));
+            // TODO: Limit this somehow
+            _history.Add(entry);
         }
     }
 }
