@@ -18,16 +18,16 @@ using System.Collections.Generic;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class BackgroundJobStateCreatedAtComparer : IComparer<BackgroundJobEntry>
+    internal sealed class JobStateCreatedAtComparer : IComparer<JobEntry>
     {
         private readonly StringComparer _stringComparer;
 
-        public BackgroundJobStateCreatedAtComparer(StringComparer stringComparer)
+        public JobStateCreatedAtComparer(StringComparer stringComparer)
         {
             _stringComparer = stringComparer;
         }
 
-        public int Compare(BackgroundJobEntry x, BackgroundJobEntry y)
+        public int Compare(JobEntry x, JobEntry y)
         {
             if (ReferenceEquals(x, y)) return 0;
             if (y?.State == null) return 1;

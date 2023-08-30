@@ -44,7 +44,7 @@ namespace Hangfire.InMemory
             return entries;
         }
 
-        public bool TryGetJobData(string jobId, out BackgroundJobEntry entry)
+        public bool TryGetJobData(string jobId, out JobEntry entry)
         {
             return _state.Jobs.TryGetValue(jobId, out entry);
         }
@@ -158,7 +158,7 @@ namespace Hangfire.InMemory
 
         private static void ExpireJobIndex(DateTime now, InMemoryState state)
         {
-            BackgroundJobEntry entry;
+            JobEntry entry;
 
             // TODO: Replace with actual expiration rules
             while (state.ExpiringJobsIndex.Count > 0 && (entry = state.ExpiringJobsIndex.Min).ExpireAt.HasValue && now >= entry.ExpireAt)

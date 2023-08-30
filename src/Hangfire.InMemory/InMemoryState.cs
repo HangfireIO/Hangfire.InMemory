@@ -23,14 +23,14 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryState
     {
-        private readonly BackgroundJobStateCreatedAtComparer _backgroundJobEntryComparer;
+        private readonly JobStateCreatedAtComparer _jobEntryComparer;
 
         // State index uses case-insensitive comparisons, despite of the current settings. SQL Server
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
-        private readonly Dictionary<string, SortedSet<BackgroundJobEntry>> _jobStateIndex = new Dictionary<string, SortedSet<BackgroundJobEntry>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, SortedSet<JobEntry>> _jobStateIndex = new Dictionary<string, SortedSet<JobEntry>>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Dictionary<string, LockEntry<JobStorageConnection>> _locks;
-        private readonly ConcurrentDictionary<string, BackgroundJobEntry> _jobs;
+        private readonly ConcurrentDictionary<string, JobEntry> _jobs;
         private readonly Dictionary<string, HashEntry> _hashes;
         private readonly Dictionary<string, ListEntry> _lists;
         private readonly Dictionary<string, SetEntry> _sets;
@@ -43,10 +43,10 @@ namespace Hangfire.InMemory
             TimeResolver = timeResolver;
             Options = options;
 
-            _backgroundJobEntryComparer = new BackgroundJobStateCreatedAtComparer(options.StringComparer);
+            _jobEntryComparer = new JobStateCreatedAtComparer(options.StringComparer);
 
             _locks = CreateDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
-            _jobs = CreateConcurrentDictionary<BackgroundJobEntry>(options.StringComparer);
+            _jobs = CreateConcurrentDictionary<JobEntry>(options.StringComparer);
             _hashes = CreateDictionary<HashEntry>(options.StringComparer);
             _lists = CreateDictionary<ListEntry>(options.StringComparer);
             _sets = CreateDictionary<SetEntry>(options.StringComparer);
@@ -55,7 +55,7 @@ namespace Hangfire.InMemory
             _servers = CreateDictionary<ServerEntry>(options.StringComparer);
 
             var expirableEntryComparer = new ExpirableEntryComparer(options.StringComparer);
-            ExpiringJobsIndex = new SortedSet<BackgroundJobEntry>(expirableEntryComparer);
+            ExpiringJobsIndex = new SortedSet<JobEntry>(expirableEntryComparer);
             ExpiringCountersIndex = new SortedSet<CounterEntry>(expirableEntryComparer);
             ExpiringHashesIndex = new SortedSet<HashEntry>(expirableEntryComparer);
             ExpiringListsIndex = new SortedSet<ListEntry>(expirableEntryComparer);
@@ -65,7 +65,7 @@ namespace Hangfire.InMemory
         public Func<DateTime> TimeResolver { get; }
         public InMemoryStorageOptions Options { get; }
 
-        public ConcurrentDictionary<string, BackgroundJobEntry> Jobs => _jobs; // net451 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
+        public ConcurrentDictionary<string, JobEntry> Jobs => _jobs; // net451 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
         public IDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
         public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
         public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
@@ -74,9 +74,9 @@ namespace Hangfire.InMemory
         public ConcurrentDictionary<string, QueueEntry> Queues => _queues; // net451 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
         public IReadOnlyDictionary<string, ServerEntry> Servers => _servers;
 
-        public IReadOnlyDictionary<string, SortedSet<BackgroundJobEntry>> JobStateIndex => _jobStateIndex;
+        public IReadOnlyDictionary<string, SortedSet<JobEntry>> JobStateIndex => _jobStateIndex;
 
-        public SortedSet<BackgroundJobEntry> ExpiringJobsIndex { get; }
+        public SortedSet<JobEntry> ExpiringJobsIndex { get; }
         public SortedSet<CounterEntry> ExpiringCountersIndex { get; }
         public SortedSet<HashEntry> ExpiringHashesIndex { get; }
         public SortedSet<ListEntry> ExpiringListsIndex { get; }
@@ -92,40 +92,40 @@ namespace Hangfire.InMemory
             return entry;
         }
 
-        public void JobCreate(BackgroundJobEntry job)
+        public void JobCreate(JobEntry entry)
         {
-            if (!_jobs.TryAdd(job.Key, job))
+            if (!_jobs.TryAdd(entry.Key, entry))
             {
                 // TODO: Panic
             }
 
-            ExpiringJobsIndex.Add(job);
+            ExpiringJobsIndex.Add(entry);
         }
 
-        public void JobSetState(BackgroundJobEntry job, StateEntry state)
+        public void JobSetState(JobEntry entry, StateEntry state)
         {
-            if (job.State != null && _jobStateIndex.TryGetValue(job.State.Name, out var indexEntry))
+            if (entry.State != null && _jobStateIndex.TryGetValue(entry.State.Name, out var indexEntry))
             {
-                indexEntry.Remove(job);
-                if (indexEntry.Count == 0) _jobStateIndex.Remove(job.State.Name);
+                indexEntry.Remove(entry);
+                if (indexEntry.Count == 0) _jobStateIndex.Remove(entry.State.Name);
             }
 
-            job.State = state;
+            entry.State = state;
 
             if (!_jobStateIndex.TryGetValue(state.Name, out indexEntry))
             {
-                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<BackgroundJobEntry>(_backgroundJobEntryComparer));
+                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<JobEntry>(_jobEntryComparer));
             }
 
-            indexEntry.Add(job);
+            indexEntry.Add(entry);
         }
 
-        public void JobExpire(BackgroundJobEntry job, TimeSpan? expireIn)
+        public void JobExpire(JobEntry entry, TimeSpan? expireIn)
         {
-            EntryExpire(job, ExpiringJobsIndex, expireIn);
+            EntryExpire(entry, ExpiringJobsIndex, expireIn);
         }
 
-        public void JobDelete(BackgroundJobEntry entry)
+        public void JobDelete(JobEntry entry)
         {
             if (entry.ExpireAt.HasValue)
             {

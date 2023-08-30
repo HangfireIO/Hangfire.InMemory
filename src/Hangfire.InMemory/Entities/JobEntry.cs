@@ -22,11 +22,11 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class BackgroundJobEntry : IExpirableEntry
+    internal sealed class JobEntry : IExpirableEntry
     {
         private readonly LinkedList<StateEntry> _history = new LinkedList<StateEntry>();
 
-        public BackgroundJobEntry(
+        public JobEntry(
             string key,
             Job job,
             IDictionary<string, string> parameters,

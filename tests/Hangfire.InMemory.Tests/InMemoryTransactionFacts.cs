@@ -348,7 +348,7 @@ namespace Hangfire.InMemory.Tests
         public void ExpireJob_SetsExpirationTime_OfTheGivenJob()
         {
             // Arrange
-            _state.Jobs.TryAdd("myjob", new BackgroundJobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
+            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
 
             // Act
             Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
@@ -362,7 +362,7 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void ExpireJob_AddsEntry_ToExpirationIndex()
         {
-            var entry = new BackgroundJobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer);
+            var entry = new JobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer);
             _state.Jobs.TryAdd(entry.Key, entry);
 
             Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
@@ -389,7 +389,7 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void PersistJob_ResetsExpirationTime_OfTheGivenJob()
         {
-            _state.Jobs.TryAdd("myjob", new BackgroundJobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer)
+            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer)
             {
                 ExpireAt = _now
             });
@@ -403,7 +403,7 @@ namespace Hangfire.InMemory.Tests
         public void PersistJob_RemovesEntry_FromExpirationIndex()
         {
             // Arrange
-            var entry = new BackgroundJobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer)
+            var entry = new JobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer)
             {
                 ExpireAt = _now
             };
@@ -442,7 +442,7 @@ namespace Hangfire.InMemory.Tests
             var state = new Mock<IState>();
             state.SetupGet(x => x.Name).Returns((string)null);
 
-            _state.Jobs.TryAdd("myjob", new BackgroundJobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
+            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
 
             // Act
             var exception = Assert.Throws<ArgumentException>(() => Commit(
@@ -472,7 +472,7 @@ namespace Hangfire.InMemory.Tests
             state.SetupGet(x => x.Reason).Returns("SomeReason");
             state.Setup(x => x.SerializeData()).Returns(new Dictionary<string, string> {{ "Key", "Value" }});
 
-            _state.Jobs.TryAdd("myjob", new BackgroundJobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
+            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
 
             // Act
             Commit(x => x.SetJobState("myjob", state.Object));
@@ -494,7 +494,7 @@ namespace Hangfire.InMemory.Tests
             var state = new Mock<IState>();
             state.SetupGet(x => x.Name).Returns("SomeState");
 
-            _state.Jobs.TryAdd("myjob", new BackgroundJobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
+            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
 
             // Act
             Commit(x => x.SetJobState("myjob", state.Object));
@@ -510,7 +510,7 @@ namespace Hangfire.InMemory.Tests
             var state = new Mock<IState>();
             state.Setup(x => x.Name).Returns("SomeState");
 
-            var entry = new BackgroundJobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer);
+            var entry = new JobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer);
             _state.Jobs.TryAdd("myjob", entry);
 
             // Act
@@ -554,7 +554,7 @@ namespace Hangfire.InMemory.Tests
             state.SetupGet(x => x.Reason).Returns("SomeReason");
             state.Setup(x => x.SerializeData()).Returns(new Dictionary<string, string> {{ "Key", "Value" }});
 
-            _state.Jobs.TryAdd("myjob", new BackgroundJobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
+            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
 
             // Act
             Commit(x => x.AddJobState("myjob", state.Object));
@@ -578,7 +578,7 @@ namespace Hangfire.InMemory.Tests
             var state4 = new Mock<IState>(); state4.SetupGet(x => x.Name).Returns("State4");
             var state5 = new Mock<IState>(); state5.SetupGet(x => x.Name).Returns("State5");
 
-            _state.Jobs.TryAdd("myjob", new BackgroundJobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
+            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
             _options.MaxStateHistoryLength = 3;
 
             // Act

@@ -95,7 +95,7 @@ namespace Hangfire.InMemory
                 var now = state.TimeResolver();
                 
                 // TODO: Precondition: jobId does not exist
-                var backgroundJob = new BackgroundJobEntry(
+                var jobEntry = new JobEntry(
                     key,
                     job,
                     parameters,
@@ -105,7 +105,7 @@ namespace Hangfire.InMemory
                     state.Options.StringComparer);
 
                 // TODO: We need somehow to ensure that this entry isn't removed before initialization
-                state.JobCreate(backgroundJob);
+                state.JobCreate(jobEntry);
             });
 
             return key;
