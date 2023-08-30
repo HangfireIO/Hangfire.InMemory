@@ -24,8 +24,7 @@ namespace Hangfire.InMemory.Entities
 {
     internal sealed class BackgroundJobEntry : IExpirableEntry
     {
-        private const int StateCountForRegularJob = 4; // (Scheduled) -> Enqueued -> Processing -> Succeeded
-        private List<StateEntry> _history = new List<StateEntry>(StateCountForRegularJob);
+        private readonly LinkedList<StateEntry> _history = new LinkedList<StateEntry>();
 
         public BackgroundJobEntry(
             string key,
@@ -75,11 +74,16 @@ namespace Hangfire.InMemory.Entities
             }
         }
 
-        public void AddHistoryEntry(StateEntry entry)
+        public void AddHistoryEntry(StateEntry entry, int maxLength)
         {
             if (entry == null) throw new ArgumentNullException(nameof(entry));
-            // TODO: Limit this somehow
-            _history.Add(entry);
+            if (maxLength <= 0) throw new ArgumentOutOfRangeException(nameof(maxLength));
+
+            _history.AddLast(entry);
+            if (_history.Count > maxLength)
+            {
+                _history.RemoveFirst();
+            }
         }
     }
 }

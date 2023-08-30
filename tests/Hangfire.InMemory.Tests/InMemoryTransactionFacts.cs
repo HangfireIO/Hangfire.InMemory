@@ -569,6 +569,34 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void AddJobState_DoesNotAddMoreEntries_ThanConfiguredInOptions()
+        {
+            // Arrange
+            var state1 = new Mock<IState>(); state1.SetupGet(x => x.Name).Returns("State1");
+            var state2 = new Mock<IState>(); state2.SetupGet(x => x.Name).Returns("State2");
+            var state3 = new Mock<IState>(); state3.SetupGet(x => x.Name).Returns("State3");
+            var state4 = new Mock<IState>(); state4.SetupGet(x => x.Name).Returns("State4");
+            var state5 = new Mock<IState>(); state5.SetupGet(x => x.Name).Returns("State5");
+
+            _state.Jobs.TryAdd("myjob", new BackgroundJobEntry("myjob", _job, _parameters, _now, null, false, _options.StringComparer));
+            _options.MaxStateHistoryLength = 3;
+
+            // Act
+            Commit(x =>
+            {
+                x.AddJobState("myjob", state1.Object);
+                x.AddJobState("myjob", state2.Object);
+                x.AddJobState("myjob", state3.Object);
+                x.AddJobState("myjob", state4.Object);
+                x.AddJobState("myjob", state5.Object);
+            });
+
+            // Assert
+            var entries = _state.Jobs["myjob"].History.Select(x => x.Name).ToArray();
+            Assert.Equal(new [] { "State3", "State4", "State5" }, entries);
+        }
+
+        [Fact]
         public void AddToQueue_ThrowsAnException_WhenQueueIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(() => Commit(
