@@ -13,6 +13,13 @@
     <copyright>Copyright © 2020-2023 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://www.hangfire.io/blog/releases.html
+0.6.0
+• Added – `InMemoryStorageOptions.MaxStateHistoryLength` option to control state entries.
+• Changed – Release distributed locks when their connection is disposed.
+• Project – Refactor internal types to have a cleaner project structure and avoid mistakes.
+• Project – Enable static analysis by the Microsoft.CodeAnalysis.NetAnalyzers package.
+• Project – Enable portable PDBs for .NET 4.5.1 and .NET 4.6 platforms.
+
 0.5.1
 • Fixed – Infinite loop in recurring job scheduler consuming 100% CPU regression after 0.5.0.
 
