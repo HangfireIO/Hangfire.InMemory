@@ -25,8 +25,8 @@ namespace Hangfire.InMemory
     [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Instances of this class aren't meant to be disposed.")]
     internal sealed class InMemoryDispatcher : InMemoryDispatcherBase
     {
+        private const uint DefaultExpirationIntervalMs = 1000U;
         private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(15);
-        private static readonly uint DefaultExpirationIntervalMs = 1000U;
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
         private readonly ConcurrentQueue<InMemoryDispatcherCallback> _queries = new ConcurrentQueue<InMemoryDispatcherCallback>();
@@ -105,7 +105,7 @@ namespace Hangfire.InMemory
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExceptionHelper.IsCatchableExceptionType(ex))
             {
                 _logger.FatalException("Query dispatcher stopped due to an exception, no queries will be processed. Please report this problem to Hangfire.InMemory developers.", ex);
             }
@@ -118,6 +118,24 @@ namespace Hangfire.InMemory
 
             [FieldOffset(CACHE_LINE_SIZE)]
             internal long Value;
+        }
+
+        private static class ExceptionHelper
+        {
+#if !NETSTANDARD1_3
+            private static readonly Type StackOverflowType = typeof(StackOverflowException);
+#endif
+            private static readonly Type OutOfMemoryType = typeof(OutOfMemoryException);
+ 
+            public static bool IsCatchableExceptionType(Exception ex)
+            {
+                var type = ex.GetType();
+                return
+#if !NETSTANDARD1_3
+                    type != StackOverflowType &&
+#endif
+                    type != OutOfMemoryType;
+            }
         }
     }
 }
