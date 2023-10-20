@@ -27,7 +27,6 @@ using Xunit;
 // ReSharper disable StringLiteralTypo
 
 // TODO: Case sensitivity tests, may be for different modes – SQL Server and Redis compatibility
-// TODO: Expiration index checks for Increment/DecrementCounter
 // TODO: Add checks for key lengths for SQL Server compatibility mode
 // TODO: Add mixed namespace for better compatibility with Redis?
 // TODO: Check return values aren't the same and copied for each response for safety.
@@ -681,6 +680,7 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(1, _state.Counters["mycounter"].Value);
             Assert.Null(_state.Counters["mycounter"].ExpireAt);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
@@ -692,6 +692,7 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(2, _state.Counters["mycounter"].Value);
             Assert.Null(_state.Counters["mycounter"].ExpireAt);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
@@ -705,6 +706,8 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(2, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"]);
             Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
+            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -715,6 +718,7 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.IncrementCounter("somecounter"));
 
             Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
@@ -725,6 +729,7 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.IncrementCounter("somecounter"));
 
             Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
@@ -744,6 +749,8 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(1, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
             Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
+            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -756,6 +763,8 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(2, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
             Assert.Equal(_now.AddHours(1), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
+            Assert.Equal(_now.AddHours(1), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -768,6 +777,8 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(2, _state.Counters["mycounter"].Value);
             Assert.NotNull(_state.Counters["mycounter"].ExpireAt);
             Assert.Equal(_now.AddMinutes(30), _state.Counters["mycounter"].ExpireAt);
+            Assert.Equal("mycounter", _state.ExpiringCountersIndex.Single().Key);
+            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -778,6 +789,7 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(10)));
 
             Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
@@ -788,6 +800,7 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(10)));
 
             Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
@@ -806,6 +819,7 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(-1, _state.Counters["mycounter"].Value);
             Assert.Null(_state.Counters["mycounter"].ExpireAt);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
@@ -817,6 +831,7 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(-2, _state.Counters["mycounter"].Value);
             Assert.Null(_state.Counters["mycounter"].ExpireAt);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
@@ -830,6 +845,8 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(-2, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"]);
             Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
+            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -840,6 +857,7 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.DecrementCounter("somecounter"));
 
             Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
@@ -850,6 +868,7 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.DecrementCounter("somecounter"));
 
             Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
@@ -869,6 +888,8 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(-1, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
             Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
+            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -881,6 +902,8 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(-2, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
             Assert.Equal(_now.AddHours(1), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
+            Assert.Equal(_now.AddHours(1), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -893,6 +916,8 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(-2, _state.Counters["mycounter"].Value);
             Assert.NotNull(_state.Counters["mycounter"].ExpireAt);
             Assert.Equal(_now.AddMinutes(30), _state.Counters["mycounter"].ExpireAt);
+            Assert.Equal("mycounter", _state.ExpiringCountersIndex.Single().Key);
+            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -903,6 +928,7 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(10)));
 
             Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
@@ -913,6 +939,7 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(10)));
 
             Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.Empty(_state.ExpiringCountersIndex);
         }
 
         [Fact]
