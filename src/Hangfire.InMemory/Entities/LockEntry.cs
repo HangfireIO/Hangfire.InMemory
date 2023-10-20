@@ -118,7 +118,7 @@ namespace Hangfire.InMemory.Entities
                     }
                     else
                     {
-                        Monitor.Pulse(this);
+                        Monitor.Pulse(_syncRoot);
                     }
                 }
             }
