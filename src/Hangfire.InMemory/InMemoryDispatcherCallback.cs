@@ -29,16 +29,37 @@ namespace Hangfire.InMemory
 
         public Func<InMemoryState, object> Callback { get; }
         public ManualResetEventSlim Ready { get; } = new ManualResetEventSlim(false);
+        public bool IsFaulted { get; private set; }
 
-        public object Result
+        public object Result => _result;
+
+        internal void SetResult(object value)
         {
-            get => _result;
-            set => _result = value;
+            _result = value;
+            TrySetReady();
+        }
+
+        internal void SetException(Exception value)
+        {
+            _result = value;
+            IsFaulted = true;
+            TrySetReady();
         }
 
         public void Dispose()
         {
             Ready?.Dispose();
+        }
+
+        private void TrySetReady()
+        {
+            try
+            {
+                Ready.Set();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
         }
     }
 }

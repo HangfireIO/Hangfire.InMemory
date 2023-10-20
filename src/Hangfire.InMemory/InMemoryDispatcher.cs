@@ -64,6 +64,11 @@ namespace Hangfire.InMemory
                     throw new TimeoutException();
                 }
 
+                if (callback.IsFaulted)
+                {
+                    throw new InvalidOperationException("Dispatcher stopped due to an unhandled exception, storage state is corrupted.", (Exception)callback.Result);
+                }
+
                 return callback.Result;
             }
         }
@@ -82,14 +87,15 @@ namespace Hangfire.InMemory
 
                         while (_queries.TryDequeue(out var next))
                         {
-                            next.Result = base.QueryAndWait(next.Callback);
-
                             try
                             {
-                                next.Ready.Set();
+                                var result = base.QueryAndWait(next.Callback);
+                                next.SetResult(result);
                             }
-                            catch (ObjectDisposedException)
+                            catch (Exception ex) when (ExceptionHelper.IsCatchableExceptionType(ex))
                             {
+                                next.SetException(ex);
+                                throw;
                             }
 
                             if (Environment.TickCount - startTime >= DefaultExpirationIntervalMs)
