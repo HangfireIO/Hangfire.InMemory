@@ -1631,8 +1631,17 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
-        // TODO: Remove GetFirstByLowestScoreFromSet_ThrowsAnException_ToScoreIsLowerThanFromScore from SQL Server implementation
-        // TODO: Also remove GetFirstByLowestScoreFromSet_ThrowsArgException_WhenRequestingLessThanZero there
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_ThrowsAnException_WhenToScoreIsLowerThanFromScore()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentException>(
+                    () => connection.GetFirstByLowestScoreFromSet("key", 0, -1));
+
+                Assert.Equal("toScore", exception.ParamName);
+            });
+        }
 
         [Fact]
         public void GetFirstByLowestScoreFromSet_ReturnsNull_WhenTargetSetDoesNotExist()
@@ -1759,6 +1768,30 @@ namespace Hangfire.InMemory.Tests
                     () => connection.GetFirstByLowestScoreFromSet(null, 0, 1, 10));
 
                 Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_WithCount_ThrowsAnException_WhenToScoreIsLowerThanFromScore()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentException>(
+                    () => connection.GetFirstByLowestScoreFromSet("key", 0, -1, 10));
+
+                Assert.Equal("toScore", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_WithCount_ThrowsArgException_WhenRequestingLessThanZero()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentException>(
+                    () => connection.GetFirstByLowestScoreFromSet("key", 0, 10, -4));
+
+                Assert.Equal("count", exception.ParamName);
             });
         }
 
