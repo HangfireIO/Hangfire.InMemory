@@ -49,7 +49,6 @@ namespace Hangfire.InMemory.Entities
                 }
                 else
                 {
-                    // TODO: Ensure ReferenceCount is updated only under _state._locks
                     _referenceCount++;
                 }
             }
