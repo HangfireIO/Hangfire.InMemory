@@ -30,7 +30,6 @@ using Xunit;
 // TODO: Expiration index checks for Increment/DecrementCounter
 // TODO: Add checks for key lengths for SQL Server compatibility mode
 // TODO: Add mixed namespace for better compatibility with Redis?
-// TODO: AddToSet/AddRangeToSet with null value – how other storages behave?
 // TODO: Check return values aren't the same and copied for each response for safety.
 
 namespace Hangfire.InMemory.Tests
@@ -1398,6 +1397,15 @@ namespace Hangfire.InMemory.Tests
         {
             var exception = Assert.Throws<ArgumentNullException>(
                 () => Commit(x => x.AddRangeToSet("key", null)));
+
+            Assert.Equal("items", exception.ParamName);
+        }
+
+        [Fact]
+        public void AddRangeToSet_ThrowsAnException_WhenItemsContainsNullValue()
+        {
+            var exception = Assert.Throws<ArgumentException>(
+                () => Commit(x => x.AddRangeToSet("key", new List<string> { "1", "2", null, "3" })));
 
             Assert.Equal("items", exception.ParamName);
         }

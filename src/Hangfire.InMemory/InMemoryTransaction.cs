@@ -321,6 +321,11 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (items == null) throw new ArgumentNullException(nameof(items));
 
+            foreach (var item in items)
+            {
+                if (item == null) throw new ArgumentException("The list of items must not contain any `null` entries.", nameof(items));
+            }
+
             if (items.Count == 0) return;
 
             _actions.Add(state =>
@@ -344,7 +349,7 @@ namespace Hangfire.InMemory
             });
         }
 
-        public override void ExpireHash([NotNull]string key, TimeSpan expireIn)
+        public override void ExpireHash([NotNull] string key, TimeSpan expireIn)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
