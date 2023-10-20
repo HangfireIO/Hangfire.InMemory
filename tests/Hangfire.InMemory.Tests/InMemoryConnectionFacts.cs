@@ -9,8 +9,6 @@ using Hangfire.Storage;
 using Moq;
 using Xunit;
 
-// TODO: Add unit test for ranges where startingFrom is greater than endingAt (and similar)
-
 namespace Hangfire.InMemory.Tests
 {
     public class InMemoryConnectionFacts
@@ -937,6 +935,30 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void GetRangeFromSet_ThrowsAnException_WhenStartingFrom_IsLessThanZero()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentException>(
+                    () => connection.GetRangeFromSet("key", -5, 5));
+
+                Assert.Equal("startingFrom", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromSet_ThrowsAnException_WhenEndingAtIsLowerThanStartingFrom()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentException>(
+                    () => connection.GetRangeFromSet("key", 0, -1));
+
+                Assert.Equal("endingAt", exception.ParamName);
+            });
+        }
+
+        [Fact]
         public void GetRangeFromSet_ReturnsNonNullEmptyCollection_WhenTargetSetDoesNotExist()
         {
             UseConnection(connection =>
@@ -1013,6 +1035,30 @@ namespace Hangfire.InMemory.Tests
                     () => connection.GetRangeFromList(null, 0, 1));
 
                 Assert.Equal("key", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromList_ThrowsAnException_WhenStartingFrom_IsLessThanZero()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentException>(
+                    () => connection.GetRangeFromList("key", -5, 5));
+
+                Assert.Equal("startingFrom", exception.ParamName);
+            });
+        }
+
+        [Fact]
+        public void GetRangeFromList_ThrowsAnException_WhenEndingAtIsLowerThanStartingFrom()
+        {
+            UseConnection(connection =>
+            {
+                var exception = Assert.Throws<ArgumentException>(
+                    () => connection.GetRangeFromList("key", 0, -1));
+
+                Assert.Equal("endingAt", exception.ParamName);
             });
         }
 

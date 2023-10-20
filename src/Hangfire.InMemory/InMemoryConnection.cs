@@ -347,7 +347,7 @@ namespace Hangfire.InMemory
         public override string GetFirstByLowestScoreFromSet([NotNull] string key, double fromScore, double toScore)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
-            if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be higher or equal to the `fromScore` value.", nameof(toScore));
+            if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be greater or equal to the `fromScore` value.", nameof(toScore));
 
             return Dispatcher.QueryAndWait(state =>
             {
@@ -363,7 +363,7 @@ namespace Hangfire.InMemory
         public override List<string> GetFirstByLowestScoreFromSet([NotNull] string key, double fromScore, double toScore, int count)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
-            if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be higher or equal to the `fromScore` value.", nameof(toScore));
+            if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be greater or equal to the `fromScore` value.", nameof(toScore));
             if (count <= 0) throw new ArgumentException("The value must be a positive number", nameof(count));
 
             return Dispatcher.QueryAndWait(state =>
@@ -575,6 +575,8 @@ namespace Hangfire.InMemory
         public override List<string> GetRangeFromList([NotNull] string key, int startingFrom, int endingAt)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
+            if (startingFrom < 0) throw new ArgumentException("The value must be greater than or equal to zero.", nameof(startingFrom));
+            if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater or equal to the `{nameof(startingFrom)}` value.", nameof(endingAt));
 
             return Dispatcher.QueryAndWait(state =>
             {
@@ -598,6 +600,8 @@ namespace Hangfire.InMemory
         public override List<string> GetRangeFromSet([NotNull] string key, int startingFrom, int endingAt)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
+            if (startingFrom < 0) throw new ArgumentException("The value must be greater than or equal to zero.", nameof(startingFrom));
+            if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater or equal to the `{nameof(startingFrom)}` value.", nameof(endingAt));
 
             return Dispatcher.QueryAndWait(state =>
             {
