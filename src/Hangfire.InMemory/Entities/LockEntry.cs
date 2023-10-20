@@ -72,7 +72,7 @@ namespace Hangfire.InMemory.Entities
                         return false;
                     }
 
-                    Monitor.Wait(this, remaining);
+                    Monitor.Wait(_syncRoot, remaining);
                 }
 
                 _owner = owner;
