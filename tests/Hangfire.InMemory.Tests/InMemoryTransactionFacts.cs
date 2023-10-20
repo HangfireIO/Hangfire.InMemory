@@ -37,7 +37,7 @@ namespace Hangfire.InMemory.Tests
     {
         private readonly InMemoryStorageOptions _options;
         private readonly InMemoryState _state;
-        private readonly DateTime _now;
+        private readonly MonotonicTime _now;
         private readonly InMemoryConnection _connection;
         private readonly Dictionary<string,string> _parameters;
         private readonly Job _job;
@@ -45,7 +45,7 @@ namespace Hangfire.InMemory.Tests
         public InMemoryTransactionFacts()
         {
             _options = new InMemoryStorageOptions { StringComparer = StringComparer.Ordinal };
-            _now = new DateTime(2020, 09, 29, 08, 05, 30, DateTimeKind.Utc);
+            _now = MonotonicTime.GetCurrent();
             _state = new InMemoryState(() => _now, _options);
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
@@ -172,7 +172,7 @@ namespace Hangfire.InMemory.Tests
         public void CreateExpiredJob_ThrowsAnException_WhenJobIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => Commit(x => x.CreateJob(null, _parameters, _now, TimeSpan.Zero)));
+                () => Commit(x => x.CreateJob(null, _parameters, _now.ToUtcDateTime(), TimeSpan.Zero)));
 
             Assert.Equal("job", exception.ParamName);
         }
@@ -181,7 +181,7 @@ namespace Hangfire.InMemory.Tests
         public void CreateExpiredJob_ThrowsAnException_WhenParametersArgumentIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => Commit(x => x.CreateJob(_job, null, _now, TimeSpan.Zero)));
+                () => Commit(x => x.CreateJob(_job, null, _now.ToUtcDateTime(), TimeSpan.Zero)));
 
             Assert.Equal("parameters", exception.ParamName);
         }
@@ -191,8 +191,8 @@ namespace Hangfire.InMemory.Tests
         {
             Commit(transaction =>
             {
-                var id1 = transaction.CreateJob(_job, _parameters, _now, TimeSpan.Zero);
-                var id2 = transaction.CreateJob(_job, _parameters, _now, TimeSpan.Zero);
+                var id1 = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.Zero);
+                var id2 = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.Zero);
 
                 Assert.NotEqual(id1, id2);
             });
@@ -206,7 +206,7 @@ namespace Hangfire.InMemory.Tests
             // Act
             Commit(transaction =>
             {
-                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));                
+                jobId = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));                
             });
 
             // Assert
@@ -217,7 +217,7 @@ namespace Hangfire.InMemory.Tests
             Assert.NotSame(_parameters, entry.Parameters);
             Assert.Empty(entry.History);
             Assert.Equal(_now, entry.CreatedAt);
-            Assert.Equal(_now.AddMinutes(30), entry.ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), entry.ExpireAt);
             Assert.Equal(data.Type, entry.InvocationData.Type);
             Assert.Equal(data.Method, entry.InvocationData.Method);
             Assert.Equal(data.ParameterTypes, entry.InvocationData.ParameterTypes);
@@ -232,7 +232,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(transaction =>
             {
-                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
             });
 
             Assert.Contains(_state.Jobs[jobId], _state.ExpiringJobsIndex);
@@ -248,7 +248,7 @@ namespace Hangfire.InMemory.Tests
                 _parameters.Add("RetryCount", "1");
                 _parameters.Add("CurrentCulture", "en-US");
 
-                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
             });
 
             var parameters = _state.Jobs[jobId].Parameters;
@@ -265,7 +265,7 @@ namespace Hangfire.InMemory.Tests
             Commit(transaction =>
             {
                 var job = new Job(_job.Type, _job.Method, _job.Args, "critical");
-                jobId = transaction.CreateJob(job, _parameters, _now, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
             });
 
             Assert.Equal("critical", _state.Jobs[jobId].InvocationData.Queue);
@@ -296,7 +296,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(transaction =>
             {
-                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
                 transaction.SetJobParameter(jobId, "name", null);
             });
 
@@ -319,7 +319,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(transaction =>
             {
-                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
                 transaction.SetJobParameter(jobId, "CurrentCulture", "en-US");
             });
 
@@ -334,7 +334,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(transaction =>
             {
-                jobId = transaction.CreateJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                jobId = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
                 transaction.SetJobParameter(jobId, "RetryCount", "2");
             });
 
@@ -369,7 +369,7 @@ namespace Hangfire.InMemory.Tests
             // Assert
             var expireAt = _state.Jobs["myjob"].ExpireAt;
             Assert.NotNull(expireAt);
-            Assert.Equal(_now.AddMinutes(30), expireAt.Value);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), expireAt.Value);
         }
 
         [Fact]
@@ -705,9 +705,9 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(2, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"]);
-            Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.Counters["somecounter"].ExpireAt);
             Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
-            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -748,9 +748,9 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(1, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
-            Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.Counters["somecounter"].ExpireAt);
             Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
-            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -762,9 +762,9 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(2, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
-            Assert.Equal(_now.AddHours(1), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromHours(1)), _state.Counters["somecounter"].ExpireAt);
             Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
-            Assert.Equal(_now.AddHours(1), _state.ExpiringCountersIndex.Single().ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromHours(1)), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -776,9 +776,9 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(2, _state.Counters["mycounter"].Value);
             Assert.NotNull(_state.Counters["mycounter"].ExpireAt);
-            Assert.Equal(_now.AddMinutes(30), _state.Counters["mycounter"].ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.Counters["mycounter"].ExpireAt);
             Assert.Equal("mycounter", _state.ExpiringCountersIndex.Single().Key);
-            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -844,9 +844,9 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(-2, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"]);
-            Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.Counters["somecounter"].ExpireAt);
             Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
-            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -887,9 +887,9 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(-1, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
-            Assert.Equal(_now.AddMinutes(30), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.Counters["somecounter"].ExpireAt);
             Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
-            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -901,9 +901,9 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(-2, _state.Counters["somecounter"].Value);
             Assert.NotNull(_state.Counters["somecounter"].ExpireAt);
-            Assert.Equal(_now.AddHours(1), _state.Counters["somecounter"].ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromHours(1)), _state.Counters["somecounter"].ExpireAt);
             Assert.Equal("somecounter", _state.ExpiringCountersIndex.Single().Key);
-            Assert.Equal(_now.AddHours(1), _state.ExpiringCountersIndex.Single().ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromHours(1)), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -915,9 +915,9 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(-2, _state.Counters["mycounter"].Value);
             Assert.NotNull(_state.Counters["mycounter"].ExpireAt);
-            Assert.Equal(_now.AddMinutes(30), _state.Counters["mycounter"].ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.Counters["mycounter"].ExpireAt);
             Assert.Equal("mycounter", _state.ExpiringCountersIndex.Single().Key);
-            Assert.Equal(_now.AddMinutes(30), _state.ExpiringCountersIndex.Single().ExpireAt);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), _state.ExpiringCountersIndex.Single().ExpireAt);
         }
 
         [Fact]
@@ -1502,7 +1502,7 @@ namespace Hangfire.InMemory.Tests
             // Assert
             var expireAt = _state.Hashes["key"].ExpireAt;
             Assert.NotNull(expireAt);
-            Assert.Equal(_now.AddMinutes(30), expireAt.Value);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), expireAt.Value);
         }
 
         [Fact]
@@ -1543,7 +1543,7 @@ namespace Hangfire.InMemory.Tests
             // Assert
             var expireAt = _state.Lists["key"].ExpireAt;
             Assert.NotNull(expireAt);
-            Assert.Equal(_now.AddMinutes(30), expireAt.Value);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), expireAt.Value);
         }
 
         [Fact]
@@ -1584,7 +1584,7 @@ namespace Hangfire.InMemory.Tests
             // Assert
             var expireAt = _state.Sets["key"].ExpireAt;
             Assert.NotNull(expireAt);
-            Assert.Equal(_now.AddMinutes(30), expireAt.Value);
+            Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), expireAt.Value);
         }
 
         [Fact]

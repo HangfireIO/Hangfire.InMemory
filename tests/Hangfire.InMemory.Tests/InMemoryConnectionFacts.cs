@@ -32,12 +32,12 @@ namespace Hangfire.InMemory.Tests
         private readonly InMemoryState _state;
         private readonly Dictionary<string, string> _parameters;
         private readonly Job _job;
-        private DateTime _now;
+        private MonotonicTime _now;
 
         public InMemoryConnectionFacts()
         {
             _options = new InMemoryStorageOptions();
-            _now = new DateTime(2020, 09, 29, 08, 05, 30, DateTimeKind.Utc);
+            _now = MonotonicTime.GetCurrent();
             _state = new InMemoryState(() => _now, _options);
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
@@ -72,7 +72,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 var exception = Assert.Throws<ArgumentNullException>(
-                    () => connection.CreateExpiredJob(null, _parameters, _now, TimeSpan.Zero));
+                    () => connection.CreateExpiredJob(null, _parameters, _now.ToUtcDateTime(), TimeSpan.Zero));
 
                 Assert.Equal("job", exception.ParamName);
             });
@@ -84,7 +84,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 var exception = Assert.Throws<ArgumentNullException>(
-                    () => connection.CreateExpiredJob(_job, null, _now, TimeSpan.Zero));
+                    () => connection.CreateExpiredJob(_job, null, _now.ToUtcDateTime(), TimeSpan.Zero));
 
                 Assert.Equal("parameters", exception.ParamName);
             });
@@ -95,8 +95,8 @@ namespace Hangfire.InMemory.Tests
         {
             UseConnection(connection =>
             {
-                var id1 = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.Zero);
-                var id2 = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.Zero);
+                var id1 = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.Zero);
+                var id2 = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.Zero);
 
                 Assert.NotEqual(id1, id2);
             });
@@ -108,7 +108,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 // Act
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 // Assert
                 var entry = _state.Jobs[jobId];
@@ -118,7 +118,7 @@ namespace Hangfire.InMemory.Tests
                 Assert.NotSame(_parameters, entry.Parameters);
                 Assert.Empty(entry.History);
                 Assert.Equal(_now, entry.CreatedAt);
-                Assert.Equal(_now.AddMinutes(30), entry.ExpireAt);
+                Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), entry.ExpireAt);
                 Assert.Equal(data.Type, entry.InvocationData.Type);
                 Assert.Equal(data.Method, entry.InvocationData.Method);
                 Assert.Equal(data.ParameterTypes, entry.InvocationData.ParameterTypes);
@@ -132,7 +132,7 @@ namespace Hangfire.InMemory.Tests
         {
             UseConnection(connection =>
             {
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 Assert.Contains(_state.Jobs[jobId], _state.ExpiringJobsIndex);
             });
@@ -146,7 +146,7 @@ namespace Hangfire.InMemory.Tests
                 _parameters.Add("RetryCount", "1");
                 _parameters.Add("CurrentCulture", "en-US");
 
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 var parameters = _state.Jobs[jobId].Parameters;
                 Assert.Equal(2, parameters.Count);
@@ -161,7 +161,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 var job = new Job(_job.Type, _job.Method, _job.Args, "critical");
-                var jobId = connection.CreateExpiredJob(job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
                 
                 Assert.Equal("critical", _state.Jobs[jobId].InvocationData.Queue);
             });
@@ -196,7 +196,7 @@ namespace Hangfire.InMemory.Tests
         {
             UseConnection(connection =>
             {
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 connection.SetJobParameter(jobId, "name", null);
 
@@ -218,7 +218,7 @@ namespace Hangfire.InMemory.Tests
         {
             UseConnection(connection =>
             {
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 connection.SetJobParameter(jobId, "CurrentCulture", "en-US");
 
@@ -232,7 +232,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 _parameters.Add("RetryCount", "1");
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 connection.SetJobParameter(jobId, "RetryCount", "2");
 
@@ -280,7 +280,7 @@ namespace Hangfire.InMemory.Tests
         {
             UseConnection(connection =>
             {
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 var value = connection.GetJobParameter(jobId, "name");
 
@@ -294,7 +294,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 _parameters.Add("name", null);
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 var value = connection.GetJobParameter(jobId, "name");
 
@@ -308,7 +308,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 _parameters.Add("name", "value");
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 var value = connection.GetJobParameter(jobId, "name");
 
@@ -344,12 +344,12 @@ namespace Hangfire.InMemory.Tests
         {
             UseConnection(connection =>
             {
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 var data = connection.GetJobData(jobId);
 
                 Assert.NotNull(data);
-                Assert.Equal(_now, data.CreatedAt);
+                AssertWithinSecond(_now.ToUtcDateTime(), data.CreatedAt);
                 Assert.Same(_job.Type, data.Job.Type);
                 Assert.Same(_job.Method, data.Job.Method);
                 Assert.Equal(_job.Args, data.Job.Args);
@@ -367,7 +367,7 @@ namespace Hangfire.InMemory.Tests
                 var state = new Mock<IState>();
                 state.SetupGet(x => x.Name).Returns("MyState");
 
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 Commit(connection, x => x.SetJobState(jobId, state.Object));
 
@@ -387,14 +387,14 @@ namespace Hangfire.InMemory.Tests
         {
             UseConnection(connection =>
             {
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
                 _state.Jobs[jobId].InvocationData = new InvocationData("afsasf", "oiaeghgaoiwejg", "ksad", "aiwheg3");
 
                 var data = connection.GetJobData(jobId);
 
                 Assert.Null(data.Job);
                 Assert.NotNull(data.LoadException);
-                Assert.Equal(_now, data.CreatedAt);
+                AssertWithinSecond(_now.ToUtcDateTime(), data.CreatedAt);
             });
         }
 
@@ -405,7 +405,7 @@ namespace Hangfire.InMemory.Tests
             {
                 // Arrange
                 var job = new Job(_job.Type, _job.Method, _job.Args, "critical");
-                var jobId = connection.CreateExpiredJob(job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 // Act
                 var data = connection.GetJobData(jobId);
@@ -443,7 +443,7 @@ namespace Hangfire.InMemory.Tests
         {
             UseConnection(connection =>
             {
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 var data = connection.GetStateData(jobId);
 
@@ -464,7 +464,7 @@ namespace Hangfire.InMemory.Tests
                 state.SetupGet(x => x.Reason).Returns("MyReason");
                 state.Setup(x => x.SerializeData()).Returns(stateData);
 
-                var jobId = connection.CreateExpiredJob(_job, _parameters, _now, TimeSpan.FromMinutes(30));
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
                 Commit(connection, x => x.SetJobState(jobId, state.Object));
 
@@ -1335,7 +1335,7 @@ namespace Hangfire.InMemory.Tests
                     x.ExpireHash("key", TimeSpan.FromSeconds(35));
                 });
 
-                _now = _now.AddMinutes(5);
+                _now = _now.Add(TimeSpan.FromMinutes(5));
 
                 // Act
                 var expireIn = connection.GetHashTtl("key");
@@ -1409,7 +1409,7 @@ namespace Hangfire.InMemory.Tests
                     x.ExpireList("key", TimeSpan.FromSeconds(35));
                 });
 
-                _now = _now.AddMinutes(5);
+                _now = _now.Add(TimeSpan.FromMinutes(5));
 
                 // Act
                 var expireIn = connection.GetListTtl("key");
@@ -1483,7 +1483,7 @@ namespace Hangfire.InMemory.Tests
                     x.ExpireSet("key", TimeSpan.FromSeconds(35));
                 });
 
-                _now = _now.AddMinutes(5);
+                _now = _now.Add(TimeSpan.FromMinutes(5));
 
                 // Act
                 var expireIn = connection.GetSetTtl("key");
@@ -1604,12 +1604,12 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 connection.AnnounceServer("some-server", new ServerContext());
-                _now = _now.AddMinutes(32);
+                _now = _now.Add(TimeSpan.FromMinutes(32));
 
                 connection.Heartbeat("some-server");
 
                 Assert.Equal(_now, _state.Servers["some-server"].HeartbeatAt);
-                Assert.Equal(_now.AddMinutes(-32), _state.Servers["some-server"].StartedAt);
+                Assert.Equal(_now.Add(TimeSpan.FromMinutes(-32)), _state.Servers["some-server"].StartedAt);
             });
         }
 
@@ -1655,11 +1655,11 @@ namespace Hangfire.InMemory.Tests
                 // Arrange
                 connection.AnnounceServer("server-1", new ServerContext());
                 connection.AnnounceServer("server-2", new ServerContext());
-                _state.Servers["server-2"].HeartbeatAt = _now.AddMinutes(-30);
+                _state.Servers["server-2"].HeartbeatAt = _now.Add(TimeSpan.FromMinutes(-30));
                 connection.AnnounceServer("server-3", new ServerContext());
-                _state.Servers["server-3"].HeartbeatAt = _now.AddMinutes(-5);
+                _state.Servers["server-3"].HeartbeatAt = _now.Add(TimeSpan.FromMinutes(-5));
                 connection.AnnounceServer("server-4", new ServerContext());
-                _state.Servers["server-4"].HeartbeatAt = _now.AddMinutes(-60);
+                _state.Servers["server-4"].HeartbeatAt = _now.Add(TimeSpan.FromMinutes(-60));
 
                 // Act
                 var result = connection.RemoveTimedOutServers(TimeSpan.FromMinutes(15));
@@ -1676,7 +1676,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 var result = connection.GetUtcDateTime();
-                Assert.Equal(_now, result);
+                AssertWithinSecond(_now.ToUtcDateTime(), result);
             });
         }
 
@@ -2284,6 +2284,11 @@ namespace Hangfire.InMemory.Tests
         public void MyMethod(string arg)
 #pragma warning restore xUnit1013 // Public method should be marked as test
         {
+        }
+
+        private static void AssertWithinSecond(DateTime date1, DateTime? date2)
+        {
+            Assert.Equal(0, (date1 - date2.Value).TotalSeconds, 2);
         }
     }
 }

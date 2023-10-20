@@ -31,8 +31,8 @@ namespace Hangfire.InMemory.Entities
             string key,
             Job job,
             IDictionary<string, string> parameters,
-            DateTime createdAt,
-            DateTime? expireAt,
+            MonotonicTime createdAt,
+            MonotonicTime? expireAt,
             bool disableSerialization,
             StringComparer comparer)
         {
@@ -52,8 +52,8 @@ namespace Hangfire.InMemory.Entities
 
         public StateEntry State { get; set; }
         public IEnumerable<StateEntry> History => _history;
-        public DateTime CreatedAt { get; }
-        public DateTime? ExpireAt { get; set; }
+        public MonotonicTime CreatedAt { get; }
+        public MonotonicTime? ExpireAt { get; set; }
 
         public Job TryGetJob(out JobLoadException exception)
         {

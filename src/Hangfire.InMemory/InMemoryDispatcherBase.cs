@@ -145,7 +145,7 @@ namespace Hangfire.InMemory
             ExpireJobIndex(now, _state);
         }
 
-        private static void ExpireIndex<T>(DateTime now, SortedSet<T> index, Action<T> action)
+        private static void ExpireIndex<T>(MonotonicTime now, SortedSet<T> index, Action<T> action)
             where T : IExpirableEntry
         {
             T entry;
@@ -156,7 +156,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        private static void ExpireJobIndex(DateTime now, InMemoryState state)
+        private static void ExpireJobIndex(MonotonicTime now, InMemoryState state)
         {
             JobEntry entry;
 

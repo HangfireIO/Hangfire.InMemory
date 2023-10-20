@@ -70,7 +70,7 @@ namespace Hangfire.InMemory
                             InvocationData = jobEntry?.InvocationData,
                             State = stateName,
                             InEnqueuedState = inEnqueuedState,
-                            EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt : null,
+                            EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt.ToUtcDateTime() : null,
                             StateData = inEnqueuedState && jobEntry?.State != null
                                 ? jobEntry.State.GetData()
                                 : null
@@ -102,8 +102,8 @@ namespace Hangfire.InMemory
                         Name = entry.Key,
                         Queues = entry.Value.Context.Queues.ToArray(),
                         WorkersCount = entry.Value.Context.WorkerCount,
-                        Heartbeat = entry.Value.HeartbeatAt,
-                        StartedAt = entry.Value.StartedAt,
+                        Heartbeat = entry.Value.HeartbeatAt.ToUtcDateTime(),
+                        StartedAt = entry.Value.StartedAt.ToUtcDateTime(),
                     });
                 }
 
@@ -126,15 +126,15 @@ namespace Hangfire.InMemory
 
                 return new JobDetailsDto
                 {
-                    CreatedAt = entry.CreatedAt,
-                    ExpireAt = entry.ExpireAt,
+                    CreatedAt = entry.CreatedAt.ToUtcDateTime(),
+                    ExpireAt = entry.ExpireAt?.ToUtcDateTime(),
                     Job = job,
                     InvocationData = entry.InvocationData,
                     LoadException = loadException,
                     Properties = entry.Parameters.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer),
                     History = entry.History.Select(x => new StateHistoryDto
                     {
-                        CreatedAt = x.CreatedAt,
+                        CreatedAt = x.CreatedAt.ToUtcDateTime(),
                         StateName = x.Name,
                         Reason = x.Reason,
                         Data = x.GetData()
@@ -204,7 +204,7 @@ namespace Hangfire.InMemory
                             LoadException = loadException,
                             State = stateName,
                             InEnqueuedState = inEnqueuedState,
-                            EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt : null,
+                            EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt.ToUtcDateTime() : null,
                             StateData = inEnqueuedState && jobEntry?.State != null
                                 ? jobEntry.State.GetData()
                                 : null
@@ -251,7 +251,7 @@ namespace Hangfire.InMemory
                             InvocationData = entry.InvocationData,
                             LoadException = loadException,
                             InProcessingState = inProcessingState,
-                            StartedAt = entry.State?.CreatedAt,
+                            StartedAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inProcessingState && data != null
                                 ? data
                                 : null
@@ -298,7 +298,7 @@ namespace Hangfire.InMemory
                             InvocationData = backgroundJob?.InvocationData,
                             LoadException = loadException,
                             InScheduledState = inScheduledState,
-                            ScheduledAt = backgroundJob?.State?.CreatedAt,
+                            ScheduledAt = backgroundJob?.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inScheduledState && backgroundJob?.State != null
                                 ? backgroundJob.State.GetData()
                                 : null
@@ -342,7 +342,7 @@ namespace Hangfire.InMemory
                             InvocationData = entry.InvocationData,
                             LoadException = loadException,
                             InSucceededState = inSucceededState,
-                            SucceededAt = entry.State?.CreatedAt,
+                            SucceededAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inSucceededState && data != null
                                 ? data
                                 : null
@@ -386,7 +386,7 @@ namespace Hangfire.InMemory
                             ExceptionMessage = data?.ContainsKey("ExceptionMessage") ?? false ? data["ExceptionMessage"] : null,
                             Reason = entry.State?.Reason,
                             InFailedState = inFailedState,
-                            FailedAt = entry.State?.CreatedAt,
+                            FailedAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inFailedState && data != null
                                 ? data
                                 : null
@@ -425,7 +425,7 @@ namespace Hangfire.InMemory
                             InvocationData = entry.InvocationData,
                             LoadException = loadException,
                             InDeletedState = inDeletedState,
-                            DeletedAt = entry.State?.CreatedAt,
+                            DeletedAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inDeletedState && entry.State != null
                                 ? entry.State.GetData()
                                 : null
@@ -464,7 +464,7 @@ namespace Hangfire.InMemory
                             InvocationData = entry.InvocationData,
                             LoadException = loadException,
                             InAwaitingState = inAwaitingState,
-                            AwaitingAt = entry.State?.CreatedAt,
+                            AwaitingAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inAwaitingState && entry.State != null
                                 ? entry.State.GetData()
                                 : null
@@ -570,7 +570,7 @@ namespace Hangfire.InMemory
 
         private static Dictionary<DateTime, long> GetHourlyTimelineStats(InMemoryState state, string type)
         {
-            var endDate = state.TimeResolver();
+            var endDate = state.TimeResolver().ToUtcDateTime();
             var dates = new List<DateTime>();
             for (var i = 0; i < 24; i++)
             {
@@ -592,7 +592,7 @@ namespace Hangfire.InMemory
 
         private static Dictionary<DateTime, long> GetTimelineStats(InMemoryState state, string type)
         {
-            var endDate = state.TimeResolver().Date;
+            var endDate = state.TimeResolver().ToUtcDateTime().Date;
             var startDate = endDate.AddDays(-7);
             var dates = new List<DateTime>();
 

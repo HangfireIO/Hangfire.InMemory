@@ -13,8 +13,6 @@
 // You should have received a copy of the GNU Lesser General Public 
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
-using System;
-
 namespace Hangfire.InMemory.Entities
 {
     internal sealed class CounterEntry : IExpirableEntry
@@ -26,6 +24,6 @@ namespace Hangfire.InMemory.Entities
 
         public string Key { get; }
         public long Value { get; set; }
-        public DateTime? ExpireAt { get; set; }
+        public MonotonicTime? ExpireAt { get; set; }
     }
 }

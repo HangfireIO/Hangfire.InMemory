@@ -38,7 +38,7 @@ namespace Hangfire.InMemory
         private readonly ConcurrentDictionary<string, QueueEntry> _queues;
         private readonly Dictionary<string, ServerEntry> _servers;
 
-        public InMemoryState(Func<DateTime> timeResolver, InMemoryStorageOptions options)
+        public InMemoryState(Func<MonotonicTime> timeResolver, InMemoryStorageOptions options)
         {
             TimeResolver = timeResolver;
             Options = options;
@@ -62,7 +62,7 @@ namespace Hangfire.InMemory
             ExpiringSetsIndex = new SortedSet<SetEntry>(expirableEntryComparer);
         }
 
-        public Func<DateTime> TimeResolver { get; }
+        public Func<MonotonicTime> TimeResolver { get; }
         public InMemoryStorageOptions Options { get; }
 
         public ConcurrentDictionary<string, JobEntry> Jobs => _jobs; // net451 target does not have ConcurrentDictionary that implements IReadOnlyDictionary

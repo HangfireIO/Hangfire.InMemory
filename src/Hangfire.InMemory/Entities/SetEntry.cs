@@ -32,7 +32,7 @@ namespace Hangfire.InMemory.Entities
         }
 
         public string Key { get; }
-        public DateTime? ExpireAt { get; set; }
+        public MonotonicTime? ExpireAt { get; set; }
 
         public int Count => _value.Count;
 

@@ -13,14 +13,13 @@
 // You should have received a copy of the GNU Lesser General Public 
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
-using System;
 using Hangfire.Server;
 
 namespace Hangfire.InMemory.Entities
 {
     internal sealed class ServerEntry
     {
-        public ServerEntry(ServerContext context, DateTime startedAt)
+        public ServerEntry(ServerContext context, MonotonicTime startedAt)
         {
             Context = context;
             StartedAt = startedAt;
@@ -28,8 +27,7 @@ namespace Hangfire.InMemory.Entities
         }
 
         public ServerContext Context { get; }
-        // TODO: Consider replacing DateTime with monotonic clocks almost everywhere
-        public DateTime StartedAt { get; }
-        public DateTime HeartbeatAt { get; set; }
+        public MonotonicTime StartedAt { get; }
+        public MonotonicTime HeartbeatAt { get; set; }
     }
 }

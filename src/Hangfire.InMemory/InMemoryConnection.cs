@@ -211,7 +211,7 @@ namespace Hangfire.InMemory
             {
                 Job = entry.TryGetJob(out var loadException),
                 LoadException = loadException,
-                CreatedAt = entry.CreatedAt,
+                CreatedAt = entry.CreatedAt.ToUtcDateTime(),
                 State = entry.State?.Name
             };
         }
@@ -302,7 +302,7 @@ namespace Hangfire.InMemory
 
                 foreach (var server in state.Servers)
                 {
-                    if (now > server.Value.HeartbeatAt + timeout)
+                    if (now > server.Value.HeartbeatAt.Add(timeout))
                     {
                         // Adding for removal first, to avoid breaking the iterator
                         serversToRemove.Add(server.Key);
@@ -321,7 +321,7 @@ namespace Hangfire.InMemory
         public override DateTime GetUtcDateTime()
         {
             // TODO: Implement without touching the dispatcher?
-            return Dispatcher.QueryAndWait(state => state.TimeResolver());
+            return Dispatcher.QueryAndWait(state => state.TimeResolver().ToUtcDateTime());
         }
 
         public override HashSet<string> GetAllItemsFromSet([NotNull] string key)

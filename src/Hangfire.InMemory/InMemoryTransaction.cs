@@ -61,13 +61,15 @@ namespace Hangfire.InMemory
 
             _actions.Add(state =>
             {
+                var now = state.TimeResolver();
+
                 // TODO: Precondition: jobId does not exist
                 var entry = new JobEntry(
                     key,
                     job,
                     parameters,
-                    createdAt,
-                    createdAt.Add(expireIn),
+                    now,
+                    now.Add(expireIn),
                     state.Options.DisableJobSerialization,
                     state.Options.StringComparer);
 

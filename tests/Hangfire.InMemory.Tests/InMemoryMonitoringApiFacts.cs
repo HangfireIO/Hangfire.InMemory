@@ -29,12 +29,12 @@ namespace Hangfire.InMemory.Tests
     {
         private readonly InMemoryStorageOptions _options;
         private readonly InMemoryState _state;
-        private DateTime _now;
+        private MonotonicTime _now;
 
         public InMemoryMonitoringApiFacts()
         {
             _options = new InMemoryStorageOptions { StringComparer = StringComparer.Ordinal };
-            _now = new DateTime(2020, 09, 29, 08, 05, 30, DateTimeKind.Utc);
+            _now = MonotonicTime.GetCurrent();
             _state = new InMemoryState(() => _now, _options);
         }
 
@@ -102,7 +102,7 @@ namespace Hangfire.InMemory.Tests
 
             Assert.True(queuedJob.Value.InEnqueuedState);
             Assert.Equal("Enqueued", queuedJob.Value.State, StringComparer.OrdinalIgnoreCase);
-            Assert.Equal(_now, queuedJob.Value.EnqueuedAt);
+            AssertWithinSecond(_now.ToUtcDateTime(), queuedJob.Value.EnqueuedAt);
 
             Assert.Equal(typeof(ITestServices), queuedJob.Value.Job.Type);
             Assert.Equal("Empty", queuedJob.Value.Job.Method.Name);
@@ -185,7 +185,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId, someJob.Key);
             Assert.True(someJob.Value.InEnqueuedState);
             Assert.Equal("EnQUEued", someJob.Value.State);
-            Assert.Equal(_now, someJob.Value.EnqueuedAt);
+            AssertWithinSecond(_now.ToUtcDateTime(), someJob.Value.EnqueuedAt);
         }
 
         [Fact]
@@ -291,20 +291,20 @@ namespace Hangfire.InMemory.Tests
             var server1 = result.Single(x => x.Name == "server1");
             Assert.Equal(new [] { "default" }, server1.Queues);
             Assert.Equal(100, server1.WorkersCount);
-            Assert.Equal(_now, server1.StartedAt);
-            Assert.Equal(_now, server1.Heartbeat);
+            AssertWithinSecond(_now.ToUtcDateTime(), server1.StartedAt);
+            AssertWithinSecond(_now.ToUtcDateTime(), server1.Heartbeat);
 
             var server2 = result.Single(x => x.Name == "server2");
             Assert.Equal(new[] { "critical" }, server2.Queues);
             Assert.Equal(17, server2.WorkersCount);
-            Assert.Equal(_now, server2.StartedAt);
-            Assert.Equal(_now, server2.Heartbeat);
+            AssertWithinSecond(_now.ToUtcDateTime(), server2.StartedAt);
+            AssertWithinSecond(_now.ToUtcDateTime(), server2.Heartbeat);
 
             var server3 = result.Single(x => x.Name == "server3");
             Assert.Equal(new[] { "alpha", "beta" }, server3.Queues);
             Assert.Equal(0, server3.WorkersCount);
-            Assert.Equal(_now, server3.StartedAt);
-            Assert.Equal(_now, server3.Heartbeat);
+            AssertWithinSecond(_now.ToUtcDateTime(), server3.StartedAt);
+            AssertWithinSecond(_now.ToUtcDateTime(), server3.Heartbeat);
         }
 
         [Fact]
@@ -358,7 +358,7 @@ namespace Hangfire.InMemory.Tests
             var jobId = UseConnection(connection => connection.CreateExpiredJob(
                     Job.FromExpression<ITestServices>(x => x.Empty()),
                     new Dictionary<string, string> { { "CurrentCulture", "en-US" }, { "RetryCount", "5" } },
-                    _now,
+                    _now.ToUtcDateTime(),
                     TimeSpan.FromMinutes(37)));
 
             var monitoring = CreateMonitoringApi();
@@ -372,8 +372,8 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal("Empty", result.Job.Method.Name);
             Assert.Equal("en-US", result.Properties["CurrentCulture"]);
             Assert.Equal("5", result.Properties["RetryCount"]);
-            Assert.Equal(_now, result.CreatedAt);
-            Assert.Equal(_now.AddMinutes(37), result.ExpireAt);
+            AssertWithinSecond(_now.ToUtcDateTime(), result.CreatedAt);
+            AssertWithinSecond(_now.ToUtcDateTime().AddMinutes(37), result.ExpireAt);
         }
 
         [Fact]
@@ -385,7 +385,7 @@ namespace Hangfire.InMemory.Tests
                 var jobId = connection.CreateExpiredJob(
                     Job.FromExpression<ITestServices>(x => x.Empty()),
                     new Dictionary<string, string>(), 
-                    _now,
+                    _now.ToUtcDateTime(),
                     TimeSpan.Zero);
 
                 using (var transaction = connection.CreateWriteTransaction())
@@ -394,7 +394,7 @@ namespace Hangfire.InMemory.Tests
                     transaction.Commit();
                 }
 
-                _now = _now.AddMinutes(1);
+                _now = _now.Add(TimeSpan.FromMinutes(1));
 
                 using (var transaction = connection.CreateWriteTransaction())
                 {
@@ -413,12 +413,12 @@ namespace Hangfire.InMemory.Tests
             // Assert
             Assert.Equal("Deleted", result.History.First().StateName);
             Assert.Null(result.History.First().Reason);
-            Assert.Equal(_now, result.History.First().CreatedAt);
+            AssertWithinSecond(_now.ToUtcDateTime(), result.History.First().CreatedAt);
 
             Assert.Equal("Enqueued", result.History.Last().StateName, StringComparer.OrdinalIgnoreCase);
             Assert.Equal("Some reason", result.History.Last().Reason);
             Assert.Equal("critical", result.History.Last().Data["Queue"]);
-            Assert.Equal(_now.AddMinutes(-1), result.History.Last().CreatedAt);
+            AssertWithinSecond(_now.Add(TimeSpan.FromMinutes(-1)).ToUtcDateTime(), result.History.Last().CreatedAt);
         }
 
         [Fact]
@@ -428,7 +428,7 @@ namespace Hangfire.InMemory.Tests
             var jobId = UseConnection(connection => connection.CreateExpiredJob(
                 Job.FromExpression<ITestServices>(x => x.Empty()),
                 new Dictionary<string, string>(),
-                _now,
+                _now.ToUtcDateTime(),
                 TimeSpan.Zero));
 
             _state.Jobs[jobId].InvocationData = new InvocationData("asfasf", "232", "afasf", "gg");
@@ -443,8 +443,8 @@ namespace Hangfire.InMemory.Tests
             Assert.Null(result.Job);
             Assert.Empty(result.Properties);
             Assert.Empty(result.History);
-            Assert.Equal(_now, result.CreatedAt);
-            Assert.Equal(_now, result.ExpireAt);
+            AssertWithinSecond(_now.ToUtcDateTime(), result.CreatedAt);
+            AssertWithinSecond(_now.ToUtcDateTime(), result.ExpireAt);
         }
 
         [Fact]
@@ -508,7 +508,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId, queuedJob.Key);
             Assert.True(queuedJob.Value.InEnqueuedState);
             Assert.Equal("Enqueued", queuedJob.Value.State, StringComparer.OrdinalIgnoreCase);
-            Assert.Equal(_now, queuedJob.Value.EnqueuedAt);
+            AssertWithinSecond(_now.ToUtcDateTime(), queuedJob.Value.EnqueuedAt);
 
             Assert.Equal(typeof(ITestServices), queuedJob.Value.Job.Type);
             Assert.Equal("Empty", queuedJob.Value.Job.Method.Name);
@@ -591,7 +591,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId, someJob.Key);
             Assert.True(someJob.Value.InEnqueuedState);
             Assert.Equal("EnQUEued", someJob.Value.State);
-            Assert.Equal(_now, someJob.Value.EnqueuedAt);
+            AssertWithinSecond(_now.ToUtcDateTime(), someJob.Value.EnqueuedAt);
         }
 
         [Fact]
@@ -831,15 +831,16 @@ namespace Hangfire.InMemory.Tests
             var monitoring = CreateMonitoringApi();
 
             var result = monitoring.SucceededByDatesCount();
+            var date = _now.ToUtcDateTime().Date;
 
             Assert.Equal(7, result.Count);
-            Assert.Equal(0, result[_now.Date]);
-            Assert.Equal(0, result[_now.Date.AddDays(-1)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-2)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-3)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-4)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-5)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-6)]);
+            Assert.Equal(0, result[date]);
+            Assert.Equal(0, result[date.AddDays(-1)]);
+            Assert.Equal(0, result[date.AddDays(-2)]);
+            Assert.Equal(0, result[date.AddDays(-3)]);
+            Assert.Equal(0, result[date.AddDays(-4)]);
+            Assert.Equal(0, result[date.AddDays(-5)]);
+            Assert.Equal(0, result[date.AddDays(-6)]);
         }
 
         [Fact]
@@ -848,15 +849,16 @@ namespace Hangfire.InMemory.Tests
             var monitoring = CreateMonitoringApi();
 
             var result = monitoring.FailedByDatesCount();
+            var date = _now.ToUtcDateTime().Date;
 
             Assert.Equal(7, result.Count);
-            Assert.Equal(0, result[_now.Date]);
-            Assert.Equal(0, result[_now.Date.AddDays(-1)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-2)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-3)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-4)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-5)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-6)]);
+            Assert.Equal(0, result[date]);
+            Assert.Equal(0, result[date.AddDays(-1)]);
+            Assert.Equal(0, result[date.AddDays(-2)]);
+            Assert.Equal(0, result[date.AddDays(-3)]);
+            Assert.Equal(0, result[date.AddDays(-4)]);
+            Assert.Equal(0, result[date.AddDays(-5)]);
+            Assert.Equal(0, result[date.AddDays(-6)]);
         }
 
         [Fact]
@@ -865,15 +867,16 @@ namespace Hangfire.InMemory.Tests
             var monitoring = CreateMonitoringApi();
 
             var result = monitoring.DeletedByDatesCount();
+            var date = _now.ToUtcDateTime().Date;
 
             Assert.Equal(7, result.Count);
-            Assert.Equal(0, result[_now.Date]);
-            Assert.Equal(0, result[_now.Date.AddDays(-1)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-2)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-3)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-4)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-5)]);
-            Assert.Equal(0, result[_now.Date.AddDays(-6)]);
+            Assert.Equal(0, result[date]);
+            Assert.Equal(0, result[date.AddDays(-1)]);
+            Assert.Equal(0, result[date.AddDays(-2)]);
+            Assert.Equal(0, result[date.AddDays(-3)]);
+            Assert.Equal(0, result[date.AddDays(-4)]);
+            Assert.Equal(0, result[date.AddDays(-5)]);
+            Assert.Equal(0, result[date.AddDays(-6)]);
         }
 
         [Fact]
@@ -884,14 +887,14 @@ namespace Hangfire.InMemory.Tests
             var result = monitoring.HourlySucceededJobs();
 
             Assert.Equal(24, result.Count);
-            Assert.Equal(0, result[_now]);
-            Assert.Equal(0, result[_now.AddHours(-3)]);
-            Assert.Equal(0, result[_now.AddHours(-6)]);
-            Assert.Equal(0, result[_now.AddHours(-9)]);
-            Assert.Equal(0, result[_now.AddHours(-12)]);
-            Assert.Equal(0, result[_now.AddHours(-15)]);
-            Assert.Equal(0, result[_now.AddHours(-18)]);
-            Assert.Equal(0, result[_now.AddHours(-21)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(0)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(3)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(6)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(9)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(12)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(15)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(18)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(21)]);
         }
 
         [Fact]
@@ -902,14 +905,14 @@ namespace Hangfire.InMemory.Tests
             var result = monitoring.HourlyFailedJobs();
 
             Assert.Equal(24, result.Count);
-            Assert.Equal(0, result[_now]);
-            Assert.Equal(0, result[_now.AddHours(-3)]);
-            Assert.Equal(0, result[_now.AddHours(-6)]);
-            Assert.Equal(0, result[_now.AddHours(-9)]);
-            Assert.Equal(0, result[_now.AddHours(-12)]);
-            Assert.Equal(0, result[_now.AddHours(-15)]);
-            Assert.Equal(0, result[_now.AddHours(-18)]);
-            Assert.Equal(0, result[_now.AddHours(-21)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(0)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(3)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(6)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(9)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(12)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(15)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(18)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(21)]);
         }
 
         [Fact]
@@ -920,14 +923,14 @@ namespace Hangfire.InMemory.Tests
             var result = monitoring.HourlyDeletedJobs();
 
             Assert.Equal(24, result.Count);
-            Assert.Equal(0, result[_now]);
-            Assert.Equal(0, result[_now.AddHours(-3)]);
-            Assert.Equal(0, result[_now.AddHours(-6)]);
-            Assert.Equal(0, result[_now.AddHours(-9)]);
-            Assert.Equal(0, result[_now.AddHours(-12)]);
-            Assert.Equal(0, result[_now.AddHours(-15)]);
-            Assert.Equal(0, result[_now.AddHours(-18)]);
-            Assert.Equal(0, result[_now.AddHours(-21)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(0)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(3)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(6)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(9)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(12)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(15)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(18)]);
+            Assert.Equal(0, result[result.Keys.ElementAt(21)]);
         }
 
         private string SimpleEnqueueJob(string queue, string jobId = null, IState state = null, Job job = null)
@@ -937,7 +940,7 @@ namespace Hangfire.InMemory.Tests
                 jobId = jobId ?? connection.CreateExpiredJob(
                     job ?? Job.FromExpression<ITestServices>(x => x.Empty()),
                     new Dictionary<string, string>(),
-                    _now,
+                    _now.ToUtcDateTime(),
                     TimeSpan.Zero);
 
                 using (var transaction = connection.CreateWriteTransaction())
@@ -963,6 +966,11 @@ namespace Hangfire.InMemory.Tests
             {
                 return action(connection);
             }
+        }
+
+        private static void AssertWithinSecond(DateTime date1, DateTime? date2)
+        {
+            Assert.Equal(0, (date1 - date2.Value).TotalSeconds, 1);
         }
     }
 }

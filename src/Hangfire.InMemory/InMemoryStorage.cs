@@ -51,7 +51,7 @@ namespace Hangfire.InMemory
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
 
-            _dispatcher = new InMemoryDispatcher(new InMemoryState(() => DateTime.UtcNow, Options));
+            _dispatcher = new InMemoryDispatcher(new InMemoryState(MonotonicTime.GetCurrent, Options));
         }
 
         public InMemoryStorageOptions Options { get; }

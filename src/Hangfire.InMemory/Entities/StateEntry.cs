@@ -22,7 +22,7 @@ namespace Hangfire.InMemory.Entities
     {
         private readonly Dictionary<string, string> _data;
 
-        public StateEntry(string name, string reason, IDictionary<string, string> data, DateTime createdAt, StringComparer comparer)
+        public StateEntry(string name, string reason, IDictionary<string, string> data, MonotonicTime createdAt, StringComparer comparer)
         {
             _data = data != null ? new Dictionary<string, string>(data, comparer) : null;
             Name = name;
@@ -32,7 +32,7 @@ namespace Hangfire.InMemory.Entities
 
         public string Name { get; }
         public string Reason { get; }
-        public DateTime CreatedAt { get; }
+        public MonotonicTime CreatedAt { get; }
 
         public IDictionary<string, string> GetData()
         {
