@@ -19,13 +19,18 @@ namespace Hangfire.InMemory
 {
     public class InMemoryStorageOptions
     {
-        private int _maxStateHistoryLength = 20;
+        private int _maxStateHistoryLength = 10;
 
         public bool DisableJobSerialization { get; set; }
         // TODO: Rename it to EnableSerialization and disable by default? Remember that Args can be substituted at runtime
         // TODO: bool ExpireKeysOnGen2Collection (defaults to true). Implement key expiration regardless of actual expiration value on Gen2 collections and make this default.
         // https://github.com/dotnet/runtime/blob/36439c510b779103a4a8066359d0d63dc003eed3/src/libraries/System.Private.CoreLib/src/System/Gen2GcCallback.cs
 
+        /// <summary>
+        /// Gets or sets the maximum length of state history for each background job. Older
+        /// records are trimmed to avoid uncontrollable growth when some background job is
+        /// constantly moved from one state to another without being completed.
+        /// </summary>
         public int MaxStateHistoryLength
         {
             get => _maxStateHistoryLength;
