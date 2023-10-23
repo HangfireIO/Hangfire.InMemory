@@ -41,6 +41,9 @@ namespace Hangfire.InMemory.Entities
             _job = disableSerialization ? new Job(job.Type, job.Method, job.Args.ToArray(), job.Queue) : null;
             Parameters = new ConcurrentDictionary<string, string>(parameters, comparer);
             CreatedAt = createdAt;
+#if NET451
+            Comparer = comparer;
+#endif
         }
 
         public string Key { get; }
@@ -52,6 +55,10 @@ namespace Hangfire.InMemory.Entities
         public IEnumerable<StateEntry> History => _history;
         public MonotonicTime CreatedAt { get; }
         public MonotonicTime? ExpireAt { get; set; }
+
+#if NET451
+        public StringComparer Comparer { get; }
+#endif
 
         public Job TryGetJob(out JobLoadException exception)
         {

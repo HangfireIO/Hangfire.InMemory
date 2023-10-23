@@ -209,7 +209,13 @@ namespace Hangfire.InMemory
                 Job = entry.TryGetJob(out var loadException),
                 LoadException = loadException,
                 CreatedAt = entry.CreatedAt.ToUtcDateTime(),
-                State = entry.State?.Name
+                State = entry.State?.Name,
+                InvocationData = entry.InvocationData,
+#if NET451
+                ParametersSnapshot = entry.Parameters.ToDictionary(x => x.Key, x => x.Value, entry.Comparer)
+#else
+                ParametersSnapshot = entry.Parameters
+#endif
             };
         }
 
