@@ -96,7 +96,7 @@ namespace Hangfire.InMemory
         {
             if (!_jobs.TryAdd(entry.Key, entry))
             {
-                // TODO: Panic
+                throw new InvalidOperationException($"Background job with key '{entry.Key}' already exists.");
             }
 
             ExpiringJobsIndex.Add(entry);

@@ -93,8 +93,7 @@ namespace Hangfire.InMemory
             Dispatcher.QueryAndWait(state =>
             {
                 var now = state.TimeResolver();
-                
-                // TODO: Precondition: jobId does not exist
+
                 var jobEntry = new JobEntry(
                     key,
                     job,
@@ -104,7 +103,6 @@ namespace Hangfire.InMemory
                     state.Options.DisableJobSerialization,
                     state.Options.StringComparer);
 
-                // TODO: We need somehow to ensure that this entry isn't removed before initialization
                 state.JobCreate(jobEntry);
             });
 

@@ -63,7 +63,6 @@ namespace Hangfire.InMemory
             {
                 var now = state.TimeResolver();
 
-                // TODO: Precondition: jobId does not exist
                 var entry = new JobEntry(
                     key,
                     job,
