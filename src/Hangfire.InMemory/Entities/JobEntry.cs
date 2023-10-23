@@ -33,7 +33,6 @@ namespace Hangfire.InMemory.Entities
             Job job,
             IDictionary<string, string> parameters,
             MonotonicTime createdAt,
-            MonotonicTime? expireAt,
             bool disableSerialization,
             StringComparer comparer)
         {
@@ -42,7 +41,6 @@ namespace Hangfire.InMemory.Entities
             _job = disableSerialization ? new Job(job.Type, job.Method, job.Args.ToArray(), job.Queue) : null;
             Parameters = new ConcurrentDictionary<string, string>(parameters, comparer);
             CreatedAt = createdAt;
-            ExpireAt = expireAt;
         }
 
         public string Key { get; }

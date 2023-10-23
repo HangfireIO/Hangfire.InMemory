@@ -68,12 +68,11 @@ namespace Hangfire.InMemory
                     job,
                     parameters,
                     now,
-                    now.Add(expireIn),
                     state.Options.DisableJobSerialization,
                     state.Options.StringComparer);
 
                 // TODO: We need somehow to ensure that this entry isn't removed before initialization
-                state.JobCreate(entry);
+                state.JobCreate(entry, expireIn);
             });
 
             return key;

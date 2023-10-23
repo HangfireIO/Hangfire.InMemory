@@ -99,11 +99,10 @@ namespace Hangfire.InMemory
                     job,
                     parameters,
                     now,
-                    now.Add(expireIn),
                     state.Options.DisableJobSerialization,
                     state.Options.StringComparer);
 
-                state.JobCreate(jobEntry);
+                state.JobCreate(jobEntry, expireIn);
             });
 
             return key;
