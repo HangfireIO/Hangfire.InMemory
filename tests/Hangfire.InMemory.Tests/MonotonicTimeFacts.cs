@@ -196,6 +196,13 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void ToString_ReturnsSomeValue()
+        {
+            var result = MonotonicTime.GetCurrent().ToString();
+            Assert.NotNull(result);
+        }
+
+        [Fact]
         public void op_Subtraction_ReturnsZeroTimeSpan_ForEqualValues()
         {
             var time = MonotonicTime.GetCurrent();
