@@ -86,6 +86,7 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal(time1, time2);
             Assert.True(time1.Equals(time2));
+            Assert.True(time1.Equals((object)time2));
             Assert.True(time1 == time2);
             Assert.False(time1 != time2);
         }
@@ -98,8 +99,25 @@ namespace Hangfire.InMemory.Tests
 
             Assert.NotEqual(time1, time2);
             Assert.False(time1.Equals(time2));
+            Assert.False(time1.Equals((object)time2));
             Assert.False(time1 == time2);
             Assert.True(time1 != time2);
+        }
+
+        [Fact]
+        public void Equals_Object_ReturnsFalse_WhenNullValueIsGiven()
+        {
+            var time = MonotonicTime.GetCurrent();
+            Assert.False(time.Equals(null));
+        }
+
+        [Fact]
+        public void Equals_Object_ReturnsFalse_ForOtherTypes()
+        {
+            var time = MonotonicTime.GetCurrent();
+            // ReSharper disable SuspiciousTypeConversion.Global
+            Assert.False(time.Equals(12345));
+            // ReSharper restore SuspiciousTypeConversion.Global
         }
 
         [Fact]
