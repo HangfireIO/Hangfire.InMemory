@@ -416,6 +416,24 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void GetJobData_Populates_InvocationData_AndParametersSnapshot_Properties()
+        {
+            UseConnection(connection =>
+            {
+                // Arrange
+                var job = new Job(_job.Type, _job.Method, _job.Args, "critical");
+                var jobId = connection.CreateExpiredJob(job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
+
+                // Act
+                var data = connection.GetJobData(jobId);
+
+                // Assert
+                Assert.Equal(_parameters, data.ParametersSnapshot);
+                Assert.NotNull(data.InvocationData);
+            });
+        }
+
+        [Fact]
         public void GetStateData_ThrowsAnException_WhenJobIdIsNull()
         {
             UseConnection(connection =>
