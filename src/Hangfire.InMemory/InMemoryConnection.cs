@@ -323,7 +323,6 @@ namespace Hangfire.InMemory
 
         public override DateTime GetUtcDateTime()
         {
-            // TODO: Implement without touching the dispatcher?
             return Dispatcher.QueryAndWait(state => state.TimeResolver().ToUtcDateTime());
         }
 
