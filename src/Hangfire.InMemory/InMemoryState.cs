@@ -247,6 +247,11 @@ namespace Hangfire.InMemory
 
             if (expireIn.HasValue)
             {
+                if (Options.MaxExpirationTime.HasValue)
+                {
+                    expireIn = Options.MaxExpirationTime;
+                }
+
                 entry.ExpireAt = TimeResolver().Add(expireIn.Value);
                 index.Add(entry);
             }
