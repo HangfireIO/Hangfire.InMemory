@@ -117,12 +117,12 @@ namespace Hangfire.InMemory
             }
         }
 
-        [StructLayout(LayoutKind.Explicit, Size = 2 * CACHE_LINE_SIZE)]
-        internal struct PaddedInt64
+        [StructLayout(LayoutKind.Explicit, Size = 2 * CacheLineSize)]
+        private struct PaddedInt64
         {
-            internal const int CACHE_LINE_SIZE = 128;
+            private const int CacheLineSize = 128;
 
-            [FieldOffset(CACHE_LINE_SIZE)]
+            [FieldOffset(CacheLineSize)]
             internal long Value;
         }
 
