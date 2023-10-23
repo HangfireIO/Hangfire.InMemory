@@ -25,7 +25,8 @@ namespace Hangfire.InMemory.Entities
     internal sealed class JobEntry : IExpirableEntry
     {
         private const int StateCountForRegularJob = 4; // (Scheduled) -> Enqueued -> Processing -> Succeeded
-        private readonly List<StateEntry> _history = new List<StateEntry>(StateCountForRegularJob);
+        private readonly List<StateEntry> _history = new(StateCountForRegularJob);
+        private readonly Job _job;
 
         public JobEntry(
             string key,
@@ -38,7 +39,7 @@ namespace Hangfire.InMemory.Entities
         {
             Key = key;
             InvocationData = disableSerialization == false ? InvocationData.SerializeJob(job) : null;
-            Job = disableSerialization ? new Job(job.Type, job.Method, job.Args.ToArray(), job.Queue) : null;
+            _job = disableSerialization ? new Job(job.Type, job.Method, job.Args.ToArray(), job.Queue) : null;
             Parameters = new ConcurrentDictionary<string, string>(parameters, comparer);
             CreatedAt = createdAt;
             ExpireAt = expireAt;
@@ -46,7 +47,6 @@ namespace Hangfire.InMemory.Entities
 
         public string Key { get; }
         public InvocationData InvocationData { get; internal set; }
-        public Job Job { get; }
 
         public ConcurrentDictionary<string, string> Parameters { get; }
 
@@ -59,9 +59,9 @@ namespace Hangfire.InMemory.Entities
         {
             exception = null;
 
-            if (Job != null)
+            if (_job != null)
             {
-                return new Job(Job.Type, Job.Method, Job.Args.ToArray(), Job.Queue);
+                return new Job(_job.Type, _job.Method, _job.Args.ToArray(), _job.Queue);
             }
 
             try
