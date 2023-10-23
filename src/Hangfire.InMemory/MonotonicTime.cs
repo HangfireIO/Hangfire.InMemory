@@ -45,12 +45,12 @@ namespace Hangfire.InMemory
         public int CompareTo(object other)
         {
             if (other == null) return 1;
-            if (!(other is MonotonicTime))
+            if (other is not MonotonicTime time)
             {
                 throw new ArgumentException("Value must be of type " + nameof(MonotonicTime), nameof(other));
             }
  
-            return CompareTo((MonotonicTime)other);
+            return CompareTo(time);
         }
 
         public bool Equals(MonotonicTime other)
