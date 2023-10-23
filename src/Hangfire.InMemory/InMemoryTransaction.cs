@@ -434,13 +434,12 @@ namespace Hangfire.InMemory
                         acquiredLock.Dispose();
                     }
                 }
-            });
 
-            // TODO: QueryAndWait can throw TimeoutException, in this case queue will be unsignaled
-            foreach (var queue in _enqueued)
-            {
-                queue.SignalOneWaitNode();
-            }
+                foreach (var queue in _enqueued)
+                {
+                    queue.SignalOneWaitNode();
+                }
+            });
         }
 
         private static void CounterIncrement(InMemoryState state, string key, int value, TimeSpan? expireIn)
