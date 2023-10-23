@@ -19,7 +19,7 @@ using Xunit;
 
 namespace Hangfire.InMemory.Tests
 {
-    public class MonotonicFacts
+    public class MonotonicTimeFacts
     {
         [Fact]
         public void GetCurrent_ReturnsBiggerValues_ForSubsequentCalls()
