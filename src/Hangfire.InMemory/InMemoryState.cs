@@ -127,12 +127,7 @@ namespace Hangfire.InMemory
 
         public void JobDelete(JobEntry entry)
         {
-            if (entry.ExpireAt.HasValue)
-            {
-                ExpiringJobsIndex.Remove(entry);
-            }
-
-            _jobs.TryRemove(entry.Key, out _);
+            EntryRemove(entry, _jobs, ExpiringJobsIndex);
 
             if (entry.State?.Name != null && _jobStateIndex.TryGetValue(entry.State.Name, out var stateIndex))
             {
@@ -158,11 +153,7 @@ namespace Hangfire.InMemory
 
         public void HashDelete(HashEntry hash)
         {
-            _hashes.Remove(hash.Key);
-            if (hash.ExpireAt.HasValue)
-            {
-                ExpiringHashesIndex.Remove(hash);
-            }
+            EntryRemove(hash, _hashes, ExpiringHashesIndex);
         }
 
         public SetEntry SetGetOrAdd(string key)
@@ -182,13 +173,7 @@ namespace Hangfire.InMemory
 
         public void SetDelete(SetEntry set)
         {
-            _sets.Remove(set.Key);
-
-            if (set.ExpireAt.HasValue)
-            {
-                // TODO: Ensure entity removal always deals with expiration indexes
-                ExpiringSetsIndex.Remove(set);
-            }
+            EntryRemove(set, _sets, ExpiringSetsIndex);
         }
 
         public ListEntry ListGetOrAdd(string key)
@@ -208,12 +193,7 @@ namespace Hangfire.InMemory
 
         public void ListDelete(ListEntry list)
         {
-            _lists.Remove(list.Key);
-
-            if (list.ExpireAt.HasValue)
-            {
-                ExpiringListsIndex.Remove(list);
-            }
+            EntryRemove(list, _lists, ExpiringListsIndex);
         }
 
         public CounterEntry CounterGetOrAdd(string key)
@@ -233,12 +213,7 @@ namespace Hangfire.InMemory
 
         public void CounterDelete(CounterEntry entry)
         {
-            _counters.Remove(entry.Key);
-
-            if (entry.ExpireAt.HasValue)
-            {
-                ExpiringCountersIndex.Remove(entry);
-            }
+            EntryRemove(entry, _counters, ExpiringCountersIndex);
         }
 
         public void ServerAdd(string serverId, ServerEntry entry)
@@ -251,22 +226,33 @@ namespace Hangfire.InMemory
             _servers.Remove(serverId);
         }
 
-        private void EntryExpire<T>(T entity, ISet<T> index, TimeSpan? expireIn)
+        private static void EntryRemove<T>(T entry, IDictionary<string, T> index, ISet<T> expirationIndex)
             where T : IExpirableEntry
         {
-            if (entity.ExpireAt.HasValue)
+            index.Remove(entry.Key);
+
+            if (entry.ExpireAt.HasValue)
             {
-                index.Remove(entity);
+                expirationIndex.Remove(entry);
+            }
+        }
+
+        private void EntryExpire<T>(T entry, ISet<T> index, TimeSpan? expireIn)
+            where T : IExpirableEntry
+        {
+            if (entry.ExpireAt.HasValue)
+            {
+                index.Remove(entry);
             }
 
             if (expireIn.HasValue)
             {
-                entity.ExpireAt = TimeResolver().Add(expireIn.Value);
-                index.Add(entity);
+                entry.ExpireAt = TimeResolver().Add(expireIn.Value);
+                index.Add(entry);
             }
             else
             {
-                entity.ExpireAt = null;
+                entry.ExpireAt = null;
             }
         }
 
