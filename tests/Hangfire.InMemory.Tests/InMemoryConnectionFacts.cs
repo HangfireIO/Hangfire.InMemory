@@ -1004,21 +1004,22 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
-        public void GetRangeFromSet_ReturnsTheGivenRange_FromTheGivenSet()
+        public void GetRangeFromSet_ReturnsTheGivenRange_FromTheGivenSet_SortedByScore()
         {
             UseConnection(connection =>
             {
                 Commit(connection, x =>
                 {
+                    x.AddToSet("key", "5", 5.0D);
                     x.AddToSet("key", "3", 3.0D);
                     x.AddToSet("key", "1", 1.0D);
                     x.AddToSet("key", "4", 4.0D);
                     x.AddToSet("key", "2", 2.0D);
                 });
 
-                var result = connection.GetRangeFromSet("key", 1, 2);
+                var result = connection.GetRangeFromSet("key", 1, 3);
 
-                Assert.Equal(new[] { "2", "3" }, result);
+                Assert.Equal(new[] { "2", "3", "4" }, result);
             });
         }
 
