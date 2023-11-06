@@ -24,30 +24,32 @@ namespace Hangfire.InMemory.Entities
 
         public ExpirableEntryComparer(StringComparer stringComparer)
         {
-            _stringComparer = stringComparer;
+            _stringComparer = stringComparer ?? throw new ArgumentNullException(nameof(stringComparer));
         }
 
         public int Compare(IExpirableEntry x, IExpirableEntry y)
         {
+            if (x == null) throw new ArgumentNullException(nameof(x));
+            if (y == null) throw new ArgumentNullException(nameof(y));
+
             if (ReferenceEquals(x, y)) return 0;
 
-            // TODO: Nulls last, our indexes shouldn't contain nulls anyway
-            // TODO: Check this
-            if (x == null) return -1;
-            if (y == null) return +1;
-
-            if (!x.ExpireAt.HasValue)
+            // Place nulls last just in case, because they will prevent expiration
+            // manager from correctly running and stopping earlier, since it works
+            // from first value until is higher than the current time.
+            if (x.ExpireAt.HasValue && y.ExpireAt.HasValue)
             {
-                throw new InvalidOperationException("Left side does not contain ExpireAt value");
+                var expirationCompare = x.ExpireAt.Value.CompareTo(y.ExpireAt.Value);
+                if (expirationCompare != 0) return expirationCompare;
             }
-
-            if (!y.ExpireAt.HasValue)
+            else if (!x.ExpireAt.HasValue && y.ExpireAt.HasValue)
             {
-                throw new InvalidOperationException("Right side does not contain ExpireAt value");
+                return +1;
             }
-
-            var expirationCompare = x.ExpireAt.Value.CompareTo(y.ExpireAt.Value);
-            if (expirationCompare != 0) return expirationCompare;
+            else if (!y.ExpireAt.HasValue && x.ExpireAt.HasValue)
+            {
+                return -1;
+            }
 
             return _stringComparer.Compare(x.Key, y.Key);
         }
