@@ -13,6 +13,12 @@
     <copyright>Copyright © 2020-2023 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
+0.7.0
+• Added – `InMemoryStorageOptions.MaxExpirationTime` option to control the maximum expiration time.
+• Changed – Default value for maximum expiration time is 2 hours now, not days.
+• Changed – Refactored internals and added more unit tests.
+• Fixed – Project URL and Release Notes URL in NuGet package now point to the repository.
+
 0.6.0
 • Added – `InMemoryStorageOptions.MaxStateHistoryLength` option to control state entries.
 • Changed – Always use monotonic clock when working with time.
