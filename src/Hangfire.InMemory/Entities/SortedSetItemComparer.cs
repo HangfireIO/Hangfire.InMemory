@@ -29,6 +29,7 @@ namespace Hangfire.InMemory.Entities
 
         public int Compare(SortedSetItem x, SortedSetItem y)
         {
+            // TODO: Add unit tests for all the comparers in project
             var scoreComparison = x.Score.CompareTo(y.Score);
             if (scoreComparison != 0 ||
                 ReferenceEquals(null, y.Value) ||
