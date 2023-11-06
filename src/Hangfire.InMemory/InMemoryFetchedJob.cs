@@ -14,6 +14,7 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using Hangfire.Annotations;
 using Hangfire.Storage;
 
 namespace Hangfire.InMemory
@@ -22,12 +23,15 @@ namespace Hangfire.InMemory
     {
         private readonly InMemoryDispatcherBase _dispatcher;
 
-        public InMemoryFetchedJob(InMemoryDispatcherBase dispatcher, string queueName, string jobId)
+        public InMemoryFetchedJob(
+            [NotNull] InMemoryDispatcherBase dispatcher,
+            [NotNull] string queueName,
+            [NotNull] string jobId)
         {
-            _dispatcher = dispatcher;
+            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
 
-            QueueName = queueName;
-            JobId = jobId;
+            QueueName = queueName ?? throw new ArgumentNullException(nameof(queueName));
+            JobId = jobId ?? throw new ArgumentNullException(nameof(jobId));
         }
 
         public string QueueName { get; }
