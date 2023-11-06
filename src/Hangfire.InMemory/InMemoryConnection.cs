@@ -88,7 +88,7 @@ namespace Hangfire.InMemory
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            var key = Guid.NewGuid().ToString(); // TODO: Change with Long type
+            var key = Guid.NewGuid().ToString();
 
             Dispatcher.QueryAndWait(state =>
             {
