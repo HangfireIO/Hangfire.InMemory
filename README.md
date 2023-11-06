@@ -24,22 +24,28 @@ Distributed locks (heh, in an in-process storage), queue fetch logic (even from 
 [Hangfire.InMemory](https://www.nuget.org/packages/Hangfire.InMemory/) is available on NuGet so we can install it as usual using your favorite package manager. Here is how `*.csproj` file look like when the package is installed to use the latest `0.X` version.
 
 ```xml
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Hangfire.InMemory" Version="0.*" />
-  </ItemGroup>
-
-</Project>
+<ItemGroup>
+  <PackageReference Include="Hangfire.InMemory" Version="0.*" />
+</ItemGroup>
 ```
+
+## Configuration
 
 After the package is installed we can use the new `UseMemoryStorage` method for the `IGlobalConfiguration` interface to register the storage.
 
 ```csharp
 GlobalConfiguration.Configuration.UseInMemoryStorage();
+```
+
+### Maximum Expiration Time
+
+Starting from version 0.7.0, the package controls the maximum expiration time for storage entries and sets it to *2 hours* when a higher expiration time is passed. By default, the expiration time for background jobs is *24 hours*, and for batch jobs and their contents is *7 days* which can be too big for in-memory storage that runs side-by-side with the application.
+
+We can control this behavior or even disable it with the `MaxExpirationTime` option available in the `InMemoryStorageOptions` class in the following way.
+
+```csharp
+GlobalConfiguration.Configuration.UseInMemoryStorage(new InMemoryStorageOptions
+{
+    MaxExpirationTime = TimeSpan.FromHours(6) // Or set to `null` to disable
+});
 ```
