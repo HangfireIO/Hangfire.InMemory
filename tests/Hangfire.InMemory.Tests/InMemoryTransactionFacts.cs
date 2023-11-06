@@ -665,6 +665,12 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void RemoveFromQueue_DoesNotDoAnything()
+        {
+            Commit(x => x.RemoveFromQueue(null));
+        }
+
+        [Fact]
         public void IncrementCounter_ThrowsAnException_WhenKeyIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
@@ -1446,6 +1452,13 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(0.0D, _state.Sets["key"].Single(x => x.Value == "1").Score, 2);
             Assert.Equal(0.0D, _state.Sets["key"].Single(x => x.Value == "2").Score, 2);
             Assert.Equal(0.0D, _state.Sets["key"].Single(x => x.Value == "3").Score, 2);
+        }
+
+        [Fact]
+        public void AddRangeToSet_WithEmptyList_DoesNotCreateSetEntry()
+        {
+            Commit(x => x.AddRangeToSet("key", new List<string>(0)));
+            Assert.False(_state.Sets.ContainsKey("key"));
         }
 
         [Fact]

@@ -54,5 +54,28 @@ namespace Hangfire.InMemory.Tests
             Assert.True(_storage.HasFeature("Monitoring.AwaitingJobs"));
             Assert.False(_storage.HasFeature("SomeNonExistingFeature"));
         }
+
+        [Fact]
+        public void GetConnection_ReturnsUsableInstance()
+        {
+            using (var connection = _storage.GetConnection())
+            {
+                Assert.NotNull(connection);
+            }
+        }
+
+        [Fact]
+        public void GetMonitoringApi_ReturnsUsableInstance()
+        {
+            var monitoringApi = _storage.GetMonitoringApi();
+            Assert.NotNull(monitoringApi);
+        }
+
+        [Fact]
+        public void ToString_ReturnsUsefulString()
+        {
+            var result = _storage.ToString();
+            Assert.Equal("In-Memory Storage", result);
+        }
     }
 }
