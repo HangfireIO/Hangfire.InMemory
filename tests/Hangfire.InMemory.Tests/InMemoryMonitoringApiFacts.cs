@@ -1037,6 +1037,22 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void ScheduledCount_ReturnsTheCorrectNumber_OfScheduledJobs()
+        {
+            // Arrange
+            SimpleScheduledJob(TimeSpan.FromHours(1));
+            SimpleScheduledJob(TimeSpan.FromHours(2));
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.ScheduledCount();
+
+            // Assert
+            Assert.Equal(2, result);
+        }
+
+        [Fact]
         public void EnqueuedCount_ThrowsAnException_WhenQueueNameIsNull()
         {
             var monitoring = CreateMonitoringApi();
@@ -1055,6 +1071,24 @@ namespace Hangfire.InMemory.Tests
             var result = monitoring.EnqueuedCount("critical");
 
             Assert.Equal(0, result);
+        }
+
+        [Fact]
+        public void EnqueuedCount_ReturnsTheCorrectNumber_OfEnqueuedJobs_OfTheGivenQueue()
+        {
+            // Arrange
+            SimpleEnqueueJob("critical");
+            SimpleEnqueueJob("default");
+            SimpleEnqueueJob("critical");
+            SimpleEnqueueJob("critical");
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.EnqueuedCount("critical");
+
+            // Assert
+            Assert.Equal(3, result);
         }
 
         [Fact]
@@ -1089,6 +1123,23 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void FailedCount_ReturnsTheCorrectNumber_OfFailedJobs()
+        {
+            // Arrange
+            SimpleFailedJob();
+            SimpleFailedJob();
+            SimpleFailedJob();
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.FailedCount();
+
+            // Assert
+            Assert.Equal(3, result);
+        }
+
+        [Fact]
         public void ProcessingCount_ReturnsZero_WhenThereAreNoProcessingJobs()
         {
             var monitoring = CreateMonitoringApi();
@@ -1096,6 +1147,24 @@ namespace Hangfire.InMemory.Tests
             var result = monitoring.ProcessingCount();
 
             Assert.Equal(0, result);
+        }
+
+        [Fact]
+        public void ProcessingCount_ReturnsTheCorrectNumber_OfProcessingJobs()
+        {
+            // Arrange
+            SimpleProcessingJob("1", "1");
+            SimpleProcessingJob("2", "2");
+            SimpleProcessingJob("3", "3");
+            SimpleProcessingJob("1", "1");
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.ProcessingCount();
+
+            // Assert
+            Assert.Equal(4, result);
         }
 
         [Fact]
@@ -1109,6 +1178,25 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void SucceededListCount_ReturnsTheCorrectNumber_OfSucceededJobs_CurrentlyInIndex()
+        {
+            // Arrange
+            SimpleSucceededJob();
+            SimpleSucceededJob();
+            SimpleSucceededJob();
+            SimpleSucceededJob();
+            SimpleSucceededJob();
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.SucceededListCount();
+
+            // Assert
+            Assert.Equal(5, result);
+        }
+
+        [Fact]
         public void DeletedListCount_ReturnsZero_WhenThereAreNoDeletedJobs()
         {
             var monitoring = CreateMonitoringApi();
@@ -1119,6 +1207,23 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void DeletedListCount_ReturnsTheCorrectNumber_OfDeletedJobs_CurrentlyInIndex()
+        {
+            // Arrange
+            SimpleDeletedJob();
+            SimpleDeletedJob();
+            SimpleDeletedJob();
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.DeletedListCount();
+
+            // Assert
+            Assert.Equal(3, result);
+        }
+
+        [Fact]
         public void AwaitingCount_ReturnsZero_WhenThereAreNoAwaitingJobs()
         {
             var monitoring = CreateMonitoringApi();
@@ -1126,6 +1231,24 @@ namespace Hangfire.InMemory.Tests
             var result = monitoring.AwaitingCount();
 
             Assert.Equal(0, result);
+        }
+
+        [Fact]
+        public void AwaitingCount_ReturnsTheCorrectNumber_OfAwaitingJobs()
+        {
+            // Arrange
+            SimpleAwaitingJob("1");
+            SimpleAwaitingJob("2");
+            SimpleAwaitingJob("3");
+            SimpleAwaitingJob("1");
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.AwaitingCount();
+
+            // Assert
+            Assert.Equal(4, result);
         }
 
         [Fact]
@@ -1265,7 +1388,7 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
-        private string SimpleSucceededJob(object result, long latency, long duration, Job job = null)
+        private string SimpleSucceededJob(object result = null, long latency = 0, long duration = 0, Job job = null)
         {
             return SimpleJob(
                 job: job,
