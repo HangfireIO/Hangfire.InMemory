@@ -615,7 +615,7 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
-        public void EnqueuedJobs_ReturnsTheGivenRange_FromTheGivenQueue()
+        public void EnqueuedJobs_ReturnsJobs_WithinTheGivenRange_FromTheGivenQueue()
         {
             // Arrange
             var jobId1 = SimpleEnqueueJob("default", state: new EnqueuedState());
@@ -714,9 +714,9 @@ namespace Hangfire.InMemory.Tests
         public void ProcessingJobs_ReturnsJobs_InTheAscendingOrder()
         {
             // Arrange
-            var jobId1 = SimpleProcessingJob("server-1", "worker-1");
-            var jobId2 = SimpleProcessingJob("server-1", "worker-1");
-            var jobId3 = SimpleProcessingJob("server-1", "worker-1");
+            var jobId1 = SimpleProcessingJob();
+            var jobId2 = SimpleProcessingJob();
+            var jobId3 = SimpleProcessingJob();
 
             var monitoring = CreateMonitoringApi();
 
@@ -727,6 +727,27 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId1, result[0].Key);
             Assert.Equal(jobId2, result[1].Key);
             Assert.Equal(jobId3, result[2].Key);
+        }
+
+        [Fact]
+        public void ProcessingJobs_ReturnsJobs_WithinTheGivenRange()
+        {
+            // Arrange
+            var jobId1 = SimpleProcessingJob();
+            var jobId2 = SimpleProcessingJob();
+            var jobId3 = SimpleProcessingJob();
+            var jobId4 = SimpleProcessingJob();
+            var jobId5 = SimpleProcessingJob();
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.ProcessingJobs(1, 2).ToArray();
+
+            // Assert
+            Assert.Equal(2, result.Length);
+            Assert.Equal(jobId2, result[0].Key);
+            Assert.Equal(jobId3, result[1].Key);
         }
 
         [Fact]
@@ -788,9 +809,9 @@ namespace Hangfire.InMemory.Tests
         public void ScheduledJobs_ReturnsJobs_InTheAscendingOrder()
         {
             // Arrange
-            var jobId1 = SimpleScheduledJob(TimeSpan.FromHours(1));
-            var jobId2 = SimpleScheduledJob(TimeSpan.FromHours(2));
-            var jobId3 = SimpleScheduledJob(TimeSpan.FromHours(3));
+            var jobId1 = SimpleScheduledJob();
+            var jobId2 = SimpleScheduledJob();
+            var jobId3 = SimpleScheduledJob();
 
             var monitoring = CreateMonitoringApi();
 
@@ -801,6 +822,27 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId1, result[0].Key);
             Assert.Equal(jobId2, result[1].Key);
             Assert.Equal(jobId3, result[2].Key);
+        }
+
+        [Fact]
+        public void ScheduledJobs_ReturnsJobs_WithinTheGivenRange()
+        {
+            // Arrange
+            var jobId1 = SimpleScheduledJob();
+            var jobId2 = SimpleScheduledJob();
+            var jobId3 = SimpleScheduledJob();
+            var jobId4 = SimpleScheduledJob();
+            var jobId5 = SimpleScheduledJob();
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.ScheduledJobs(1, 2).ToArray();
+
+            // Assert
+            Assert.Equal(2, result.Length);
+            Assert.Equal(jobId2, result[0].Key);
+            Assert.Equal(jobId3, result[1].Key);
         }
 
         [Fact]
@@ -844,9 +886,9 @@ namespace Hangfire.InMemory.Tests
         public void SucceededJobs_ReturnsJobs_InTheDescendingOrder()
         {
             // Arrange
-            var jobId1 = SimpleSucceededJob("1", 123, 456);
-            var jobId2 = SimpleSucceededJob("2", 123, 456);
-            var jobId3 = SimpleSucceededJob("3", 123, 456);
+            var jobId1 = SimpleSucceededJob();
+            var jobId2 = SimpleSucceededJob();
+            var jobId3 = SimpleSucceededJob();
 
             var monitoring = CreateMonitoringApi();
 
@@ -857,6 +899,27 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId3, result[0].Key);
             Assert.Equal(jobId2, result[1].Key);
             Assert.Equal(jobId1, result[2].Key);
+        }
+
+        [Fact]
+        public void SucceededJobs_ReturnsJobs_WithinTheGivenRange()
+        {
+            // Arrange
+            var jobId1 = SimpleSucceededJob();
+            var jobId2 = SimpleSucceededJob();
+            var jobId3 = SimpleSucceededJob();
+            var jobId4 = SimpleSucceededJob();
+            var jobId5 = SimpleSucceededJob();
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.SucceededJobs(1, 2).ToArray();
+
+            // Assert
+            Assert.Equal(2, result.Length);
+            Assert.Equal(jobId4, result[0].Key);
+            Assert.Equal(jobId3, result[1].Key);
         }
 
         [Fact]
@@ -917,6 +980,27 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void FailedJobs_ReturnsJobs_WithinTheGivenRange()
+        {
+            // Arrange
+            var jobId1 = SimpleFailedJob();
+            var jobId2 = SimpleFailedJob();
+            var jobId3 = SimpleFailedJob();
+            var jobId4 = SimpleFailedJob();
+            var jobId5 = SimpleFailedJob();
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.FailedJobs(1, 2).ToArray();
+
+            // Assert
+            Assert.Equal(2, result.Length);
+            Assert.Equal(jobId4, result[0].Key);
+            Assert.Equal(jobId3, result[1].Key);
+        }
+
+        [Fact]
         public void DeletedJobs_ReturnsEmptyCollection_WhenThereAreNoDeletedJobs()
         {
             var monitoring = CreateMonitoringApi();
@@ -968,6 +1052,27 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId3, result[0].Key);
             Assert.Equal(jobId2, result[1].Key);
             Assert.Equal(jobId1, result[2].Key);
+        }
+
+        [Fact]
+        public void DeletedJobs_ReturnsJobs_WithinTheGivenRange()
+        {
+            // Arrange
+            var jobId1 = SimpleDeletedJob();
+            var jobId2 = SimpleDeletedJob();
+            var jobId3 = SimpleDeletedJob();
+            var jobId4 = SimpleDeletedJob();
+            var jobId5 = SimpleDeletedJob();
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.DeletedJobs(1, 2).ToArray();
+
+            // Assert
+            Assert.Equal(2, result.Length);
+            Assert.Equal(jobId4, result[0].Key);
+            Assert.Equal(jobId3, result[1].Key);
         }
 
         [Fact]
@@ -1024,6 +1129,27 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId1, result[0].Key);
             Assert.Equal(jobId2, result[1].Key);
             Assert.Equal(jobId3, result[2].Key);
+        }
+
+        [Fact]
+        public void AwaitingJobs_ReturnsJobs_WithinTheGivenRange()
+        {
+            // Arrange
+            var jobId1 = SimpleAwaitingJob("1");
+            var jobId2 = SimpleAwaitingJob("1");
+            var jobId3 = SimpleAwaitingJob("2");
+            var jobId4 = SimpleAwaitingJob("1");
+            var jobId5 = SimpleAwaitingJob("1");
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.AwaitingJobs(1, 2).ToArray();
+
+            // Assert
+            Assert.Equal(2, result.Length);
+            Assert.Equal(jobId2, result[0].Key);
+            Assert.Equal(jobId3, result[1].Key);
         }
 
         [Fact]
@@ -1359,18 +1485,18 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(0, result[result.Keys.ElementAt(21)]);
         }
 
-        private string SimpleProcessingJob(string serverId, string workerId, Job job = null)
+        private string SimpleProcessingJob(string serverId = null, string workerId = null, Job job = null)
         {
             var type = typeof(ProcessingState);
             var ctor = type.GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic);
-            var processingState = (ProcessingState)ctor.First().Invoke(new object[] { serverId, workerId });
+            var processingState = (ProcessingState)ctor.First().Invoke(new object[] { serverId ?? "server-1", workerId ?? "worker-1" });
 
             return SimpleJob(state: processingState, job: job);
         }
 
-        private string SimpleScheduledJob(TimeSpan delay, Job job = null)
+        private string SimpleScheduledJob(TimeSpan? delay = null, Job job = null)
         {
-            var state = new ScheduledState(delay);
+            var state = new ScheduledState(delay ?? TimeSpan.FromHours(1));
             return SimpleJob(job: job, state: state, transactionAction: (transaction, assignedJobId, assignedJob) =>
             {
                 transaction.AddToSet(
