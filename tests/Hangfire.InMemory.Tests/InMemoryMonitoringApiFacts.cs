@@ -516,6 +516,25 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void EnqueuedJobs_ReturnsJobs_InTheAscendingOrder()
+        {
+            // Arrange
+            var jobId1 = SimpleEnqueueJob("critical");
+            var jobId2 = SimpleEnqueueJob("critical");
+            var jobId3 = SimpleEnqueueJob("critical");
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.EnqueuedJobs("critical", 0, 10).ToArray();
+
+            // Assert
+            Assert.Equal(jobId1, result[0].Key);
+            Assert.Equal(jobId2, result[1].Key);
+            Assert.Equal(jobId3, result[2].Key);
+        }
+
+        [Fact]
         public void EnqueuedJobs_IsAbleToHandle_JobIdWithoutCorrespondingBackgroundJobEntry()
         {
             // Arrange
@@ -692,6 +711,25 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void ProcessingJobs_ReturnsJobs_InTheAscendingOrder()
+        {
+            // Arrange
+            var jobId1 = SimpleProcessingJob("server-1", "worker-1");
+            var jobId2 = SimpleProcessingJob("server-1", "worker-1");
+            var jobId3 = SimpleProcessingJob("server-1", "worker-1");
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.ProcessingJobs(0, 10).ToArray();
+
+            // Assert
+            Assert.Equal(jobId1, result[0].Key);
+            Assert.Equal(jobId2, result[1].Key);
+            Assert.Equal(jobId3, result[2].Key);
+        }
+
+        [Fact]
         public void ScheduledJobs_ReturnsEmptyCollection_WhenThereAreNoScheduledJobs()
         {
             var monitoring = CreateMonitoringApi();
@@ -747,6 +785,25 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void ScheduledJobs_ReturnsJobs_InTheAscendingOrder()
+        {
+            // Arrange
+            var jobId1 = SimpleScheduledJob(TimeSpan.FromHours(1));
+            var jobId2 = SimpleScheduledJob(TimeSpan.FromHours(2));
+            var jobId3 = SimpleScheduledJob(TimeSpan.FromHours(3));
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.ScheduledJobs(0, 10).ToArray();
+
+            // Assert
+            Assert.Equal(jobId1, result[0].Key);
+            Assert.Equal(jobId2, result[1].Key);
+            Assert.Equal(jobId3, result[2].Key);
+        }
+
+        [Fact]
         public void SucceededJobs_ReturnsEmptyCollection_WhenThereAreNoSucceededJobs()
         {
             var monitoring = CreateMonitoringApi();
@@ -761,9 +818,9 @@ namespace Hangfire.InMemory.Tests
         public void SucceededJobs_ReturnsCorrectJobs_InTheSucceededState()
         {
             // Arrange
-            var jobId = SimpleJob(
-                job: Job.FromExpression<ITestServices>(x => x.Empty()),
-                state: new SucceededState("hello", 123, 456));
+            var jobId = SimpleSucceededJob(
+                "hello", 123, 456,
+                job: Job.FromExpression<ITestServices>(x => x.Empty()));
 
             var monitoring = CreateMonitoringApi();
             
@@ -781,6 +838,25 @@ namespace Hangfire.InMemory.Tests
             
             Assert.Equal(typeof(ITestServices), succeededJob.Value.Job.Type);
             Assert.Equal("Empty", succeededJob.Value.Job.Method.Name);
+        }
+
+        [Fact]
+        public void SucceededJobs_ReturnsJobs_InTheDescendingOrder()
+        {
+            // Arrange
+            var jobId1 = SimpleSucceededJob("1", 123, 456);
+            var jobId2 = SimpleSucceededJob("2", 123, 456);
+            var jobId3 = SimpleSucceededJob("3", 123, 456);
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.SucceededJobs(0, 10).ToArray();
+
+            // Assert
+            Assert.Equal(jobId3, result[0].Key);
+            Assert.Equal(jobId2, result[1].Key);
+            Assert.Equal(jobId1, result[2].Key);
         }
 
         [Fact]
@@ -822,6 +898,25 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void FailedJobs_ReturnsJobs_InTheDescendingOrder()
+        {
+            // Arrange
+            var jobId1 = SimpleFailedJob(new InvalidOperationException());
+            var jobId2 = SimpleFailedJob(new OperationCanceledException());
+            var jobId3 = SimpleFailedJob(new NotSupportedException());
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.FailedJobs(0, 10).ToArray();
+
+            // Assert
+            Assert.Equal(jobId3, result[0].Key);
+            Assert.Equal(jobId2, result[1].Key);
+            Assert.Equal(jobId1, result[2].Key);
+        }
+
+        [Fact]
         public void DeletedJobs_ReturnsEmptyCollection_WhenThereAreNoDeletedJobs()
         {
             var monitoring = CreateMonitoringApi();
@@ -836,12 +931,9 @@ namespace Hangfire.InMemory.Tests
         public void DeletedJobs_ReturnsCorrectJobs_InTheDeletedState()
         {
             // Arrange
-            var jobId = SimpleJob(
-                job: Job.FromExpression<ITestServices>(x => x.Empty()),
-                state: new DeletedState(new ExceptionInfo(new InvalidOperationException("Hello, world!")))
-                {
-                    Reason = "Some reason"
-                });
+            var jobId = SimpleDeletedJob(
+                exception: new InvalidOperationException("Hello, world!"), 
+                job: Job.FromExpression<ITestServices>(x => x.Empty()));
 
             var monitoring = CreateMonitoringApi();
             
@@ -860,6 +952,25 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void DeletedJobs_ReturnsJobs_InTheDescendingOrder()
+        {
+            // Arrange
+            var jobId1 = SimpleDeletedJob(new InvalidOperationException());
+            var jobId2 = SimpleDeletedJob(new NotSupportedException());
+            var jobId3 = SimpleDeletedJob(new ArgumentNullException());
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.DeletedJobs(0, 10).ToArray();
+
+            // Assert
+            Assert.Equal(jobId3, result[0].Key);
+            Assert.Equal(jobId2, result[1].Key);
+            Assert.Equal(jobId1, result[2].Key);
+        }
+
+        [Fact]
         public void AwaitingJobs_ReturnsEmptyCollection_WhenThereAreNoAwaitingJobs()
         {
             var monitoring = CreateMonitoringApi();
@@ -875,9 +986,9 @@ namespace Hangfire.InMemory.Tests
         {
             // Arrange
             var processingId = SimpleProcessingJob("server-1", "worker-1");
-            var jobId = SimpleJob(
-                job: Job.FromExpression<ITestServices>(x => x.Empty()),
-                state: new AwaitingState(processingId));
+            var jobId = SimpleAwaitingJob(
+                processingId,
+                job: Job.FromExpression<ITestServices>(x => x.Empty()));
 
             var monitoring = CreateMonitoringApi();
             
@@ -894,6 +1005,25 @@ namespace Hangfire.InMemory.Tests
             
             Assert.Equal(typeof(ITestServices), awaitingJob.Value.Job.Type);
             Assert.Equal("Empty", awaitingJob.Value.Job.Method.Name);
+        }
+
+        [Fact]
+        public void AwaitingJobs_ReturnsJobs_InTheAscendingOrder()
+        {
+            // Arrange
+            var jobId1 = SimpleAwaitingJob("123");
+            var jobId2 = SimpleAwaitingJob("456");
+            var jobId3 = SimpleAwaitingJob("789");
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.AwaitingJobs(0, 10).ToArray();
+
+            // Assert
+            Assert.Equal(jobId1, result[0].Key);
+            Assert.Equal(jobId2, result[1].Key);
+            Assert.Equal(jobId3, result[2].Key);
         }
 
         [Fact]
@@ -1135,6 +1265,34 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
+        private string SimpleSucceededJob(object result, long latency, long duration, Job job = null)
+        {
+            return SimpleJob(
+                job: job,
+                state: new SucceededState(result, latency, duration));
+        }
+
+        private string SimpleFailedJob(Exception exception = null, Job job = null)
+        {
+            return SimpleJob(
+                job: job,
+                state: new FailedState(exception ?? new InvalidOperationException()));
+        }
+
+        private string SimpleDeletedJob(Exception exception = null, Job job = null)
+        {
+            return SimpleJob(
+                job: job,
+                state: new DeletedState(new ExceptionInfo(exception ?? new InvalidOperationException())));
+        }
+
+        private string SimpleAwaitingJob(string parentId, Job job = null)
+        {
+            return SimpleJob(
+                job: job,
+                state: new AwaitingState(parentId));
+        }
+
         private string SimpleJob(string jobId = null, Job job = null, IState state = null, Action<IWriteOnlyTransaction, string, Job> transactionAction = null)
         {
             var createdId = UseConnection(connection =>
@@ -1155,6 +1313,8 @@ namespace Hangfire.InMemory.Tests
 
                 return jobId;
             });
+
+            _now = _now.Add(TimeSpan.FromTicks(1));
 
             return createdId;
         }
