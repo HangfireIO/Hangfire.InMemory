@@ -458,6 +458,15 @@ namespace Hangfire.InMemory
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
 
+                        string parentStateName = null;
+
+                        if (inAwaitingState && entry.State != null &&
+                            entry.State.GetData().TryGetValue("ParentId", out var parentId) &&
+                            state.Jobs.TryGetValue(parentId, out var parentEntry))
+                        {
+                            parentStateName = parentEntry.State?.Name;
+                        }
+
                         result.Add(new KeyValuePair<string, AwaitingJobDto>(entry.Key, new AwaitingJobDto
                         {
                             Job = job,
@@ -467,7 +476,8 @@ namespace Hangfire.InMemory
                             AwaitingAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inAwaitingState && entry.State != null
                                 ? entry.State.GetData()
-                                : null
+                                : null,
+                            ParentStateName = parentStateName
                         }));
 
                         index++;

@@ -871,6 +871,7 @@ namespace Hangfire.InMemory.Tests
             
             Assert.Equal(jobId, awaitingJob.Key);
             Assert.True(awaitingJob.Value.InAwaitingState);
+            Assert.Equal("Processing", awaitingJob.Value.ParentStateName);
             AssertWithinSecond(_now.ToUtcDateTime(), awaitingJob.Value.AwaitingAt);
             
             Assert.Equal(typeof(ITestServices), awaitingJob.Value.Job.Type);
