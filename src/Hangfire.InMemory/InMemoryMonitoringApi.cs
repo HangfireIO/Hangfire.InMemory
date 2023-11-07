@@ -270,37 +270,33 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryAndWait(state =>
             {
                 var result = new JobList<ScheduledJobDto>(Enumerable.Empty<KeyValuePair<string, ScheduledJobDto>>());
-                if (state.Sets.TryGetValue("schedule", out var setEntry))
+                if (state.JobStateIndex.TryGetValue(ScheduledState.StateName, out var indexEntry))
                 {
                     var index = 0;
 
-                    foreach (var entry in setEntry)
+                    foreach (var entry in indexEntry)
                     {
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        Job job = null;
-                        JobLoadException loadException = null;
-
-                        if (state.Jobs.TryGetValue(entry.Value, out var backgroundJob))
-                        {
-                            job = backgroundJob.TryGetJob(out loadException);
-                        }
+                        var job = entry.TryGetJob(out var loadException);
                         
                         var inScheduledState = ScheduledState.StateName.Equals(
-                            backgroundJob?.State?.Name,
+                            entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
 
-                        result.Add(new KeyValuePair<string, ScheduledJobDto>(entry.Value, new ScheduledJobDto
+                        result.Add(new KeyValuePair<string, ScheduledJobDto>(entry.Key, new ScheduledJobDto
                         {
-                            EnqueueAt = JobHelper.FromTimestamp((long)entry.Score),
+                            EnqueueAt = (entry.State != null && entry.State.GetData().TryGetValue("EnqueueAt", out var enqueueAt)
+                                ? JobHelper.DeserializeNullableDateTime(enqueueAt)
+                                : null) ?? DateTime.MinValue,
                             Job = job,
-                            InvocationData = backgroundJob?.InvocationData,
+                            InvocationData = entry.InvocationData,
                             LoadException = loadException,
                             InScheduledState = inScheduledState,
-                            ScheduledAt = backgroundJob?.State?.CreatedAt.ToUtcDateTime(),
-                            StateData = inScheduledState && backgroundJob?.State != null
-                                ? backgroundJob.State.GetData()
+                            ScheduledAt = entry.State?.CreatedAt.ToUtcDateTime(),
+                            StateData = inScheduledState && entry.State != null
+                                ? entry.State.GetData()
                                 : null
                         }));
 

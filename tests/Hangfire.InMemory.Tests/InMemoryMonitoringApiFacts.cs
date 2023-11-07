@@ -708,7 +708,6 @@ namespace Hangfire.InMemory.Tests
             // Arrange
             var jobId = SimpleScheduledJob(
                 TimeSpan.FromDays(1),
-                queue: null,
                 job: Job.FromExpression<ITestServices>(x => x.Empty()));
 
             var monitoring = CreateMonitoringApi();
@@ -718,14 +717,33 @@ namespace Hangfire.InMemory.Tests
 
             // Assert
             var scheduledJob = result.Single();
-            
+
             Assert.Equal(jobId, scheduledJob.Key);
             Assert.True(scheduledJob.Value.InScheduledState);
             AssertWithinSecond(_now.Add(TimeSpan.FromDays(1)).ToUtcDateTime(), scheduledJob.Value.EnqueueAt);
             AssertWithinSecond(_now.ToUtcDateTime(), scheduledJob.Value.ScheduledAt);
-            
+
             Assert.Equal(typeof(ITestServices), scheduledJob.Value.Job.Type);
             Assert.Equal("Empty", scheduledJob.Value.Job.Method.Name);
+        }
+
+        [Fact]
+        public void ScheduledJobs_ReturnsCorrectJobs_InTheScheduledState_WithCompositeIndex()
+        {
+            // Arrange
+            var jobId = SimpleScheduledJob(
+                TimeSpan.FromHours(1),
+                job: Job.FromExpression<ITestServices>(x => x.Empty(), "critical"));
+
+            var monitoring = CreateMonitoringApi();
+            
+            // Act
+            var result = monitoring.ScheduledJobs(0, 10);
+
+            // Assert
+            var scheduledJob = result.Single();
+            Assert.Equal(jobId, scheduledJob.Key);
+            Assert.Equal("critical", scheduledJob.Value.Job.Queue);
         }
 
         [Fact]
@@ -1097,32 +1115,33 @@ namespace Hangfire.InMemory.Tests
             return SimpleJob(state: processingState, job: job);
         }
 
-        private string SimpleScheduledJob(TimeSpan delay, string queue = null, Job job = null)
+        private string SimpleScheduledJob(TimeSpan delay, Job job = null)
         {
             var state = new ScheduledState(delay);
-            return SimpleJob(job: job, state: state, transactionAction: (transaction, assignedJobId) =>
+            return SimpleJob(job: job, state: state, transactionAction: (transaction, assignedJobId, assignedJob) =>
             {
                 transaction.AddToSet(
                     "schedule",
-                    queue != null ? $"{queue}:{assignedJobId}" : assignedJobId,
+                    assignedJob.Queue != null ? $"{assignedJob.Queue}:{assignedJobId}" : assignedJobId,
                     JobHelper.ToTimestamp(state.EnqueueAt));
             });
         }
 
         private string SimpleEnqueueJob(string queue, string jobId = null, IState state = null, Job job = null)
         {
-            return SimpleJob(jobId, job, state, (transaction, assignedJobId) =>
+            return SimpleJob(jobId, job, state, (transaction, assignedJobId, _) =>
             {
                 transaction.AddToQueue(queue, assignedJobId);
             });
         }
 
-        private string SimpleJob(string jobId = null, Job job = null, IState state = null, Action<IWriteOnlyTransaction, string> transactionAction = null)
+        private string SimpleJob(string jobId = null, Job job = null, IState state = null, Action<IWriteOnlyTransaction, string, Job> transactionAction = null)
         {
             var createdId = UseConnection(connection =>
             {
+                job = job ?? Job.FromExpression<ITestServices>(x => x.Empty()); 
                 jobId = jobId ?? connection.CreateExpiredJob(
-                    job ?? Job.FromExpression<ITestServices>(x => x.Empty()),
+                    job,
                     new Dictionary<string, string>(),
                     _now.ToUtcDateTime(),
                     TimeSpan.Zero);
@@ -1130,7 +1149,7 @@ namespace Hangfire.InMemory.Tests
                 using (var transaction = connection.CreateWriteTransaction())
                 {
                     if (state != null) transaction.SetJobState(jobId, state);
-                    transactionAction?.Invoke(transaction, jobId);
+                    transactionAction?.Invoke(transaction, jobId, job);
                     transaction.Commit();
                 }
 
