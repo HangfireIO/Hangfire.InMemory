@@ -25,5 +25,25 @@ Task Pack -Depends Collect -Description "Create NuGet packages and archive files
     $version = Get-PackageVersion
     
     Create-Archive "Hangfire.InMemory-$version"
-    Create-Package "Hangfire.InMemory" $version
+    Create-Package2 "Hangfire.InMemory" $version
+}
+
+function Create-Package2($project, $version) {
+    Write-Host "Creating NuGet package for '$project'..." -ForegroundColor "Green"
+
+    Create-Directory $temp_dir
+    Copy-Files "$nuspec_dir\$project.nuspec" $temp_dir
+
+    $commit = (git rev-parse HEAD)
+
+    Try {
+        Write-Host "Patching version with '$version'..." -ForegroundColor "DarkGray"
+        Replace-Content "$nuspec_dir\$project.nuspec" '%version%' $version
+        Write-Host "Patching commit hash with '$commit'..." -ForegroundColor "DarkGray"
+        Replace-Content "$nuspec_dir\$project.nuspec" '%commit%' $commit
+        Exec { .$nuget pack "$nuspec_dir\$project.nuspec" -OutputDirectory "$build_dir" -BasePath "$build_dir" -Version "$version" }
+    }
+    Finally {
+        Move-Files "$temp_dir\$project.nuspec" $nuspec_dir
+    }
 }

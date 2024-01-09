@@ -22,8 +22,6 @@ nuget:
   project_feed: true
   disable_publish_on_pr: true
 
-shallow_clone: true
-
 #---------------------------------#
 #       build configuration       #
 #---------------------------------#
@@ -46,7 +44,6 @@ artifacts:
 
 deploy:
   - provider: NuGet
-    skip_symbols: true
     api_key: 
       secure: sE88DSEBBhC+hDgI1+JICzwWjwwmxSyNEWfUjED6ZAs6f9oDD85V0qpbGLWBn+gL
     on:
