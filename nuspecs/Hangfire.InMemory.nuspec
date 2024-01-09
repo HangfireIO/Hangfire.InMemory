@@ -7,8 +7,7 @@
     <authors>Sergey Odinokov</authors>
     <owners>odinserj</owners>
     <projectUrl>https://github.com/HangfireIO/Hangfire.InMemory</projectUrl>
-    <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <licenseUrl>https://www.hangfire.io/licenses.html</licenseUrl>
+    <license type="file">LICENSE.md</license>
     <description>In-memory job storage for Hangfire with transactional implementation.</description>
     <copyright>Copyright © 2020-2023 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
