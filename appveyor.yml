@@ -17,6 +17,7 @@ os: Visual Studio 2022
 
 environment:
   BuildEnvironment: appveyor
+  NUGET_RESTORE_MSBUILD_VERBOSITY: normal
 
 nuget:
   project_feed: true
