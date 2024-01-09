@@ -3,11 +3,11 @@ Include "packages\Hangfire.Build.0.2.6\tools\psake-common.ps1"
 
 Task Default -Depends Collect
 
-Task CompileCore -Depends Clean {
+Task Build -Depends Clean -Description "Restore all the packages and build the whole solution." {
     Exec { dotnet build -c Release }
 }
 
-Task Test -Depends CompileCore -Description "Run unit and integration tests." {
+Task Test -Depends Build -Description "Run unit and integration tests." {
     Exec { dotnet test --no-build -c Release "tests\Hangfire.InMemory.Tests" }
 }
 
@@ -23,7 +23,7 @@ Task Collect -Depends Test -Description "Copy all artifacts to the build folder.
 
 Task Pack -Depends Collect -Description "Create NuGet packages and archive files." {
     $version = Get-PackageVersion
-    
+
     Create-Archive "Hangfire.InMemory-$version"
     Create-Package2 "Hangfire.InMemory" $version
 }
