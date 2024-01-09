@@ -9,7 +9,7 @@
     <projectUrl>https://github.com/HangfireIO/Hangfire.InMemory</projectUrl>
     <license type="file">LICENSE.md</license>
     <description>In-memory job storage for Hangfire with transactional implementation.</description>
-    <copyright>Copyright © 2020-2023 Hangfire OÜ</copyright>
+    <copyright>Copyright © 2020-2024 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
 0.7.0
