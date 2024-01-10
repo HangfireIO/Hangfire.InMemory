@@ -105,7 +105,9 @@
   </metadata>
   <files>
     <file src="net451\Hangfire.InMemory.dll" target="lib\net451" />
+    <file src="net451\Hangfire.InMemory.xml" target="lib\net451" />
     <file src="netstandard2.0\Hangfire.InMemory.dll" target="lib\netstandard2.0" />
+    <file src="netstandard2.0\Hangfire.InMemory.xml" target="lib\netstandard2.0" />
 
     <file src="LICENSE.md" />
     <file src="LICENSE_STANDARD" />

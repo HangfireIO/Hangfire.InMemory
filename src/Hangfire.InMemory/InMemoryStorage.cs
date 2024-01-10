@@ -20,6 +20,10 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
+    /// <summary>
+    /// A class that represents an in-memory job storage that stores all data
+    /// related to background processing in a process' memory.
+    /// </summary>
     public sealed class InMemoryStorage : JobStorage
     {
         private readonly InMemoryDispatcherBase _dispatcher;
@@ -42,11 +46,19 @@ namespace Hangfire.InMemory
             { "Monitoring.AwaitingJobs", true }
         };
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InMemoryStorage"/> class with default options.
+        /// </summary>
         public InMemoryStorage()
             : this(new InMemoryStorageOptions())
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InMemoryStorage"/> class with specified options.
+        /// </summary>
+        /// <param name="options">The options for the in-memory storage. Cannot be null.</param>
+        /// <exception cref="ArgumentNullException">Thrown when the <paramref name="options"/> argument is null.</exception>
         public InMemoryStorage([NotNull] InMemoryStorageOptions options)
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
@@ -54,9 +66,17 @@ namespace Hangfire.InMemory
             _dispatcher = new InMemoryDispatcher(new InMemoryState(MonotonicTime.GetCurrent, Options));
         }
 
+        /// <summary>
+        /// Gets the options for the in-memory storage. 
+        /// </summary>
         public InMemoryStorageOptions Options { get; }
+
+        /// <summary>
+        /// Override of <see cref="LinearizableReads"/> property. Always returns true for <see cref="InMemoryStorage"/>.
+        /// </summary>
         public override bool LinearizableReads => true;
 
+        /// <inheritdoc />
         public override bool HasFeature(string featureId)
         {
             if (featureId == null) throw new ArgumentNullException(nameof(featureId));
@@ -66,16 +86,19 @@ namespace Hangfire.InMemory
                 : base.HasFeature(featureId);
         }
 
+        /// <inheritdoc />
         public override IMonitoringApi GetMonitoringApi()
         {
             return new InMemoryMonitoringApi(_dispatcher);
         }
 
+        /// <inheritdoc />
         public override IStorageConnection GetConnection()
         {
             return new InMemoryConnection(_dispatcher);
         }
 
+        /// <inheritdoc />
         public override string ToString()
         {
             return "In-Memory Storage";

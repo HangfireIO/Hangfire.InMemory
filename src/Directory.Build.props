@@ -2,6 +2,7 @@
     <!-- Custom AssemblyInfo.cs file -->
     <PropertyGroup>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <DebugType>embedded</DebugType>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>

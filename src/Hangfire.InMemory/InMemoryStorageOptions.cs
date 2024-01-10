@@ -17,11 +17,18 @@ using System;
 
 namespace Hangfire.InMemory
 {
+    /// <summary>
+    /// Provides configuration options for in-memory storage in Hangfire.
+    /// </summary>
     public class InMemoryStorageOptions
     {
         private int _maxStateHistoryLength = 10;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether job serialization should be disabled.
+        /// </summary>
         public bool DisableJobSerialization { get; set; }
+
         // TODO: Rename it to EnableSerialization and disable by default? Remember that Args can be substituted at runtime
         // TODO: bool ExpireKeysOnGen2Collection (defaults to true). Implement key expiration regardless of actual expiration value on Gen2 collections and make this default.
         // https://github.com/dotnet/runtime/blob/36439c510b779103a4a8066359d0d63dc003eed3/src/libraries/System.Private.CoreLib/src/System/Gen2GcCallback.cs

@@ -14,13 +14,25 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using System.ComponentModel;
 using Hangfire.Annotations;
 using Hangfire.InMemory;
 
+// ReSharper disable once CheckNamespace
 namespace Hangfire
 {
+    /// <summary>
+    /// Provides extension methods for global configuration to use <see cref="InMemoryStorage"/>.
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static class GlobalConfigurationExtensions
     {
+        /// <summary>
+        /// Configures Hangfire to use the <see cref="InMemoryStorage"/> with default options.
+        /// </summary>
+        /// <param name="configuration">The global configuration on which to set the in-memory storage.</param>
+        /// <returns>An instance of <see cref="IGlobalConfiguration{InMemoryStorage}"/> for chaining further configuration.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when the <paramref name="configuration"/> argument is null.</exception>
         public static IGlobalConfiguration<InMemoryStorage> UseInMemoryStorage(
             [NotNull] this IGlobalConfiguration configuration)
         {
@@ -28,6 +40,13 @@ namespace Hangfire
             return configuration.UseStorage(new InMemoryStorage());
         }
 
+        /// <summary>
+        /// Configures Hangfire to use the <see cref="InMemoryStorage"/> with the specified options.
+        /// </summary>
+        /// <param name="configuration">The global configuration on which to set the in-memory storage.</param>
+        /// <param name="options">Options for the in-memory storage.</param>
+        /// <returns>An instance of <see cref="IGlobalConfiguration{InMemoryStorage}"/> for chaining further configuration.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when the <paramref name="configuration"/> or <paramref name="options"/> argument is null.</exception>
         public static IGlobalConfiguration<InMemoryStorage> UseInMemoryStorage(
             [NotNull] this IGlobalConfiguration configuration,
             [NotNull] InMemoryStorageOptions options)
