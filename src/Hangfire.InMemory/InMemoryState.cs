@@ -208,7 +208,10 @@ namespace Hangfire.InMemory
 
         public void CounterExpire(CounterEntry counter, TimeSpan? expireIn)
         {
-            EntryExpire(counter, ExpiringCountersIndex, expireIn);
+            // We don't apply MaxExpirationTime rules for counters, because they
+            // usually have fixed size, and because statistics should be kept for
+            // days.
+            EntryExpire(counter, ExpiringCountersIndex, expireIn, ignoreMaxExpirationTime: true);
         }
 
         public void CounterDelete(CounterEntry entry)
@@ -237,7 +240,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        private void EntryExpire<T>(T entry, ISet<T> index, TimeSpan? expireIn)
+        private void EntryExpire<T>(T entry, ISet<T> index, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
             where T : IExpirableEntry
         {
             if (entry.ExpireAt.HasValue)
@@ -247,7 +250,7 @@ namespace Hangfire.InMemory
 
             if (expireIn.HasValue)
             {
-                if (Options.MaxExpirationTime.HasValue && expireIn > Options.MaxExpirationTime)
+                if (!ignoreMaxExpirationTime && Options.MaxExpirationTime.HasValue && expireIn > Options.MaxExpirationTime)
                 {
                     expireIn = Options.MaxExpirationTime;
                 }
