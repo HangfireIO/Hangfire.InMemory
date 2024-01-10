@@ -15,9 +15,16 @@
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
 0.7.0
 • Added – `InMemoryStorageOptions.MaxExpirationTime` option to control the maximum expiration time.
-• Changed – Default value for maximum expiration time is 2 hours now, not days.
-• Changed – Refactored internals and added more unit tests.
-• Fixed – Project URL and Release Notes URL in NuGet package now point to the repository.
+• Changed – The default value for maximum expiration time is 2 hours now, not days.
+• Fixed – Populate `ParametersSnapshot` and `InvocationData` properties in `IMonitoringApi.JobDetails`.
+• Fixed – The "Awaiting Jobs" page now includes the state name of an antecedent background job.
+• Fixed – The "Scheduled Jobs" page now has correct identifiers for jobs with explicit queues defined.
+• Fixed – Unify job ordering in Monitoring API to be the same as in other storages.
+• Project – Enable source link support with embedded symbols for simplified debugging.
+• Project – Refactored internals and added even more unit tests.
+• Project – Enable NuGet package restore with lock file and locked mode.
+• Project – Project and Release Notes URLs in the NuGet package now point to the repository.
+• Project – Enable tests running on the `net6.0` platform and Ubuntu on AppVeyor.
 
 0.6.0
 • Added – `InMemoryStorageOptions.MaxStateHistoryLength` option to control state entries.
