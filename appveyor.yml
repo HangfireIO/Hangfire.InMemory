@@ -31,7 +31,8 @@ nuget:
 build_script:
   - cmd: build.bat pack
   - sh: nuget locals all -clear
-  - sh: dotnet test -c Release
+  - sh: dotnet test -c Release -f netcoreapp3.1
+  - sh: dotnet test -c Release -f net6.0
 
 #---------------------------------#
 #       tests configuration       #
