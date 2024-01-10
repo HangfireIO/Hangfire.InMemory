@@ -13,7 +13,9 @@
 # Please don't edit it manually, use the `build.bat version` command instead.
 version: 0.7.0-build-0{build}
 
-os: Visual Studio 2022
+image:
+  - Visual Studio 2022
+  - Ubuntu
 
 environment:
   BuildEnvironment: appveyor
@@ -26,7 +28,10 @@ nuget:
 #       build configuration       #
 #---------------------------------#
 
-build_script: build.bat pack
+build_script:
+  - cmd: build.bat pack
+  - sh: nuget locals all -clear
+  - sh: dotnet test -c Release
 
 #---------------------------------#
 #       tests configuration       #
