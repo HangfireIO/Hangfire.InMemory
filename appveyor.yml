@@ -17,19 +17,12 @@ image:
   - Visual Studio 2022
   - Ubuntu
 
-environment:
-  BuildEnvironment: appveyor
-
-nuget:
-  project_feed: true
-  disable_publish_on_pr: true
-
 #---------------------------------#
 #       build configuration       #
 #---------------------------------#
 
 build_script:
-  - cmd: build.bat pack
+  - cmd: build.bat
   - sh: nuget locals all -clear
   - sh: dotnet test -c Release -f netcoreapp3.1
   - sh: dotnet test -c Release -f net6.0
