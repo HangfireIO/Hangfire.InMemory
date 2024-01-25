@@ -5,13 +5,10 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <DebugType>embedded</DebugType>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-        <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(APPVEYOR)' == 'True'">
         <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
-        <RestoreLockedMode>true</RestoreLockedMode>
     </PropertyGroup>
 
     <ItemGroup>
