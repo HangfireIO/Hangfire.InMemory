@@ -16,9 +16,9 @@
       },
       "psake": {
         "type": "Direct",
-        "requested": "[4.4.1, 4.4.1]",
-        "resolved": "4.4.1",
-        "contentHash": "Hn5kdGPEoapi+wAAjaGjKEZVnuYp7fUrPK3IivLYG6Bn4adhd8l+KXXPMEmte41RmrLvfV7XGZa9KsSTc0gjDA=="
+        "requested": "[4.9.0, 4.9.0]",
+        "resolved": "4.9.0",
+        "contentHash": "bTvhh/e8frodSHPTDXPlsLDS6bexcne8drXwfe5K6KaLZx3Y+0gxp0+lUFoNim3nQbbKzvKSn5upa+neZslsKA=="
       }
     }
   }
