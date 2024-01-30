@@ -27,11 +27,6 @@ Task Sign -Depends Pack -Description "Sign artifacts." {
     $version = Get-PackageVersion
 
     Exec {
-        Submit-SigningRequest `
-            -InputArtifactPath "build\Hangfire.InMemory.$version.nupkg" `
-            -OrganizationId $SIGNPATH_ORGANIZATION_ID -ApiToken $SIGNPATH_API_TOKEN `
-            -ProjectSlug "hangfire" -SigningPolicySlug "hangfire-test-signing-policy" `
-            -ArtifactConfigurationSlug "initial" `
-            -WaitForCompletion            
+        Submit-SigningRequest -InputArtifactPath "build\Hangfire.InMemory.$version.nupkg" -OrganizationId $SIGNPATH_ORGANIZATION_ID -ApiToken $SIGNPATH_API_TOKEN -ProjectSlug "hangfire" -SigningPolicySlug "hangfire-test-signing-policy" -ArtifactConfigurationSlug "initial" -WaitForCompletion -OutputArtifactPath "build\Hangfire.InMemory.$version.signed.nupkg"         
     }
 }
