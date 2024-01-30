@@ -17,13 +17,22 @@ image:
   - Visual Studio 2022
   - Ubuntu
 
+environment:
+  SIGNPATH_ORGANIZATION_ID:
+    secure: CVHhLK+O9L5tClnMj1FRK9monnVBhtGYdXZbX52Fo2WvxJ9h5L5j96NrXi9k7+Fg
+  SIGNPATH_API_TOKEN:
+    secure: gHJ9TRVbtow8s1pvgKnuOsHuZ9N8vye+513e60fqbvHmyyT3yzXQiL59T/x64/8k
+
 #---------------------------------#
 #       build configuration       #
 #---------------------------------#
 
-build_script:
-  - cmd: build.bat
+before_build:
+  - ps: Install-Module -Name SignPath
   - sh: nuget locals all -clear
+
+build_script:
+  - cmd: build.bat sign
   - sh: dotnet test -c Release -f netcoreapp3.1
   - sh: dotnet test -c Release -f net6.0
 

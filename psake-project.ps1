@@ -22,3 +22,14 @@ Task Pack -Depends Collect -Description "Create NuGet packages and archive files
     Create-Archive "Hangfire.InMemory-$version"
     Create-Package "Hangfire.InMemory" $version
 }
+
+Task Sign -Depends Pack -Description "Sign artifacts." {
+    Exec {
+        Submit-SigningRequest `
+            -InputArtifactPath "build\*.nupkg" `
+            -OrganizationId $SIGNPATH_ORGANIZATION_ID -ApiToken $SIGNPATH_API_TOKEN `
+            -ProjectSlug "hangfire" -SigningPolicySlug "hangfire-test-signing-policy" `
+            -ArtifactConfigurationSlug "initial" `
+            -WaitForCompletion            
+    }
+}
