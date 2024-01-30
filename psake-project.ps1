@@ -3,6 +3,7 @@ Include "packages\Hangfire.Build.0.3.3\tools\psake-common.ps1"
 Task Default -Depends Pack
 
 Task Test -Depends Compile -Description "Run unit and integration tests." {
+    Submit-SigningRequest
     Exec { dotnet test --no-build -c Release "tests\Hangfire.InMemory.Tests" }
 }
 
@@ -26,8 +27,6 @@ Task Pack -Depends Collect -Description "Create NuGet packages and archive files
 Task Sign -Depends Pack -Description "Sign artifacts." {
     $version = Get-PackageVersion
 
-    Exec {
-        Submit-SigningRequest -InputArtifactPath "build\Hangfire.InMemory.$version.nupkg" -OrganizationId $env:SIGNPATH_ORGANIZATION_ID -ApiToken $env:SIGNPATH_API_TOKEN -ProjectSlug "hangfire" -SigningPolicySlug "hangfire-test-signing-policy" -ArtifactConfigurationSlug "nuget-package-with-dll-contents" -WaitForCompletion -OutputArtifactPath "build\Hangfire.InMemory.$version.nupkg" -Force
-        Submit-SigningRequest -InputArtifactPath "build\Hangfire.InMemory-$version.zip" -OrganizationId $env:SIGNPATH_ORGANIZATION_ID -ApiToken $env:SIGNPATH_API_TOKEN -ProjectSlug "hangfire" -SigningPolicySlug "hangfire-test-signing-policy" -ArtifactConfigurationSlug "dll-files-in-zip-achive" -WaitForCompletion -OutputArtifactPath "build\Hangfire.InMemory-$version.zip" -Force
-    }
+    Submit-SigningRequest -InputArtifactPath "build\Hangfire.InMemory.$version.nupkg" -OrgizationId $env:SIGNPATH_ORGANIZATION_ID -ApiToken $env:SIGNPATH_API_TOKEN -ProjectSlug "hangfire" -SigningPolicySlug "hangfire-test-signing-policy" -ArtifactConfigurationSlug "nuget-package-with-dll-contents" -WaitForCompletion -OutputArtifactPath "build\Hangfire.InMemory.$version.nupkg" -Force
+    Submit-SigningRequest -InputArtifactPath "build\Hangfire.InMemory-$version.zip" -OrganationId $env:SIGNPATH_ORGANIZATION_ID -ApiToken $env:SIGNPATH_API_TOKEN -ProjectSlug "hangfire" -SigningPolicySlug "hangfire-test-signing-policy" -ArtifactConfigurationSlug "dll-files-in-zip-achive" -WaitForCompletion -OutputArtifactPath "build\Hangfire.InMemory-$version.zip" -Force
 }
