@@ -3,7 +3,6 @@ Include "packages\Hangfire.Build.0.3.3\tools\psake-common.ps1"
 Task Default -Depends Pack
 
 Task Test -Depends Compile -Description "Run unit and integration tests." {
-    Submit-SigningRequest
     Exec { dotnet test --no-build -c Release "tests\Hangfire.InMemory.Tests" }
 }
 
