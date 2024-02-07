@@ -27,4 +27,7 @@ Task Sign -Depends Pack -Description "Sign artifacts." {
     $version = Get-PackageVersion
 
     Submit-SigningRequest -InputArtifactPath "build\Hangfire.InMemory-$version.zip" -OrganizationId $env:SIGNPATH_ORGANIZATION_ID -ApiToken $env:SIGNPATH_API_TOKEN -ProjectSlug "hangfire" -SigningPolicySlug "hangfire-release-signing-policy" -ArtifactConfigurationSlug "nuget-and-assemblies-in-zip-file" -WaitForCompletion -OutputArtifactPath "build\Hangfire.InMemory-$version.zip" -Force
+
+    # Extract the signed files, overwriting the existing ones
+    Exec { & $7zip x -y "$build_dir/Hangfire.InMemory-$version.zip" -o"$build_dir" }
 }
