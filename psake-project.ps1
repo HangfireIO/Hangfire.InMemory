@@ -26,8 +26,25 @@ Task Pack -Depends Collect -Description "Create NuGet packages and archive files
 Task Sign -Depends Pack -Description "Sign artifacts." {
     $version = Get-PackageVersion
 
-    Submit-SigningRequest -InputArtifactPath "build\Hangfire.InMemory-$version.zip" -OrganizationId $env:SIGNPATH_ORGANIZATION_ID -ApiToken $env:SIGNPATH_API_TOKEN -ProjectSlug "hangfire" -SigningPolicySlug "hangfire-test-signing-policy" -ArtifactConfigurationSlug "nuget-and-assemblies-in-zip-file" -WaitForCompletion -OutputArtifactPath "build\Hangfire.InMemory-$version.zip" -Force
+    Sign-ArchiveContents "Hangfire.InMemory-$version", "hangfire", "nuget-and-assemblies-in-zip-file"
+}
 
-    # Extract the signed files, overwriting the existing non-signed ones
-    Expand-Archive -Path "$build_dir/Hangfire.InMemory-$version.zip" -DestinationPath "$build_dir" -Force
+function Sign-ArchiveContents($project, $name, $configuration) {
+    $policy = "test-signing-policy"
+
+    if ($env:APPVEYOR_REPO_TAG -eq "True") {
+        $policy = "release-signing-policy"
+    }
+
+    Write-Host "Using project '$project'..." -ForegroundColor "DarkGray"
+    Write-Host "Using signing policy '$policy'..." -ForegroundColor "DarkGray"
+    Write-Host "Using artifacts configuration '$configuration'..." -ForegroundColor "DarkGray"
+
+    $archive = "$build_dir/$name.zip"
+
+    Write-Host "Submitting archive '$archive' for signing..." -ForegroundColor "Green"
+    Submit-SigningRequest -InputArtifactPath "$archive" -OrganizationId $env:SIGNPATH_ORGANIZATION_ID -ApiToken $env:SIGNPATH_API_TOKEN -ProjectSlug "$project" -SigningPolicySlug "$policy" -ArtifactConfigurationSlug "$configuration" -WaitForCompletion -OutputArtifactPath "$archive" -Force
+
+    Write-Host "Unpacking signed files..." -ForegroundColor "Green"
+    Expand-Archive -Path "$archive" -DestinationPath "$build_dir" -Force
 }
