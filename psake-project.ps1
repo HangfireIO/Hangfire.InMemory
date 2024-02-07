@@ -36,7 +36,7 @@ function Sign-ArchiveContents($name, $project, $configuration) {
         $policy = "release-signing-policy"
     }
 
-    Write-Host "Using project '$project'..." -ForegroundColor "DarkGray"
+    Write-Host "Using signing project '$project'..." -ForegroundColor "DarkGray"
     Write-Host "Using signing policy '$policy'..." -ForegroundColor "DarkGray"
     Write-Host "Using artifacts configuration '$configuration'..." -ForegroundColor "DarkGray"
 
@@ -46,5 +46,5 @@ function Sign-ArchiveContents($name, $project, $configuration) {
     Submit-SigningRequest -InputArtifactPath "$archive" -OrganizationId $env:SIGNPATH_ORGANIZATION_ID -ApiToken $env:SIGNPATH_API_TOKEN -ProjectSlug "$project" -SigningPolicySlug "$policy" -ArtifactConfigurationSlug "$configuration" -WaitForCompletion -OutputArtifactPath "$archive" -Force
 
     Write-Host "Unpacking signed files..." -ForegroundColor "Green"
-    Expand-Archive -Path "$archive" -DestinationPath "$build_dir" -Force
+    Expand-Archive -Path "$archive" -DestinationPath "$build_dir" -Force -PassThru
 }
