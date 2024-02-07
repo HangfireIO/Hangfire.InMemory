@@ -20,7 +20,7 @@ Task Pack -Depends Collect -Description "Create NuGet packages and archive files
     $version = Get-PackageVersion
 
     Create-Package "Hangfire.InMemory" $version
-    Create-Archive "Hangfire.InMemory-$version"
+    Compress-Archive -Path "$build_dir/*" -DestinationPath "$build_dir/Hangfire.InMemory-$version.zip"
 }
 
 Task Sign -Depends Pack -Description "Sign artifacts." {
@@ -28,6 +28,6 @@ Task Sign -Depends Pack -Description "Sign artifacts." {
 
     Submit-SigningRequest -InputArtifactPath "build\Hangfire.InMemory-$version.zip" -OrganizationId $env:SIGNPATH_ORGANIZATION_ID -ApiToken $env:SIGNPATH_API_TOKEN -ProjectSlug "hangfire" -SigningPolicySlug "hangfire-release-signing-policy" -ArtifactConfigurationSlug "nuget-and-assemblies-in-zip-file" -WaitForCompletion -OutputArtifactPath "build\Hangfire.InMemory-$version.zip" -Force
 
-    # Extract the signed files, overwriting the existing ones
-    Exec { & $7zip x -y "$build_dir/Hangfire.InMemory-$version.zip" -o"$build_dir" }
+    # Extract the signed files, overwriting the existing non-signed ones
+    Expand-Archive -LiteralPath "$build_dir/Hangfire.InMemory-$version.zip" -DestinationPath "$build_dir" -Force
 }
