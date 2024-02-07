@@ -29,7 +29,7 @@ Task Sign -Depends Pack -Description "Sign artifacts." {
     Sign-ArchiveContents "Hangfire.InMemory-$version" "hangfire" "nuget-and-assemblies-in-zip-file"
 }
 
-function Sign-ArchiveContents($project, $name, $configuration) {
+function Sign-ArchiveContents($name, $project, $configuration) {
     $policy = "test-signing-policy"
 
     if ($env:APPVEYOR_REPO_TAG -eq "True") {
