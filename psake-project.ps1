@@ -26,7 +26,7 @@ Task Pack -Depends Collect -Description "Create NuGet packages and archive files
 Task Sign -Depends Pack -Description "Sign artifacts." {
     $version = Get-PackageVersion
 
-    Sign-ArchiveContents "Hangfire.InMemory-$version", "hangfire", "nuget-and-assemblies-in-zip-file"
+    Sign-ArchiveContents "Hangfire.InMemory-$version" "hangfire" "nuget-and-assemblies-in-zip-file"
 }
 
 function Sign-ArchiveContents($project, $name, $configuration) {
