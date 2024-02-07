@@ -46,5 +46,5 @@ function Sign-ArchiveContents($name, $project, $configuration) {
     Submit-SigningRequest -InputArtifactPath "$archive" -OrganizationId $env:SIGNPATH_ORGANIZATION_ID -ApiToken $env:SIGNPATH_API_TOKEN -ProjectSlug "$project" -SigningPolicySlug "$policy" -ArtifactConfigurationSlug "$configuration" -WaitForCompletion -OutputArtifactPath "$archive" -Force
 
     Write-Host "Unpacking signed files..." -ForegroundColor "Green"
-    Expand-Archive -Path "$archive" -DestinationPath "$build_dir" -Force -PassThru
+    Expand-Archive -Path "$archive" -DestinationPath "$build_dir" -Force
 }
