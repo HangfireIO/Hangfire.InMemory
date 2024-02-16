@@ -14,6 +14,7 @@ Task Collect -Depends Test -Description "Copy all artifacts to the build folder.
     Collect-File "COPYING.LESSER"
     Collect-File "COPYING"
     Collect-File "LICENSE.md"
+    Collect-File "README.md"
 }
 
 Task Pack -Depends Collect -Description "Create NuGet packages and archive files." {

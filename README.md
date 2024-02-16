@@ -1,7 +1,6 @@
 # Hangfire.InMemory
 
-[![Build status](https://ci.appveyor.com/api/projects/status/yq82w8ji419c61vy?svg=true)](https://ci.appveyor.com/project/odinserj/hangfire-inmemory)
-[![perfvane](https://img.shields.io/endpoint?url=https://perfvane.com/HangfireIO/Hangfire.InMemory/badge)](https://perfvane.com/HangfireIO/Hangfire.InMemory)
+[![Build status](https://ci.appveyor.com/api/projects/status/yq82w8ji419c61vy?svg=true)](https://ci.appveyor.com/project/HangfireIO/hangfire-inmemory)
 
 This is an attempt to create an efficient transactional in-memory storage for Hangfire with data structures close to their optimal representation. The result of this attempt should enable production-ready usage of this storage implementation and handle particular properties of in-memory processing like avoiding `OutOfMemoryException` at any cost and moderate load on garbage collection. Of course we can't avoid them entirely, but at least can control them somehow.
 
@@ -21,12 +20,10 @@ Distributed locks (heh, in an in-process storage), queue fetch logic (even from 
 
 ## Installation
 
-[Hangfire.InMemory](https://www.nuget.org/packages/Hangfire.InMemory/) is available on NuGet so we can install it as usual using your favorite package manager. Here is how `*.csproj` file look like when the package is installed to use the latest `0.X` version.
+[Hangfire.InMemory](https://www.nuget.org/packages/Hangfire.InMemory/) is available on NuGet so we can install it as usual using your favorite package manager.
 
-```xml
-<ItemGroup>
-  <PackageReference Include="Hangfire.InMemory" Version="0.*" />
-</ItemGroup>
+```powershell
+> dotnet add package Hangfire.InMemory
 ```
 
 ## Configuration

@@ -10,6 +10,7 @@
     <repository type="git" url="https://github.com/HangfireIO/Hangfire.InMemory.git" commit="%commit%" />
     <license type="file">LICENSE.md</license>
     <icon>icon.png</icon>
+    <readme>README.md</readme>
     <description>In-memory job storage for Hangfire with transactional implementation.</description>
     <copyright>Copyright © 2020-2024 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
@@ -118,6 +119,7 @@
     <file src="netstandard2.0\Hangfire.InMemory.xml" target="lib\netstandard2.0" />
 
     <file src="..\nuspecs\icon.png" />
+    <file src="README.md" />
 
     <file src="LICENSE.md" />
     <file src="LICENSE_STANDARD" />
