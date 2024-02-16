@@ -15,6 +15,14 @@
     <copyright>Copyright © 2020-2024 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
+
+0.8.0
+• Project – Sign NuGet package and .NET assemblies on build with a company's own certificate.
+• Project – Require package signature validation when restoring dependencies.
+• Project – Add HangfireIO as an owner for the NuGet package.
+• Project – Add readme file and icon to the NuGet package.
+• Project – Fix Git repository URL in the NuGet package metadata.
+
 0.7.0
 • Added – `InMemoryStorageOptions.MaxExpirationTime` option to control the maximum expiration time.
 • Changed – The default value for maximum expiration time is 2 hours now, not days.
