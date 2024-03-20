@@ -51,7 +51,7 @@ namespace Hangfire.InMemory
             get => _maxStateHistoryLength;
             set
             {
-                if (_maxStateHistoryLength <= 0) throw new ArgumentOutOfRangeException(nameof(value), "Value is out of range. Must be greater than zero.");
+                if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value), "Value is out of range. Must be greater than zero.");
                 _maxStateHistoryLength = value;
             }
         }
