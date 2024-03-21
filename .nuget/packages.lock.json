@@ -4,9 +4,9 @@
     "Any,Version=v0.0": {
       "Hangfire.Build": {
         "type": "Direct",
-        "requested": "[0.4.1, 0.4.1]",
-        "resolved": "0.4.1",
-        "contentHash": "lQtwucKSi6bOH5+hfvhdeRb5MA0FAYR9wPoWgVlOpEAv9ltBxSy1yh35INdOv7VYAF5O910Z57j8X3pWOkmTIw=="
+        "requested": "[0.4.3, 0.4.3]",
+        "resolved": "0.4.3",
+        "contentHash": "Wp5SPwtlX3vXRVVGRhNKAh2kNShMqSLpmAGosgb3VUF9nxEJcEkOq0nv56p4dHwh7EGaJM35HiOD+CvUeJkLRw=="
       },
       "psake": {
         "type": "Direct",
