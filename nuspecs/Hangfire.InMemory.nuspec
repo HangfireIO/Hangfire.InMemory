@@ -16,6 +16,9 @@
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
 
+0.8.1
+• Fixed – Incorrect validation in the `MaxStateHistoryLength` setter (by @DPschichholz).
+
 0.8.0
 • Project – Sign NuGet package and .NET assemblies on build with a company's own certificate.
 • Project – Require package signature validation when restoring dependencies.
