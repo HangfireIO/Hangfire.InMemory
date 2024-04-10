@@ -20,62 +20,94 @@ namespace Hangfire.InMemory.Tests
 {
     public class InMemoryStorageFacts
     {
-        private readonly InMemoryStorage _storage = new InMemoryStorage();
-
         [Fact]
         public void LinearizableRead_Property_ReturnsTrue()
         {
-            Assert.True(_storage.LinearizableReads);
+            // Arrange
+            var storage = CreateStorage();
+
+            // Act & Assert
+            Assert.True(storage.LinearizableReads);
         }
 
         [Fact]
         public void HasFeature_ThrowsArgumentNullException_WhenFeatureIdIsNull()
         {
-            var exception = Assert.Throws<ArgumentNullException>(
-                () => _storage.HasFeature(null));
+            // Arrange
+            var storage = CreateStorage();
 
+            // Act
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => storage.HasFeature(null));
+
+            // Assert
             Assert.Equal("featureId", exception.ParamName);
         }
 
         [Fact]
         public void HasFeature_ReturnsTrue_ForTheFollowingFeatures()
         {
-            Assert.True(_storage.HasFeature("Storage.ExtendedApi"));
-            Assert.True(_storage.HasFeature("Job.Queue"));
-            Assert.True(_storage.HasFeature("Connection.BatchedGetFirstByLowestScoreFromSet"));
-            Assert.True(_storage.HasFeature("Connection.GetUtcDateTime"));
-            Assert.True(_storage.HasFeature("Connection.GetSetContains"));
-            Assert.True(_storage.HasFeature("Connection.GetSetCount.Limited"));
-            Assert.True(_storage.HasFeature("Transaction.AcquireDistributedLock"));
-            Assert.True(_storage.HasFeature("Transaction.CreateJob"));
-            Assert.True(_storage.HasFeature("Transaction.SetJobParameter"));
-            Assert.True(_storage.HasFeature("TransactionalAcknowledge:InMemoryFetchedJob"));
-            Assert.True(_storage.HasFeature("Monitoring.DeletedStateGraphs"));
-            Assert.True(_storage.HasFeature("Monitoring.AwaitingJobs"));
-            Assert.False(_storage.HasFeature("SomeNonExistingFeature"));
+            // Arrange
+            var storage = CreateStorage();
+
+            // Act & Assert
+            Assert.True(storage.HasFeature("Storage.ExtendedApi"));
+            Assert.True(storage.HasFeature("Job.Queue"));
+            Assert.True(storage.HasFeature("Connection.BatchedGetFirstByLowestScoreFromSet"));
+            Assert.True(storage.HasFeature("Connection.GetUtcDateTime"));
+            Assert.True(storage.HasFeature("Connection.GetSetContains"));
+            Assert.True(storage.HasFeature("Connection.GetSetCount.Limited"));
+            Assert.True(storage.HasFeature("Transaction.AcquireDistributedLock"));
+            Assert.True(storage.HasFeature("Transaction.CreateJob"));
+            Assert.True(storage.HasFeature("Transaction.SetJobParameter"));
+            Assert.True(storage.HasFeature("TransactionalAcknowledge:InMemoryFetchedJob"));
+            Assert.True(storage.HasFeature("Monitoring.DeletedStateGraphs"));
+            Assert.True(storage.HasFeature("Monitoring.AwaitingJobs"));
+            Assert.False(storage.HasFeature("SomeNonExistingFeature"));
         }
 
         [Fact]
         public void GetConnection_ReturnsUsableInstance()
         {
-            using (var connection = _storage.GetConnection())
-            {
-                Assert.NotNull(connection);
-            }
+            // Arrange
+            var storage = CreateStorage();
+
+            // Act
+            using var connection = storage.GetConnection();
+
+            // Assert
+            Assert.NotNull(connection);
         }
 
         [Fact]
         public void GetMonitoringApi_ReturnsUsableInstance()
         {
-            var monitoringApi = _storage.GetMonitoringApi();
+            // Arrange
+            var storage = CreateStorage();
+
+            // Act
+            var monitoringApi = storage.GetMonitoringApi();
+
+            // Assert
             Assert.NotNull(monitoringApi);
         }
 
         [Fact]
         public void ToString_ReturnsUsefulString()
         {
-            var result = _storage.ToString();
+            // Arrange
+            var storage = CreateStorage();
+
+            // Act
+            var result = storage.ToString();
+
+            // Assert
             Assert.Equal("In-Memory Storage", result);
+        }
+
+        private static InMemoryStorage CreateStorage()
+        {
+            return new InMemoryStorage();
         }
     }
 }
