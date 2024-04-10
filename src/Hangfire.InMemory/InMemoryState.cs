@@ -65,13 +65,21 @@ namespace Hangfire.InMemory
         public Func<MonotonicTime> TimeResolver { get; }
         public InMemoryStorageOptions Options { get; }
 
-        public ConcurrentDictionary<string, JobEntry> Jobs => _jobs; // net451 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
+#if NET451
+        public ConcurrentDictionary<string, JobEntry> Jobs => _jobs;
+#else
+        public IReadOnlyDictionary<string, JobEntry> Jobs => _jobs;
+#endif
         public IDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
         public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
         public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
         public IReadOnlyDictionary<string, SetEntry> Sets => _sets;
         public IReadOnlyDictionary<string, CounterEntry> Counters => _counters;
-        public ConcurrentDictionary<string, QueueEntry> Queues => _queues; // net451 target does not have ConcurrentDictionary that implements IReadOnlyDictionary
+#if NET451
+        public ConcurrentDictionary<string, QueueEntry> Queues => _queues;
+#else
+        public IReadOnlyDictionary<string, QueueEntry> Queues => _queues;
+#endif
         public IReadOnlyDictionary<string, ServerEntry> Servers => _servers;
 
         public IReadOnlyDictionary<string, SortedSet<JobEntry>> JobStateIndex => _jobStateIndex;
@@ -92,7 +100,7 @@ namespace Hangfire.InMemory
             return entry;
         }
 
-        public void JobCreate(JobEntry entry, TimeSpan expireIn)
+        public void JobCreate(JobEntry entry, TimeSpan? expireIn)
         {
             if (!_jobs.TryAdd(entry.Key, entry))
             {

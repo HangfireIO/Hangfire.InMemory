@@ -361,7 +361,7 @@ namespace Hangfire.InMemory.Tests
         public void ExpireJob_SetsExpirationTime_OfTheGivenJob()
         {
             // Arrange
-            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer));
+            _state.JobCreate(new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer), expireIn: null);
 
             // Act
             Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
@@ -376,7 +376,7 @@ namespace Hangfire.InMemory.Tests
         public void ExpireJob_AddsEntry_ToExpirationIndex()
         {
             var entry = new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer);
-            _state.Jobs.TryAdd(entry.Key, entry);
+            _state.JobCreate(entry, expireIn: null);
 
             Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
 
@@ -402,10 +402,9 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void PersistJob_ResetsExpirationTime_OfTheGivenJob()
         {
-            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer)
-            {
-                ExpireAt = _now
-            });
+            _state.JobCreate(
+                new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                expireIn: TimeSpan.Zero);
 
             Commit(x => x.PersistJob("myjob"));
 
@@ -418,10 +417,9 @@ namespace Hangfire.InMemory.Tests
             // Arrange
             var entry = new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer)
             {
-                ExpireAt = _now
+                ExpireAt = _now // todo should throw
             };
-            _state.Jobs.TryAdd("myjob", entry);
-            _state.ExpiringJobsIndex.Add(entry);
+            _state.JobCreate(entry, expireIn: TimeSpan.Zero);
 
             // Act
             Commit(x => x.PersistJob("myjob"));
@@ -455,7 +453,9 @@ namespace Hangfire.InMemory.Tests
             var state = new Mock<IState>();
             state.SetupGet(x => x.Name).Returns((string)null);
 
-            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer));
+            _state.JobCreate(
+                new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                expireIn: null);
 
             // Act
             var exception = Assert.Throws<ArgumentException>(() => Commit(
@@ -485,7 +485,9 @@ namespace Hangfire.InMemory.Tests
             state.SetupGet(x => x.Reason).Returns("SomeReason");
             state.Setup(x => x.SerializeData()).Returns(new Dictionary<string, string> {{ "Key", "Value" }});
 
-            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer));
+            _state.JobCreate(
+                new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                expireIn: null);
 
             // Act
             Commit(x => x.SetJobState("myjob", state.Object));
@@ -507,7 +509,9 @@ namespace Hangfire.InMemory.Tests
             var state = new Mock<IState>();
             state.SetupGet(x => x.Name).Returns("SomeState");
 
-            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer));
+            _state.JobCreate(
+                new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                expireIn: null);
 
             // Act
             Commit(x => x.SetJobState("myjob", state.Object));
@@ -524,7 +528,7 @@ namespace Hangfire.InMemory.Tests
             state.Setup(x => x.Name).Returns("SomeState");
 
             var entry = new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer);
-            _state.Jobs.TryAdd("myjob", entry);
+            _state.JobCreate(entry, expireIn: null);
 
             // Act
             Commit(x => x.SetJobState("myjob", state.Object));
@@ -567,7 +571,9 @@ namespace Hangfire.InMemory.Tests
             state.SetupGet(x => x.Reason).Returns("SomeReason");
             state.Setup(x => x.SerializeData()).Returns(new Dictionary<string, string> {{ "Key", "Value" }});
 
-            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer));
+            _state.JobCreate(
+                new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                expireIn: null);
 
             // Act
             Commit(x => x.AddJobState("myjob", state.Object));
@@ -591,7 +597,10 @@ namespace Hangfire.InMemory.Tests
             var state4 = new Mock<IState>(); state4.SetupGet(x => x.Name).Returns("State4");
             var state5 = new Mock<IState>(); state5.SetupGet(x => x.Name).Returns("State5");
 
-            _state.Jobs.TryAdd("myjob", new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer));
+            _state.JobCreate(
+                new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                expireIn: null);
+
             _options.MaxStateHistoryLength = 3;
 
             // Act
@@ -630,8 +639,7 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void AddToQueue_EnqueuesTheGivenJobId_ToTheGivenQueue_WhenItAlreadyExists()
         {
-            var entry = new QueueEntry();
-            _state.Queues.TryAdd("myqueue", entry);
+            var entry = _state.QueueGetOrCreate("myqueue");
 
             Commit(x => x.AddToQueue("myqueue", "jobid"));
 
@@ -651,10 +659,8 @@ namespace Hangfire.InMemory.Tests
             using (var semaphore = new AutoResetEvent(false))
             {
                 // Arrange
-                var entry = new QueueEntry();
+                var entry = _state.QueueGetOrCreate("myqueue");
                 entry.WaitHead.Next = new InMemoryQueueWaitNode(semaphore);
-
-                _state.Queues.TryAdd("myqueue", entry);
 
                 // Act
                 Commit(x => x.AddToQueue("myqueue", "jobid"));
