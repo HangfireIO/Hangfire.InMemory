@@ -196,11 +196,11 @@ namespace Hangfire.InMemory.Tests
             _dispatcher.EvictEntries();
 
             // Assert
-            Assert.Equal(["job-1", "job-2"], _state.Jobs.Keys.OrderBy(x => x));
-            Assert.Equal(["hash-1", "hash-2"], _state.Hashes.Keys.OrderBy(x => x));
-            Assert.Equal(["set-1", "set-2"], _state.Sets.Keys.OrderBy(x => x));
-            Assert.Equal(["list-1", "list-2"], _state.Lists.Keys.OrderBy(x => x));
-            Assert.Equal(["counter-1", "counter-2"], _state.Counters.Keys.OrderBy(x => x));
+            Assert.Equal(new [] { "job-1", "job-2" }, _state.Jobs.Keys.OrderBy(x => x));
+            Assert.Equal(new [] { "hash-1", "hash-2" }, _state.Hashes.Keys.OrderBy(x => x));
+            Assert.Equal(new [] { "set-1", "set-2" }, _state.Sets.Keys.OrderBy(x => x));
+            Assert.Equal(new [] { "list-1", "list-2" }, _state.Lists.Keys.OrderBy(x => x));
+            Assert.Equal(new [] { "counter-1", "counter-2" }, _state.Counters.Keys.OrderBy(x => x));
         }
 
         private JobEntry CreateJobEntry(string jobId)
