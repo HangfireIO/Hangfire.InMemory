@@ -100,14 +100,14 @@ namespace Hangfire.InMemory
             return entry;
         }
 
-        public void JobCreate(JobEntry entry, TimeSpan? expireIn)
+        public void JobCreate(JobEntry entry, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
         {
             if (!_jobs.TryAdd(entry.Key, entry))
             {
                 throw new InvalidOperationException($"Background job with key '{entry.Key}' already exists.");
             }
 
-            EntryExpire(entry, ExpiringJobsIndex, expireIn);
+            EntryExpire(entry, ExpiringJobsIndex, expireIn, ignoreMaxExpirationTime);
         }
 
         public void JobSetState(JobEntry entry, StateEntry state)

@@ -102,8 +102,13 @@ namespace Hangfire.InMemory
                     state.Options.DisableJobSerialization,
                     state.Options.StringComparer);
 
-                // TODO: Don't allow to adjust expiration time based on limits here to avoid early eviction when limit is too tight
-                state.JobCreate(jobEntry, expireIn);
+                // Background job is not yet initialized after calling this method, and
+                // transaction is expected a few moments later that will initialize this
+                // job. To prevent early, non-expected eviction when max expiration time
+                // limit is low or close to zero, that can lead to exceptions, we just
+                // ignoring this limit in very rare occasions when background job is not
+                // initialized for reasons I can't even realize with an in-memory storage.
+                state.JobCreate(jobEntry, expireIn, ignoreMaxExpirationTime: true);
             });
 
             return key;

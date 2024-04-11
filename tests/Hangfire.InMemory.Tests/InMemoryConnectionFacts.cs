@@ -168,6 +168,19 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void CreateExpiredJob_DoesNotUseMaxExpirationTimeLimit_ToEnsureJobCanNotBeEvictedBeforeInitialization()
+        {
+            UseConnection(connection =>
+            {
+                _options.MaxExpirationTime = TimeSpan.FromMinutes(30);
+                var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromDays(30));
+
+                Assert.True(_state.Jobs[jobId].ExpireAt.HasValue);
+                Assert.Equal(_now.Add(TimeSpan.FromDays(30)), _state.Jobs[jobId].ExpireAt.Value);
+            });
+        }
+
+        [Fact]
         public void SetJobParameter_ThrowsAnException_WhenIdIsNull()
         {
             UseConnection(connection =>
