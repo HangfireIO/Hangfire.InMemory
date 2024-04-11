@@ -1570,12 +1570,12 @@ namespace Hangfire.InMemory.Tests
 
         private InMemoryMonitoringApi CreateMonitoringApi()
         {
-            return new InMemoryMonitoringApi(new InMemoryDispatcherBase(_state));
+            return new InMemoryMonitoringApi(new TestInMemoryDispatcher(_state));
         }
 
         private T UseConnection<T>(Func<InMemoryConnection, T> action)
         {
-            using (var connection = new InMemoryConnection(new InMemoryDispatcherBase(_state)))
+            using (var connection = new InMemoryConnection(new TestInMemoryDispatcher(_state)))
             {
                 return action(connection);
             }

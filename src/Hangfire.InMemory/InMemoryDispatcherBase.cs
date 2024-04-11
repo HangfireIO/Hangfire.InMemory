@@ -20,11 +20,11 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal class InMemoryDispatcherBase
+    internal abstract class InMemoryDispatcherBase
     {
         private readonly InMemoryState _state;
 
-        public InMemoryDispatcherBase(InMemoryState state)
+        protected InMemoryDispatcherBase(InMemoryState state)
         {
             _state = state ?? throw new ArgumentNullException(nameof(state));
         }
@@ -133,19 +133,19 @@ namespace Hangfire.InMemory
             });
         }
 
-        protected void ExpireEntries()
+        protected void EvictEntries()
         {
             var now = _state.TimeResolver();
 
-            // TODO: Think how to expire under memory pressure and limit the collection to avoid OOM exceptions
-            ExpireIndex(now, _state.ExpiringCountersIndex, entry => _state.CounterDelete(entry));
-            ExpireIndex(now, _state.ExpiringHashesIndex, entry => _state.HashDelete(entry));
-            ExpireIndex(now, _state.ExpiringListsIndex, entry => _state.ListDelete(entry));
-            ExpireIndex(now, _state.ExpiringSetsIndex, entry => _state.SetDelete(entry));
-            ExpireJobIndex(now, _state);
+            EvictFromIndex(now, _state.ExpiringJobsIndex, entry => _state.JobDelete(entry));
+            EvictFromIndex(now, _state.ExpiringHashesIndex, entry => _state.HashDelete(entry));
+            EvictFromIndex(now, _state.ExpiringListsIndex, entry => _state.ListDelete(entry));
+            EvictFromIndex(now, _state.ExpiringSetsIndex, entry => _state.SetDelete(entry));
+
+            EvictFromIndex(now, _state.ExpiringCountersIndex, entry => _state.CounterDelete(entry));
         }
 
-        private static void ExpireIndex<T>(MonotonicTime now, SortedSet<T> index, Action<T> action)
+        private static void EvictFromIndex<T>(MonotonicTime now, SortedSet<T> index, Action<T> action)
             where T : IExpirableEntry
         {
             T entry;
@@ -153,17 +153,6 @@ namespace Hangfire.InMemory
             while (index.Count > 0 && (entry = index.Min).ExpireAt.HasValue && now >= entry.ExpireAt)
             {
                 action(entry);
-            }
-        }
-
-        private static void ExpireJobIndex(MonotonicTime now, InMemoryState state)
-        {
-            JobEntry entry;
-
-            // TODO: Replace with actual expiration rules
-            while (state.ExpiringJobsIndex.Count > 0 && (entry = state.ExpiringJobsIndex.Min).ExpireAt.HasValue && now >= entry.ExpireAt)
-            {
-                state.JobDelete(entry);
             }
         }
     }

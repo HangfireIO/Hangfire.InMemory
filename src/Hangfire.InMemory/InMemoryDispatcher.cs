@@ -98,16 +98,17 @@ namespace Hangfire.InMemory
                                 throw;
                             }
 
+                            // TODO: Run this before action?
                             if (Environment.TickCount - startTime >= DefaultExpirationIntervalMs)
                             {
-                                ExpireEntries();
+                                EvictEntries();
                                 startTime = Environment.TickCount;
                             }
                         }
                     }
                     else
                     {
-                        ExpireEntries();
+                        EvictEntries();
                     }
                 }
             }

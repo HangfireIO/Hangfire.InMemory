@@ -29,7 +29,7 @@ namespace Hangfire.InMemory.Tests
         {
             var now = MonotonicTime.GetCurrent();
             _state = new InMemoryState(() => now, new InMemoryStorageOptions());
-            _dispatcher = new InMemoryDispatcherBase(_state);
+            _dispatcher = new TestInMemoryDispatcher(_state);
         }
 
         [Fact]

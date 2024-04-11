@@ -102,6 +102,7 @@ namespace Hangfire.InMemory
                     state.Options.DisableJobSerialization,
                     state.Options.StringComparer);
 
+                // TODO: Don't allow to adjust expiration time based on limits here to avoid early eviction when limit is too tight
                 state.JobCreate(jobEntry, expireIn);
             });
 
