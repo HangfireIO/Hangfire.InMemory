@@ -101,14 +101,14 @@ namespace Hangfire.InMemory
                             // TODO: Run this before action?
                             if (Environment.TickCount - startTime >= DefaultExpirationIntervalMs)
                             {
-                                EvictEntries();
+                                EvictExpiredEntries();
                                 startTime = Environment.TickCount;
                             }
                         }
                     }
                     else
                     {
-                        EvictEntries();
+                        EvictExpiredEntries();
                     }
                 }
             }

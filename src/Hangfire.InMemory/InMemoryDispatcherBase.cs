@@ -149,27 +149,9 @@ namespace Hangfire.InMemory
             return QueryAndWait(Callback);
         }
 
-        protected void EvictEntries()
+        protected void EvictExpiredEntries()
         {
-            var now = GetMonotonicTime();
-
-            EvictFromIndex(now, _state.ExpiringJobsIndex, entry => _state.JobDelete(entry));
-            EvictFromIndex(now, _state.ExpiringHashesIndex, entry => _state.HashDelete(entry));
-            EvictFromIndex(now, _state.ExpiringListsIndex, entry => _state.ListDelete(entry));
-            EvictFromIndex(now, _state.ExpiringSetsIndex, entry => _state.SetDelete(entry));
-
-            EvictFromIndex(now, _state.ExpiringCountersIndex, entry => _state.CounterDelete(entry));
-        }
-
-        private static void EvictFromIndex<T>(MonotonicTime now, SortedSet<T> index, Action<T> action)
-            where T : IExpirableEntry
-        {
-            T entry;
-
-            while (index.Count > 0 && (entry = index.Min).ExpireAt.HasValue && now >= entry.ExpireAt)
-            {
-                action(entry);
-            }
+            _state.EvictExpiredEntries(GetMonotonicTime());
         }
     }
 }

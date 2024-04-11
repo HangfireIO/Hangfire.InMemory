@@ -8,9 +8,9 @@ namespace Hangfire.InMemory.Tests
         {
         }
 
-        public new void EvictEntries()
+        public new void EvictExpiredEntries()
         {
-            base.EvictEntries();
+            base.EvictExpiredEntries();
         }
     }
 }

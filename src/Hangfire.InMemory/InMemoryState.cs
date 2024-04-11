@@ -82,6 +82,7 @@ namespace Hangfire.InMemory
 
         public IReadOnlyDictionary<string, SortedSet<JobEntry>> JobStateIndex => _jobStateIndex;
 
+        // TODO: Hide these indexes from external access for safety reasons
         public SortedSet<JobEntry> ExpiringJobsIndex { get; }
         public SortedSet<CounterEntry> ExpiringCountersIndex { get; }
         public SortedSet<HashEntry> ExpiringHashesIndex { get; }
@@ -233,6 +234,26 @@ namespace Hangfire.InMemory
         public void ServerRemove(string serverId)
         {
             _servers.Remove(serverId);
+        }
+
+        public void EvictExpiredEntries(MonotonicTime now)
+        {
+            EvictFromIndex(now, ExpiringJobsIndex, JobDelete);
+            EvictFromIndex(now, ExpiringHashesIndex, HashDelete);
+            EvictFromIndex(now, ExpiringListsIndex, ListDelete);
+            EvictFromIndex(now, ExpiringSetsIndex, SetDelete);
+            EvictFromIndex(now, ExpiringCountersIndex, CounterDelete);
+        }
+
+        private static void EvictFromIndex<T>(MonotonicTime now, SortedSet<T> index, Action<T> action)
+            where T : IExpirableEntry
+        {
+            T entry;
+
+            while (index.Count > 0 && (entry = index.Min).ExpireAt.HasValue && now >= entry.ExpireAt)
+            {
+                action(entry);
+            }
         }
 
         private static void EntryRemove<T>(T entry, IDictionary<string, T> index, ISet<T> expirationIndex)

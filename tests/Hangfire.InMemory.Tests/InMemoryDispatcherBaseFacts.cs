@@ -68,7 +68,7 @@ namespace Hangfire.InMemory.Tests
             _state.JobCreate(CreateJobEntry("job-3"), _now, expireIn: TimeSpan.FromHours(-1));
 
             // Act
-            _dispatcher.EvictEntries();
+            _dispatcher.EvictExpiredEntries();
 
             // Assert
             Assert.Empty(_state.Jobs);
@@ -83,7 +83,7 @@ namespace Hangfire.InMemory.Tests
             _state.HashExpire(_state.HashGetOrAdd("hash-3"), _now, expireIn: TimeSpan.FromHours(-1));
 
             // Act
-            _dispatcher.EvictEntries();
+            _dispatcher.EvictExpiredEntries();
 
             // Assert
             Assert.Empty(_state.Hashes);
@@ -98,7 +98,7 @@ namespace Hangfire.InMemory.Tests
             _state.SetExpire(_state.SetGetOrAdd("set-3"), _now, expireIn: TimeSpan.FromHours(-1));
 
             // Act
-            _dispatcher.EvictEntries();
+            _dispatcher.EvictExpiredEntries();
 
             // Assert
             Assert.Empty(_state.Sets);
@@ -113,7 +113,7 @@ namespace Hangfire.InMemory.Tests
             _state.ListExpire(_state.ListGetOrAdd("list-3"), _now, expireIn: TimeSpan.FromHours(-1));
 
             // Act
-            _dispatcher.EvictEntries();
+            _dispatcher.EvictExpiredEntries();
 
             // Assert
             Assert.Empty(_state.Lists);
@@ -128,7 +128,7 @@ namespace Hangfire.InMemory.Tests
             _state.CounterExpire(_state.CounterGetOrAdd("counter-3"), _now, expireIn: TimeSpan.FromHours(-1));
 
             // Act
-            _dispatcher.EvictEntries();
+            _dispatcher.EvictExpiredEntries();
 
             // Assert
             Assert.Empty(_state.Counters);
@@ -145,7 +145,7 @@ namespace Hangfire.InMemory.Tests
             _state.CounterExpire(_state.CounterGetOrAdd("my-counter"), _now, expireIn: null);
 
             // Act
-            _dispatcher.EvictEntries();
+            _dispatcher.EvictExpiredEntries();
 
             // Assert
             Assert.Contains("my-job", _state.Jobs.Keys);
@@ -166,7 +166,7 @@ namespace Hangfire.InMemory.Tests
             _state.CounterExpire(_state.CounterGetOrAdd("my-counter"), _now, expireIn: TimeSpan.FromMinutes(30));
 
             // Act
-            _dispatcher.EvictEntries();
+            _dispatcher.EvictExpiredEntries();
 
             // Assert
             Assert.Contains("my-job", _state.Jobs);
@@ -202,7 +202,7 @@ namespace Hangfire.InMemory.Tests
             _state.CounterExpire(_state.CounterGetOrAdd("counter-3"), _now, expireIn: TimeSpan.FromMinutes(-30));
 
             // Act
-            _dispatcher.EvictEntries();
+            _dispatcher.EvictExpiredEntries();
 
             // Assert
             Assert.Equal(new [] { "job-1", "job-2" }, _state.Jobs.Keys.OrderBy(x => x));
