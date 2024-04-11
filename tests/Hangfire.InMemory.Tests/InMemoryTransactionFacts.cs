@@ -729,7 +729,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.IncrementCounter("somecounter"));
 
-            Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.DoesNotContain("somecounter", _state.Counters.Keys);
             Assert.Empty(_state.ExpiringCountersIndex);
         }
 
@@ -740,7 +740,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.IncrementCounter("somecounter"));
 
-            Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.DoesNotContain("somecounter", _state.Counters.Keys);
             Assert.Empty(_state.ExpiringCountersIndex);
         }
 
@@ -800,7 +800,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(10)));
 
-            Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.DoesNotContain("somecounter", _state.Counters.Keys);
             Assert.Empty(_state.ExpiringCountersIndex);
         }
 
@@ -811,7 +811,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.IncrementCounter("somecounter", TimeSpan.FromMinutes(10)));
 
-            Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.DoesNotContain("somecounter", _state.Counters.Keys);
             Assert.Empty(_state.ExpiringCountersIndex);
         }
 
@@ -868,7 +868,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.DecrementCounter("somecounter"));
 
-            Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.DoesNotContain("somecounter", _state.Counters.Keys);
             Assert.Empty(_state.ExpiringCountersIndex);
         }
 
@@ -879,7 +879,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.DecrementCounter("somecounter"));
 
-            Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.DoesNotContain("somecounter", _state.Counters.Keys);
             Assert.Empty(_state.ExpiringCountersIndex);
         }
 
@@ -939,7 +939,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(10)));
 
-            Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.DoesNotContain("somecounter", _state.Counters.Keys);
             Assert.Empty(_state.ExpiringCountersIndex);
         }
 
@@ -950,7 +950,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(10)));
 
-            Assert.DoesNotContain("somecounter", _state.Counters);
+            Assert.DoesNotContain("somecounter", _state.Counters.Keys);
             Assert.Empty(_state.ExpiringCountersIndex);
         }
 
