@@ -11,6 +11,8 @@ namespace ConsoleSample
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddHangfire(config => config
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
                 .UseIgnoredAssemblyVersionTypeResolver()
                 .UseInMemoryStorage());
 
