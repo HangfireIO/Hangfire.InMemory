@@ -29,7 +29,10 @@ namespace Hangfire.InMemory
             _state = state ?? throw new ArgumentNullException(nameof(state));
         }
 
-        public KeyValuePair<string, QueueEntry>[] GetOrAddQueues(IReadOnlyCollection<string> queueNames)
+        // Unsafe methods expose entries directly for callers, without using a
+        // dispatcher thread. Consumers should ensure each data structure is
+        // safe for a possible concurrent access.
+        public KeyValuePair<string, QueueEntry>[] GetOrAddQueuesUnsafe(IReadOnlyCollection<string> queueNames)
         {
             var entries = new KeyValuePair<string, QueueEntry>[queueNames.Count];
             var index = 0;
@@ -44,7 +47,7 @@ namespace Hangfire.InMemory
             return entries;
         }
 
-        public bool TryGetJobData(string jobId, out JobEntry entry)
+        public bool TryGetJobDataUnsafe(string jobId, out JobEntry entry)
         {
             return _state.Jobs.TryGetValue(jobId, out entry);
         }

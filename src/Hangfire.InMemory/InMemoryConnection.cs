@@ -116,7 +116,7 @@ namespace Hangfire.InMemory
 
             using (var cancellationEvent = cancellationToken.GetCancellationEvent())
             {
-                var entries = Dispatcher.GetOrAddQueues(queues);
+                var entries = Dispatcher.GetOrAddQueuesUnsafe(queues);
                 var readyEvents = new WaitHandle[entries.Length + 1];
                 var waitAdded = new bool[entries.Length];
 
@@ -200,7 +200,7 @@ namespace Hangfire.InMemory
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
-            if (!Dispatcher.TryGetJobData(jobId, out var entry))
+            if (!Dispatcher.TryGetJobDataUnsafe(jobId, out var entry))
             {
                 return null;
             }
