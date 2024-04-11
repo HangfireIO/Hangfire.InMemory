@@ -35,8 +35,8 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions();
             _now = MonotonicTime.GetCurrent();
-            _state = new InMemoryState(() => _now, _options);
-            _dispatcher = new TestInMemoryDispatcher(_state);
+            _state = new InMemoryState(_options);
+            _dispatcher = new TestInMemoryDispatcher(() => _now, _state);
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression<ITestServices>(x => x.Empty());
         }
@@ -45,18 +45,27 @@ namespace Hangfire.InMemory.Tests
         public void Ctor_ThrowsAnException_WhenStateIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new TestInMemoryDispatcher(null));
+                () => new TestInMemoryDispatcher(() => _now, null));
             
             Assert.Equal("state", exception.ParamName);
+        }
+
+        [Fact]
+        public void Ctor_ThrowsAnException_WhenTimeResolverIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => new TestInMemoryDispatcher(null, _state));
+            
+            Assert.Equal("timeResolver", exception.ParamName);
         }
 
         [Fact]
         public void EvictEntries_EvictsExpiredJobs()
         {
             // Arrange
-            _state.JobCreate(CreateJobEntry("job-1"), expireIn: TimeSpan.FromSeconds(-1));
-            _state.JobCreate(CreateJobEntry("job-2"), expireIn: TimeSpan.FromMinutes(-1));
-            _state.JobCreate(CreateJobEntry("job-3"), expireIn: TimeSpan.FromHours(-1));
+            _state.JobCreate(CreateJobEntry("job-1"), _now, expireIn: TimeSpan.FromSeconds(-1));
+            _state.JobCreate(CreateJobEntry("job-2"), _now, expireIn: TimeSpan.FromMinutes(-1));
+            _state.JobCreate(CreateJobEntry("job-3"), _now, expireIn: TimeSpan.FromHours(-1));
 
             // Act
             _dispatcher.EvictEntries();
@@ -69,9 +78,9 @@ namespace Hangfire.InMemory.Tests
         public void EvictEntries_EvictsExpiredHashes()
         {
             // Arrange
-            _state.HashExpire(_state.HashGetOrAdd("hash-1"), expireIn: TimeSpan.FromSeconds(-1));
-            _state.HashExpire(_state.HashGetOrAdd("hash-2"), expireIn: TimeSpan.FromMinutes(-1));
-            _state.HashExpire(_state.HashGetOrAdd("hash-3"), expireIn: TimeSpan.FromHours(-1));
+            _state.HashExpire(_state.HashGetOrAdd("hash-1"), _now, expireIn: TimeSpan.FromSeconds(-1));
+            _state.HashExpire(_state.HashGetOrAdd("hash-2"), _now, expireIn: TimeSpan.FromMinutes(-1));
+            _state.HashExpire(_state.HashGetOrAdd("hash-3"), _now, expireIn: TimeSpan.FromHours(-1));
 
             // Act
             _dispatcher.EvictEntries();
@@ -84,9 +93,9 @@ namespace Hangfire.InMemory.Tests
         public void EvictEntries_EvictsExpiredSets()
         {
             // Arrange
-            _state.SetExpire(_state.SetGetOrAdd("set-1"), expireIn: TimeSpan.FromSeconds(-1));
-            _state.SetExpire(_state.SetGetOrAdd("set-2"), expireIn: TimeSpan.FromMinutes(-1));
-            _state.SetExpire(_state.SetGetOrAdd("set-3"), expireIn: TimeSpan.FromHours(-1));
+            _state.SetExpire(_state.SetGetOrAdd("set-1"), _now, expireIn: TimeSpan.FromSeconds(-1));
+            _state.SetExpire(_state.SetGetOrAdd("set-2"), _now, expireIn: TimeSpan.FromMinutes(-1));
+            _state.SetExpire(_state.SetGetOrAdd("set-3"), _now, expireIn: TimeSpan.FromHours(-1));
 
             // Act
             _dispatcher.EvictEntries();
@@ -99,9 +108,9 @@ namespace Hangfire.InMemory.Tests
         public void EvictEntries_EvictsExpiredLists()
         {
             // Arrange
-            _state.ListExpire(_state.ListGetOrAdd("list-1"), expireIn: TimeSpan.FromSeconds(-1));
-            _state.ListExpire(_state.ListGetOrAdd("list-2"), expireIn: TimeSpan.FromMinutes(-1));
-            _state.ListExpire(_state.ListGetOrAdd("list-3"), expireIn: TimeSpan.FromHours(-1));
+            _state.ListExpire(_state.ListGetOrAdd("list-1"), _now, expireIn: TimeSpan.FromSeconds(-1));
+            _state.ListExpire(_state.ListGetOrAdd("list-2"), _now, expireIn: TimeSpan.FromMinutes(-1));
+            _state.ListExpire(_state.ListGetOrAdd("list-3"), _now, expireIn: TimeSpan.FromHours(-1));
 
             // Act
             _dispatcher.EvictEntries();
@@ -114,9 +123,9 @@ namespace Hangfire.InMemory.Tests
         public void EvictEntries_EvictsExpiredCounters()
         {
             // Arrange
-            _state.CounterExpire(_state.CounterGetOrAdd("counter-1"), expireIn: TimeSpan.FromSeconds(-1));
-            _state.CounterExpire(_state.CounterGetOrAdd("counter-2"), expireIn: TimeSpan.FromMinutes(-1));
-            _state.CounterExpire(_state.CounterGetOrAdd("counter-3"), expireIn: TimeSpan.FromHours(-1));
+            _state.CounterExpire(_state.CounterGetOrAdd("counter-1"), _now, expireIn: TimeSpan.FromSeconds(-1));
+            _state.CounterExpire(_state.CounterGetOrAdd("counter-2"), _now, expireIn: TimeSpan.FromMinutes(-1));
+            _state.CounterExpire(_state.CounterGetOrAdd("counter-3"), _now, expireIn: TimeSpan.FromHours(-1));
 
             // Act
             _dispatcher.EvictEntries();
@@ -129,11 +138,11 @@ namespace Hangfire.InMemory.Tests
         public void EvictEntries_DoesNotEvict_NonExpiringEntries()
         {
             // Arrange
-            _state.JobCreate(CreateJobEntry("my-job"), expireIn: null);
-            _state.HashExpire(_state.HashGetOrAdd("my-hash"), expireIn: null);
-            _state.SetExpire(_state.SetGetOrAdd("my-set"), expireIn: null);
-            _state.ListExpire(_state.ListGetOrAdd("my-list"), expireIn: null);
-            _state.CounterExpire(_state.CounterGetOrAdd("my-counter"), expireIn: null);
+            _state.JobCreate(CreateJobEntry("my-job"), _now, expireIn: null);
+            _state.HashExpire(_state.HashGetOrAdd("my-hash"), _now, expireIn: null);
+            _state.SetExpire(_state.SetGetOrAdd("my-set"), _now, expireIn: null);
+            _state.ListExpire(_state.ListGetOrAdd("my-list"), _now, expireIn: null);
+            _state.CounterExpire(_state.CounterGetOrAdd("my-counter"), _now, expireIn: null);
 
             // Act
             _dispatcher.EvictEntries();
@@ -150,11 +159,11 @@ namespace Hangfire.InMemory.Tests
         public void EvictEntries_DoesNotEvict_StillExpiringEntries()
         {
             // Arrange
-            _state.JobCreate(CreateJobEntry("my-job"), expireIn: TimeSpan.FromMinutes(30));
-            _state.HashExpire(_state.HashGetOrAdd("my-hash"), expireIn: TimeSpan.FromMinutes(30));
-            _state.SetExpire(_state.SetGetOrAdd("my-set"), expireIn: TimeSpan.FromMinutes(30));
-            _state.ListExpire(_state.ListGetOrAdd("my-list"), expireIn: TimeSpan.FromMinutes(30));
-            _state.CounterExpire(_state.CounterGetOrAdd("my-counter"), expireIn: TimeSpan.FromMinutes(30));
+            _state.JobCreate(CreateJobEntry("my-job"), _now, expireIn: TimeSpan.FromMinutes(30));
+            _state.HashExpire(_state.HashGetOrAdd("my-hash"), _now, expireIn: TimeSpan.FromMinutes(30));
+            _state.SetExpire(_state.SetGetOrAdd("my-set"), _now, expireIn: TimeSpan.FromMinutes(30));
+            _state.ListExpire(_state.ListGetOrAdd("my-list"), _now, expireIn: TimeSpan.FromMinutes(30));
+            _state.CounterExpire(_state.CounterGetOrAdd("my-counter"), _now, expireIn: TimeSpan.FromMinutes(30));
 
             // Act
             _dispatcher.EvictEntries();
@@ -171,26 +180,26 @@ namespace Hangfire.InMemory.Tests
         public void EvictEntries_DoesStumbleUpon_NonExpiredEntries()
         {
             // Arrange
-            _state.JobCreate(CreateJobEntry("job-0"), expireIn: TimeSpan.Zero);
-            _state.JobCreate(CreateJobEntry("job-1"), expireIn: null);
-            _state.JobCreate(CreateJobEntry("job-2"), expireIn: TimeSpan.FromMinutes(30));
-            _state.JobCreate(CreateJobEntry("job-3"), expireIn: TimeSpan.FromMinutes(-30));
-            _state.HashExpire(_state.HashGetOrAdd("hash-0"), expireIn: TimeSpan.Zero);
-            _state.HashExpire(_state.HashGetOrAdd("hash-1"), expireIn: null);
-            _state.HashExpire(_state.HashGetOrAdd("hash-2"), expireIn: TimeSpan.FromMinutes(30));
-            _state.HashExpire(_state.HashGetOrAdd("hash-3"), expireIn: TimeSpan.FromMinutes(-30));
-            _state.SetExpire(_state.SetGetOrAdd("set-0"), expireIn: TimeSpan.Zero);
-            _state.SetExpire(_state.SetGetOrAdd("set-1"), expireIn: null);
-            _state.SetExpire(_state.SetGetOrAdd("set-2"), expireIn: TimeSpan.FromMinutes(30));
-            _state.SetExpire(_state.SetGetOrAdd("set-3"), expireIn: TimeSpan.FromMinutes(-30));
-            _state.ListExpire(_state.ListGetOrAdd("list-0"), expireIn: TimeSpan.Zero);
-            _state.ListExpire(_state.ListGetOrAdd("list-1"), expireIn: null);
-            _state.ListExpire(_state.ListGetOrAdd("list-2"), expireIn: TimeSpan.FromMinutes(30));
-            _state.ListExpire(_state.ListGetOrAdd("list-3"), expireIn: TimeSpan.FromMinutes(-30));
-            _state.CounterExpire(_state.CounterGetOrAdd("counter-0"), expireIn: TimeSpan.Zero);
-            _state.CounterExpire(_state.CounterGetOrAdd("counter-1"), expireIn: null);
-            _state.CounterExpire(_state.CounterGetOrAdd("counter-2"), expireIn: TimeSpan.FromMinutes(30));
-            _state.CounterExpire(_state.CounterGetOrAdd("counter-3"), expireIn: TimeSpan.FromMinutes(-30));
+            _state.JobCreate(CreateJobEntry("job-0"), _now, expireIn: TimeSpan.Zero);
+            _state.JobCreate(CreateJobEntry("job-1"), _now, expireIn: null);
+            _state.JobCreate(CreateJobEntry("job-2"), _now, expireIn: TimeSpan.FromMinutes(30));
+            _state.JobCreate(CreateJobEntry("job-3"), _now, expireIn: TimeSpan.FromMinutes(-30));
+            _state.HashExpire(_state.HashGetOrAdd("hash-0"), _now, expireIn: TimeSpan.Zero);
+            _state.HashExpire(_state.HashGetOrAdd("hash-1"), _now, expireIn: null);
+            _state.HashExpire(_state.HashGetOrAdd("hash-2"), _now, expireIn: TimeSpan.FromMinutes(30));
+            _state.HashExpire(_state.HashGetOrAdd("hash-3"), _now, expireIn: TimeSpan.FromMinutes(-30));
+            _state.SetExpire(_state.SetGetOrAdd("set-0"), _now, expireIn: TimeSpan.Zero);
+            _state.SetExpire(_state.SetGetOrAdd("set-1"), _now, expireIn: null);
+            _state.SetExpire(_state.SetGetOrAdd("set-2"), _now, expireIn: TimeSpan.FromMinutes(30));
+            _state.SetExpire(_state.SetGetOrAdd("set-3"), _now, expireIn: TimeSpan.FromMinutes(-30));
+            _state.ListExpire(_state.ListGetOrAdd("list-0"), _now, expireIn: TimeSpan.Zero);
+            _state.ListExpire(_state.ListGetOrAdd("list-1"), _now, expireIn: null);
+            _state.ListExpire(_state.ListGetOrAdd("list-2"), _now, expireIn: TimeSpan.FromMinutes(30));
+            _state.ListExpire(_state.ListGetOrAdd("list-3"), _now, expireIn: TimeSpan.FromMinutes(-30));
+            _state.CounterExpire(_state.CounterGetOrAdd("counter-0"), _now, expireIn: TimeSpan.Zero);
+            _state.CounterExpire(_state.CounterGetOrAdd("counter-1"), _now, expireIn: null);
+            _state.CounterExpire(_state.CounterGetOrAdd("counter-2"), _now, expireIn: TimeSpan.FromMinutes(30));
+            _state.CounterExpire(_state.CounterGetOrAdd("counter-3"), _now, expireIn: TimeSpan.FromMinutes(-30));
 
             // Act
             _dispatcher.EvictEntries();

@@ -46,7 +46,7 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions { StringComparer = StringComparer.Ordinal };
             _now = MonotonicTime.GetCurrent();
-            _state = new InMemoryState(() => _now, _options);
+            _state = new InMemoryState(_options);
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
             _connection = CreateConnection();
@@ -361,7 +361,10 @@ namespace Hangfire.InMemory.Tests
         public void ExpireJob_SetsExpirationTime_OfTheGivenJob()
         {
             // Arrange
-            _state.JobCreate(new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer), expireIn: null);
+            _state.JobCreate(
+                new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                _now,
+                expireIn: null);
 
             // Act
             Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
@@ -376,7 +379,7 @@ namespace Hangfire.InMemory.Tests
         public void ExpireJob_AddsEntry_ToExpirationIndex()
         {
             var entry = new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer);
-            _state.JobCreate(entry, expireIn: null);
+            _state.JobCreate(entry, _now, expireIn: null);
 
             Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
 
@@ -404,6 +407,7 @@ namespace Hangfire.InMemory.Tests
         {
             _state.JobCreate(
                 new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                _now,
                 expireIn: TimeSpan.Zero);
 
             Commit(x => x.PersistJob("myjob"));
@@ -419,7 +423,7 @@ namespace Hangfire.InMemory.Tests
             {
                 ExpireAt = _now // todo should throw
             };
-            _state.JobCreate(entry, expireIn: TimeSpan.Zero);
+            _state.JobCreate(entry, _now, expireIn: TimeSpan.Zero);
 
             // Act
             Commit(x => x.PersistJob("myjob"));
@@ -455,6 +459,7 @@ namespace Hangfire.InMemory.Tests
 
             _state.JobCreate(
                 new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                _now,
                 expireIn: null);
 
             // Act
@@ -487,6 +492,7 @@ namespace Hangfire.InMemory.Tests
 
             _state.JobCreate(
                 new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                _now,
                 expireIn: null);
 
             // Act
@@ -511,6 +517,7 @@ namespace Hangfire.InMemory.Tests
 
             _state.JobCreate(
                 new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                _now,
                 expireIn: null);
 
             // Act
@@ -528,7 +535,7 @@ namespace Hangfire.InMemory.Tests
             state.Setup(x => x.Name).Returns("SomeState");
 
             var entry = new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer);
-            _state.JobCreate(entry, expireIn: null);
+            _state.JobCreate(entry, _now, expireIn: null);
 
             // Act
             Commit(x => x.SetJobState("myjob", state.Object));
@@ -573,6 +580,7 @@ namespace Hangfire.InMemory.Tests
 
             _state.JobCreate(
                 new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                _now,
                 expireIn: null);
 
             // Act
@@ -599,6 +607,7 @@ namespace Hangfire.InMemory.Tests
 
             _state.JobCreate(
                 new JobEntry("myjob", _job, _parameters, _now, false, _options.StringComparer),
+                _now,
                 expireIn: null);
 
             _options.MaxStateHistoryLength = 3;
@@ -1762,7 +1771,7 @@ namespace Hangfire.InMemory.Tests
 
         private InMemoryConnection CreateConnection()
         {
-            return new InMemoryConnection(new InMemoryDispatcher(_state));
+            return new InMemoryConnection(new InMemoryDispatcher(() => _now, _state));
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test

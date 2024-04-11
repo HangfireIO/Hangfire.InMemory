@@ -35,8 +35,7 @@ namespace Hangfire.InMemory.Tests
         public InMemoryMonitoringApiFacts()
         {
             _options = new InMemoryStorageOptions { StringComparer = StringComparer.Ordinal };
-            _now = MonotonicTime.GetCurrent();
-            _state = new InMemoryState(() => _now, _options);
+            _state = new InMemoryState(_options);
         }
 
         [Fact]
@@ -1570,12 +1569,12 @@ namespace Hangfire.InMemory.Tests
 
         private InMemoryMonitoringApi CreateMonitoringApi()
         {
-            return new InMemoryMonitoringApi(new TestInMemoryDispatcher(_state));
+            return new InMemoryMonitoringApi(new TestInMemoryDispatcher(() => _now, _state));
         }
 
         private T UseConnection<T>(Func<InMemoryConnection, T> action)
         {
-            using (var connection = new InMemoryConnection(new TestInMemoryDispatcher(_state)))
+            using (var connection = new InMemoryConnection(new TestInMemoryDispatcher(() => _now, _state)))
             {
                 return action(connection);
             }

@@ -1,8 +1,10 @@
-﻿namespace Hangfire.InMemory.Tests
+﻿using System;
+
+namespace Hangfire.InMemory.Tests
 {
     internal class TestInMemoryDispatcher : InMemoryDispatcherBase
     {
-        public TestInMemoryDispatcher(InMemoryState state) : base(state)
+        public TestInMemoryDispatcher(Func<MonotonicTime> timeResolver, InMemoryState state) : base(timeResolver, state)
         {
         }
 

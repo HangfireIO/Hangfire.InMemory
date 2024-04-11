@@ -90,10 +90,8 @@ namespace Hangfire.InMemory
 
             var key = Guid.NewGuid().ToString();
 
-            Dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryAndWait((now, state) =>
             {
-                var now = state.TimeResolver();
-
                 var jobEntry = new JobEntry(
                     key,
                     job,
@@ -108,7 +106,7 @@ namespace Hangfire.InMemory
                 // limit is low or close to zero, that can lead to exceptions, we just
                 // ignoring this limit in very rare occasions when background job is not
                 // initialized for reasons I can't even realize with an in-memory storage.
-                state.JobCreate(jobEntry, expireIn, ignoreMaxExpirationTime: true);
+                state.JobCreate(jobEntry, now, expireIn, ignoreMaxExpirationTime: true);
             });
 
             return key;
@@ -250,12 +248,10 @@ namespace Hangfire.InMemory
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
             if (context == null) throw new ArgumentNullException(nameof(context));
 
-            Dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryAndWait((now, state) =>
             {
                 if (!state.Servers.ContainsKey(serverId))
                 {
-                    var now = state.TimeResolver();
-
                     state.ServerAdd(serverId, new ServerEntry(
                         new ServerContext { Queues = context.Queues?.ToArray(), WorkerCount = context.WorkerCount },
                         now));
@@ -280,11 +276,11 @@ namespace Hangfire.InMemory
         {
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
-            var result = Dispatcher.QueryAndWait(state =>
+            var result = Dispatcher.QueryAndWait((now, state) =>
             {
                 if (state.Servers.TryGetValue(serverId, out var server))
                 {
-                    server.HeartbeatAt = state.TimeResolver();
+                    server.HeartbeatAt = now;
                     return true;
                 }
 
@@ -304,10 +300,9 @@ namespace Hangfire.InMemory
                 throw new ArgumentException("The `timeout` value must be positive.", nameof(timeout));
             }
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait((now, state) =>
             {
                 var serversToRemove = new List<string>();
-                var now = state.TimeResolver();
 
                 foreach (var server in state.Servers)
                 {
@@ -329,7 +324,7 @@ namespace Hangfire.InMemory
 
         public override DateTime GetUtcDateTime()
         {
-            return Dispatcher.QueryAndWait(state => state.TimeResolver().ToUtcDateTime());
+            return Dispatcher.GetMonotonicTime().ToUtcDateTime();
         }
 
         public override HashSet<string> GetAllItemsFromSet([NotNull] string key)
@@ -461,11 +456,11 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait((now, state) =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.ExpireAt.HasValue)
                 {
-                    var expireIn = hash.ExpireAt.Value - state.TimeResolver();
+                    var expireIn = hash.ExpireAt.Value - now;
                     return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
                 }
 
@@ -478,11 +473,11 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait((now, state) =>
             {
                 if (state.Lists.TryGetValue(key, out var list) && list.ExpireAt.HasValue)
                 {
-                    var expireIn = list.ExpireAt.Value - state.TimeResolver();
+                    var expireIn = list.ExpireAt.Value - now;
                     return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
                 }
 
@@ -494,11 +489,11 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryAndWait((now, state) =>
             {
                 if (state.Sets.TryGetValue(key, out var set) && set.ExpireAt.HasValue)
                 {
-                    var expireIn = set.ExpireAt.Value - state.TimeResolver();
+                    var expireIn = set.ExpireAt.Value - now;
                     return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
                 }
 

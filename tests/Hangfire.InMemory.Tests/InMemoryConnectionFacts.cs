@@ -38,7 +38,7 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions();
             _now = MonotonicTime.GetCurrent();
-            _state = new InMemoryState(() => _now, _options);
+            _state = new InMemoryState(_options);
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
         }
@@ -2309,7 +2309,7 @@ namespace Hangfire.InMemory.Tests
 
         private InMemoryConnection CreateConnection()
         {
-            return new InMemoryConnection(new TestInMemoryDispatcher(_state));
+            return new InMemoryConnection(new TestInMemoryDispatcher(() => _now, _state));
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test

@@ -22,11 +22,18 @@ namespace Hangfire.InMemory
 {
     internal abstract class InMemoryDispatcherBase
     {
+        private readonly Func<MonotonicTime> _timeResolver;
         private readonly InMemoryState _state;
 
-        protected InMemoryDispatcherBase(InMemoryState state)
+        protected InMemoryDispatcherBase(Func<MonotonicTime> timeResolver, InMemoryState state)
         {
+            _timeResolver = timeResolver ?? throw new ArgumentNullException(nameof(timeResolver));
             _state = state ?? throw new ArgumentNullException(nameof(state));
+        }
+
+        public MonotonicTime GetMonotonicTime()
+        {
+            return _timeResolver();
         }
 
         // Unsafe methods expose entries directly for callers, without using a
@@ -116,29 +123,35 @@ namespace Hangfire.InMemory
             }
         }
 
-        protected virtual object QueryAndWait(Func<InMemoryState, object> query)
+        protected virtual object QueryAndWait(Func<MonotonicTime, InMemoryState, object> query)
         {
-            return query(_state);
+            return query(GetMonotonicTime(), _state);
         }
 
-        public T QueryAndWait<T>(Func<InMemoryState, T> query)
+        public T QueryAndWait<T>(Func<MonotonicTime, InMemoryState, T> query)
         {
-            object Callback(InMemoryState state) => query(state);
+            object Callback(MonotonicTime now, InMemoryState state) => query(now, state);
             return (T)QueryAndWait(Callback);
         }
 
-        public void QueryAndWait(Action<InMemoryState> query)
+        public void QueryAndWait(Action<MonotonicTime, InMemoryState> query)
         {
-            QueryAndWait(state =>
+            QueryAndWait((now, state) =>
             {
-                query(state);
+                query(now, state);
                 return true;
             });
+        }
+        
+        public T QueryAndWait<T>(Func<InMemoryState, T> query)
+        {
+            T Callback(MonotonicTime _, InMemoryState state) => query(state);
+            return QueryAndWait(Callback);
         }
 
         protected void EvictEntries()
         {
-            var now = _state.TimeResolver();
+            var now = GetMonotonicTime();
 
             EvictFromIndex(now, _state.ExpiringJobsIndex, entry => _state.JobDelete(entry));
             EvictFromIndex(now, _state.ExpiringHashesIndex, entry => _state.HashDelete(entry));

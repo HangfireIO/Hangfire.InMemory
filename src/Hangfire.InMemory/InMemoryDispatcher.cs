@@ -35,7 +35,7 @@ namespace Hangfire.InMemory
 
         private PaddedInt64 _outstandingRequests;
 
-        public InMemoryDispatcher(InMemoryState state) : base(state)
+        public InMemoryDispatcher(Func<MonotonicTime> timeResolver, InMemoryState state) : base(timeResolver, state)
         {
             _thread = new Thread(DoWork)
             {
@@ -45,7 +45,7 @@ namespace Hangfire.InMemory
             _thread.Start();
         }
 
-        protected override object QueryAndWait(Func<InMemoryState, object> query)
+        protected override object QueryAndWait(Func<MonotonicTime, InMemoryState, object> query)
         {
             using (var callback = new InMemoryDispatcherCallback(query))
             {

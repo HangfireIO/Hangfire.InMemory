@@ -22,12 +22,12 @@ namespace Hangfire.InMemory
     {
         private volatile object _result;
 
-        public InMemoryDispatcherCallback(Func<InMemoryState, object> callback)
+        public InMemoryDispatcherCallback(Func<MonotonicTime, InMemoryState, object> callback)
         {
             Callback = callback ?? throw new ArgumentNullException(nameof(callback));
         }
 
-        public Func<InMemoryState, object> Callback { get; }
+        public Func<MonotonicTime, InMemoryState, object> Callback { get; }
         public ManualResetEventSlim Ready { get; } = new ManualResetEventSlim(false);
         public bool IsFaulted { get; private set; }
 

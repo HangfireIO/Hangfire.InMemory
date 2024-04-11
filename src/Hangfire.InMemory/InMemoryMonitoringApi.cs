@@ -531,32 +531,32 @@ namespace Hangfire.InMemory
 
         public override IDictionary<DateTime, long> SucceededByDatesCount()
         {
-            return _dispatcher.QueryAndWait(state => GetTimelineStats(state, "succeeded"));
+            return _dispatcher.QueryAndWait((now, state) => GetTimelineStats(state, now, "succeeded"));
         }
 
         public override IDictionary<DateTime, long> FailedByDatesCount()
         {
-            return _dispatcher.QueryAndWait(state => GetTimelineStats(state, "failed"));
+            return _dispatcher.QueryAndWait((now, state) => GetTimelineStats(state, now, "failed"));
         }
 
         public override IDictionary<DateTime, long> DeletedByDatesCount()
         {
-            return _dispatcher.QueryAndWait(state => GetTimelineStats(state, "deleted"));
+            return _dispatcher.QueryAndWait((now, state) => GetTimelineStats(state, now, "deleted"));
         }
 
         public override IDictionary<DateTime, long> HourlySucceededJobs()
         {
-            return _dispatcher.QueryAndWait(state => GetHourlyTimelineStats(state, "succeeded"));
+            return _dispatcher.QueryAndWait((now, state) => GetHourlyTimelineStats(state, now, "succeeded"));
         }
 
         public override IDictionary<DateTime, long> HourlyFailedJobs()
         {
-            return _dispatcher.QueryAndWait(state => GetHourlyTimelineStats(state, "failed"));
+            return _dispatcher.QueryAndWait((now, state) => GetHourlyTimelineStats(state, now, "failed"));
         }
 
         public override IDictionary<DateTime, long> HourlyDeletedJobs()
         {
-            return _dispatcher.QueryAndWait(state => GetHourlyTimelineStats(state, "deleted"));
+            return _dispatcher.QueryAndWait((now, state) => GetHourlyTimelineStats(state, now, "deleted"));
         }
 
         private long GetCountByStateName(string stateName)
@@ -574,9 +574,9 @@ namespace Hangfire.InMemory
             return 0;
         }
 
-        private static Dictionary<DateTime, long> GetHourlyTimelineStats(InMemoryState state, string type)
+        private static Dictionary<DateTime, long> GetHourlyTimelineStats(InMemoryState state, MonotonicTime now, string type)
         {
-            var endDate = state.TimeResolver().ToUtcDateTime();
+            var endDate = now.ToUtcDateTime();
             var dates = new List<DateTime>();
             for (var i = 0; i < 24; i++)
             {
@@ -596,9 +596,9 @@ namespace Hangfire.InMemory
             return result;
         }
 
-        private static Dictionary<DateTime, long> GetTimelineStats(InMemoryState state, string type)
+        private static Dictionary<DateTime, long> GetTimelineStats(InMemoryState state, MonotonicTime now, string type)
         {
-            var endDate = state.TimeResolver().ToUtcDateTime().Date;
+            var endDate = now.ToUtcDateTime().Date;
             var startDate = endDate.AddDays(-7);
             var dates = new List<DateTime>();
 
