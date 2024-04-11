@@ -39,7 +39,7 @@ namespace Hangfire.InMemory.Entities
             Key = key;
             InvocationData = disableSerialization == false ? InvocationData.SerializeJob(job) : null;
             _job = disableSerialization ? new Job(job.Type, job.Method, job.Args.ToArray(), job.Queue) : null;
-            Parameters = new ConcurrentDictionary<string, string>(parameters, comparer);
+            Parameters = new ConcurrentDictionary<string, string>(concurrencyLevel: 1, parameters, comparer);
             CreatedAt = createdAt;
 #if NET451
             Comparer = comparer;
