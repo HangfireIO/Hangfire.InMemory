@@ -139,11 +139,11 @@ namespace Hangfire.InMemory.Tests
             _dispatcher.EvictEntries();
 
             // Assert
-            Assert.Contains("my-job", _state.Jobs);
-            Assert.Contains("my-hash", _state.Hashes);
-            Assert.Contains("my-set", _state.Sets);
-            Assert.Contains("my-list", _state.Lists);
-            Assert.Contains("my-counter", _state.Counters);
+            Assert.Contains("my-job", _state.Jobs.Keys);
+            Assert.Contains("my-hash", _state.Hashes.Keys);
+            Assert.Contains("my-set", _state.Sets.Keys);
+            Assert.Contains("my-list", _state.Lists.Keys);
+            Assert.Contains("my-counter", _state.Counters.Keys);
         }
 
         [Fact]
@@ -161,10 +161,10 @@ namespace Hangfire.InMemory.Tests
 
             // Assert
             Assert.Contains("my-job", _state.Jobs);
-            Assert.Contains("my-hash", _state.Hashes);
-            Assert.Contains("my-set", _state.Sets);
-            Assert.Contains("my-list", _state.Lists);
-            Assert.Contains("my-counter", _state.Counters);
+            Assert.Contains("my-hash", _state.Hashes.Keys);
+            Assert.Contains("my-set", _state.Sets.Keys);
+            Assert.Contains("my-list", _state.Lists.Keys);
+            Assert.Contains("my-counter", _state.Counters.Keys);
         }
 
         [Fact]
