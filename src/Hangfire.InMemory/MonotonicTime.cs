@@ -19,6 +19,7 @@ using System.Globalization;
 
 namespace Hangfire.InMemory
 {
+    [DebuggerDisplay("{DebuggerToString()}")]
     internal readonly struct MonotonicTime : IEquatable<MonotonicTime>, IComparable, IComparable<MonotonicTime>
     {
         private const long TicksPerMillisecond = 10000;
@@ -96,5 +97,10 @@ namespace Hangfire.InMemory
         public static bool operator <=(MonotonicTime left, MonotonicTime right) => left.CompareTo(right) <= 0;
         public static bool operator >(MonotonicTime left, MonotonicTime right) => left.CompareTo(right) > 0;
         public static bool operator >=(MonotonicTime left, MonotonicTime right) => left.CompareTo(right) >= 0;
+
+        private string DebuggerToString()
+        {
+            return $"DateTime: {ToUtcDateTime()}, Raw: {ToString()}";
+        }
     }
 }
