@@ -12,8 +12,6 @@ Distributed locks (heh, in an in-process storage), queue fetch logic (even from 
 
 * Control `OutOfMemoryException` by providing some kind of limits which can be established easily, e.g. total number of jobs.
 * Avoid unnecessary object allocations without sacrificing the safety property (as described above).
-* Add integration (for public API) and unit tests (for internal API).
-* Add overridden default for expiration time for jobs and batches?
 * Can avoid synchronization in some read-only methods in the `MemoryConnection`class.
 * Avoid using large object heap at any cost by large collections – millions of jobs can be created.
 
