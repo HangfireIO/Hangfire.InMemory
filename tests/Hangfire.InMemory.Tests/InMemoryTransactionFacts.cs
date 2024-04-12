@@ -1771,7 +1771,7 @@ namespace Hangfire.InMemory.Tests
 
         private InMemoryConnection CreateConnection()
         {
-            return new InMemoryConnection(new InMemoryDispatcher(() => _now, _state));
+            return new InMemoryConnection(new TestInMemoryDispatcher(() => _now, _state));
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test
