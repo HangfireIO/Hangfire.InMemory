@@ -169,7 +169,7 @@ namespace Hangfire.InMemory.Tests
             _dispatcher.EvictExpiredEntries();
 
             // Assert
-            Assert.Contains("my-job", _state.Jobs);
+            Assert.Contains("my-job", _state.Jobs.Keys);
             Assert.Contains("my-hash", _state.Hashes.Keys);
             Assert.Contains("my-set", _state.Sets.Keys);
             Assert.Contains("my-list", _state.Lists.Keys);
