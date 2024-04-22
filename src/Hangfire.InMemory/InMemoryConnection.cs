@@ -89,15 +89,15 @@ namespace Hangfire.InMemory
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
             var key = Guid.NewGuid().ToString();
+            var data = InvocationData.SerializeJob(job);
 
             Dispatcher.QueryAndWait((now, state) =>
             {
                 var jobEntry = new JobEntry(
                     key,
-                    job,
+                    data,
                     parameters,
                     now,
-                    state.Options.DisableJobSerialization,
                     state.Options.StringComparer);
 
                 // Background job is not yet initialized after calling this method, and

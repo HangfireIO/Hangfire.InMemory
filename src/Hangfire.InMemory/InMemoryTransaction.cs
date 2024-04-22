@@ -58,15 +58,15 @@ namespace Hangfire.InMemory
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
             var key = Guid.NewGuid().ToString(); // TODO: Change with Long type
+            var data = InvocationData.SerializeJob(job);
 
             _actions.Add((now, state) =>
             {
                 var entry = new JobEntry(
                     key,
-                    job,
+                    data,
                     parameters,
                     now,
-                    state.Options.DisableJobSerialization,
                     state.Options.StringComparer);
 
                 state.JobCreate(entry, now, expireIn);

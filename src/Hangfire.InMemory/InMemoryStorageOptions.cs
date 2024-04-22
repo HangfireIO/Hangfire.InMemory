@@ -24,12 +24,6 @@ namespace Hangfire.InMemory
     {
         private int _maxStateHistoryLength = 10;
 
-        // TODO: Rename it to EnableSerialization and disable by default? Remember that Args can be substituted at runtime
-        /// <summary>
-        /// Gets or sets a value indicating whether job serialization should be disabled.
-        /// </summary>
-        public bool DisableJobSerialization { get; set; }
-
         /// <summary>
         /// Gets or sets the maximum expiration time for all the entries. When set, this
         /// value overrides any expiration time set in the other places of Hangfire. The

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Hangfire.Common;
 using Hangfire.InMemory.Entities;
+using Hangfire.Storage;
 using Xunit;
 
 namespace Hangfire.InMemory.Tests
@@ -214,7 +215,7 @@ namespace Hangfire.InMemory.Tests
 
         private JobEntry CreateJobEntry(string jobId)
         {
-            return new JobEntry(jobId, _job, _parameters, _now, _options.DisableJobSerialization, _options.StringComparer);
+            return new JobEntry(jobId, InvocationData.SerializeJob(_job), _parameters, _now, _options.StringComparer);
         }
     }
 }

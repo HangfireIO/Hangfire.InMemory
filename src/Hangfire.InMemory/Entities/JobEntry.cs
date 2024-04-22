@@ -26,19 +26,16 @@ namespace Hangfire.InMemory.Entities
     {
         private const int StateCountForRegularJob = 4; // (Scheduled) -> Enqueued -> Processing -> Succeeded
         private readonly List<StateEntry> _history = new(StateCountForRegularJob);
-        private readonly Job _job;
 
         public JobEntry(
             string key,
-            Job job,
+            InvocationData data,
             IDictionary<string, string> parameters,
             MonotonicTime createdAt,
-            bool disableSerialization,
             StringComparer comparer)
         {
             Key = key;
-            InvocationData = disableSerialization == false ? InvocationData.SerializeJob(job) : null;
-            _job = disableSerialization ? new Job(job.Type, job.Method, job.Args.ToArray(), job.Queue) : null;
+            InvocationData = data;
             Parameters = new ConcurrentDictionary<string, string>(concurrencyLevel: 1, parameters, comparer);
             CreatedAt = createdAt;
 #if NET451
@@ -63,11 +60,6 @@ namespace Hangfire.InMemory.Entities
         public Job TryGetJob(out JobLoadException exception)
         {
             exception = null;
-
-            if (_job != null)
-            {
-                return new Job(_job.Type, _job.Method, _job.Args.ToArray(), _job.Queue);
-            }
 
             try
             {
