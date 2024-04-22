@@ -14,10 +14,7 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using Hangfire.Common;
 using Hangfire.Storage;
 
 namespace Hangfire.InMemory.Entities
