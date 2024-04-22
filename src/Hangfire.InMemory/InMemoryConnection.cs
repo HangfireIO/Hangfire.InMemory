@@ -196,30 +196,47 @@ namespace Hangfire.InMemory
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            return Dispatcher.GetJobParameter(id, name);
+            return Dispatcher.QueryAndWait(state =>
+            {
+                if (state.Jobs.TryGetValue(id, out var entry) && entry.Parameters.TryGetValue(name, out var value))
+                {
+                    return value;
+                }
+
+                return null;
+            });
         }
 
         public override JobData GetJobData([NotNull] string jobId)
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
-            if (!Dispatcher.TryGetJobDataUnsafe(jobId, out var entry))
+            var data = Dispatcher.QueryAndWait(state =>
             {
-                return null;
-            }
+                if (!state.Jobs.TryGetValue(jobId, out var entry))
+                {
+                    return null;
+                }
+
+                return new
+                {
+                    entry.InvocationData,
+                    State = entry.State?.Name,
+                    entry.CreatedAt,
+                    ParametersSnapshot = entry.Parameters.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer)
+                };
+            });
+
+            if (data == null) return null;
 
             return new JobData
             {
-                Job = entry.TryGetJob(out var loadException),
+                Job = data.InvocationData.TryGetJob(out var loadException),
                 LoadException = loadException,
-                CreatedAt = entry.CreatedAt.ToUtcDateTime(),
-                State = entry.State?.Name,
-                InvocationData = entry.InvocationData,
-#if NET451
-                ParametersSnapshot = entry.Parameters.ToDictionary(x => x.Key, x => x.Value, entry.Comparer)
-#else
-                ParametersSnapshot = entry.Parameters
-#endif
+                CreatedAt = data.CreatedAt.ToUtcDateTime(),
+                State = data.State,
+                InvocationData = data.InvocationData,
+                ParametersSnapshot = data.ParametersSnapshot
             };
         }
 

@@ -36,41 +36,19 @@ namespace Hangfire.InMemory.Entities
         {
             Key = key;
             InvocationData = data;
-            Parameters = new ConcurrentDictionary<string, string>(concurrencyLevel: 1, parameters, comparer);
+            Parameters = new Dictionary<string, string>(parameters, comparer);
             CreatedAt = createdAt;
-#if NET451
-            Comparer = comparer;
-#endif
         }
 
         public string Key { get; }
         public InvocationData InvocationData { get; internal set; }
 
-        public ConcurrentDictionary<string, string> Parameters { get; }
+        public Dictionary<string, string> Parameters { get; }
 
         public StateEntry State { get; set; }
         public IEnumerable<StateEntry> History => _history;
         public MonotonicTime CreatedAt { get; }
         public MonotonicTime? ExpireAt { get; set; }
-
-#if NET451
-        public StringComparer Comparer { get; }
-#endif
-
-        public Job TryGetJob(out JobLoadException exception)
-        {
-            exception = null;
-
-            try
-            {
-                return InvocationData.DeserializeJob();
-            }
-            catch (JobLoadException ex)
-            {
-                exception = ex;
-                return null;
-            }
-        }
 
         public void AddHistoryEntry(StateEntry entry, int maxLength)
         {

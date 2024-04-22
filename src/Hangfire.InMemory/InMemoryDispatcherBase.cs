@@ -54,21 +54,6 @@ namespace Hangfire.InMemory
             return entries;
         }
 
-        public bool TryGetJobDataUnsafe(string jobId, out JobEntry entry)
-        {
-            return _state.Jobs.TryGetValue(jobId, out entry);
-        }
-
-        public string GetJobParameter(string jobId, string name)
-        {
-            if (_state.Jobs.TryGetValue(jobId, out var jobEntry) && jobEntry.Parameters.TryGetValue(name, out var result))
-            {
-                return result;
-            }
-
-            return null;
-        }
-
         public bool TryAcquireLockEntry(JobStorageConnection owner, string resource, out LockEntry<JobStorageConnection> entry)
         {
             var acquired = false;

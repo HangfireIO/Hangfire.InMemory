@@ -55,7 +55,7 @@ namespace Hangfire.InMemory
 
                         if (state.Jobs.TryGetValue(message, out var jobEntry))
                         {
-                            job = jobEntry.TryGetJob(out loadException);
+                            job = jobEntry.InvocationData.TryGetJob(out loadException);
                         }
 
                         var stateName = jobEntry?.State?.Name;
@@ -122,7 +122,7 @@ namespace Hangfire.InMemory
                     return null;
                 }
 
-                var job = entry.TryGetJob(out var loadException);
+                var job = entry.InvocationData.TryGetJob(out var loadException);
 
                 return new JobDetailsDto
                 {
@@ -189,7 +189,7 @@ namespace Hangfire.InMemory
 
                         if (state.Jobs.TryGetValue(message, out var jobEntry))
                         {
-                            job = jobEntry.TryGetJob(out loadException);
+                            job = jobEntry.InvocationData.TryGetJob(out loadException);
                         }
 
                         var stateName = jobEntry?.State?.Name;
@@ -238,7 +238,7 @@ namespace Hangfire.InMemory
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        var job = entry.TryGetJob(out var loadException);
+                        var job = entry.InvocationData.TryGetJob(out var loadException);
                         var inProcessingState = ProcessingState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
@@ -279,7 +279,7 @@ namespace Hangfire.InMemory
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        var job = entry.TryGetJob(out var loadException);
+                        var job = entry.InvocationData.TryGetJob(out var loadException);
                         
                         var inScheduledState = ScheduledState.StateName.Equals(
                             entry.State?.Name,
@@ -322,7 +322,7 @@ namespace Hangfire.InMemory
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        var job = entry.TryGetJob(out var loadException);
+                        var job = entry.InvocationData.TryGetJob(out var loadException);
                         var inSucceededState = SucceededState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
@@ -366,7 +366,7 @@ namespace Hangfire.InMemory
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        var job = entry.TryGetJob(out var loadException);
+                        var job = entry.InvocationData.TryGetJob(out var loadException);
                         var inFailedState = FailedState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
@@ -410,7 +410,7 @@ namespace Hangfire.InMemory
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        var job = entry.TryGetJob(out var loadException);
+                        var job = entry.InvocationData.TryGetJob(out var loadException);
                         var inDeletedState = DeletedState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
@@ -449,7 +449,7 @@ namespace Hangfire.InMemory
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        var job = entry.TryGetJob(out var loadException);
+                        var job = entry.InvocationData.TryGetJob(out var loadException);
                         var inAwaitingState = AwaitingState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);

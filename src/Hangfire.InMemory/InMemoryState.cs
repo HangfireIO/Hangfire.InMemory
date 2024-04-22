@@ -25,17 +25,18 @@ namespace Hangfire.InMemory
     {
         private readonly JobStateCreatedAtComparer _jobEntryComparer;
 
-        // State index uses case-insensitive comparisons, despite of the current settings. SQL Server
+        // State index uses case-insensitive comparisons, despite the current settings. SQL Server
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
         private readonly Dictionary<string, SortedSet<JobEntry>> _jobStateIndex = new Dictionary<string, SortedSet<JobEntry>>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Dictionary<string, LockEntry<JobStorageConnection>> _locks;
-        private readonly ConcurrentDictionary<string, JobEntry> _jobs;
+        private readonly ConcurrentDictionary<string, QueueEntry> _queues;
+
+        private readonly Dictionary<string, JobEntry> _jobs;
         private readonly Dictionary<string, HashEntry> _hashes;
         private readonly Dictionary<string, ListEntry> _lists;
         private readonly Dictionary<string, SetEntry> _sets;
         private readonly Dictionary<string, CounterEntry> _counters;
-        private readonly ConcurrentDictionary<string, QueueEntry> _queues;
         private readonly Dictionary<string, ServerEntry> _servers;
 
         public InMemoryState(InMemoryStorageOptions options)
@@ -45,12 +46,13 @@ namespace Hangfire.InMemory
             _jobEntryComparer = new JobStateCreatedAtComparer(options.StringComparer);
 
             _locks = CreateDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
-            _jobs = CreateConcurrentDictionary<JobEntry>(options.StringComparer);
+            _queues = CreateConcurrentDictionary<QueueEntry>(options.StringComparer);
+
+            _jobs = CreateDictionary<JobEntry>(options.StringComparer);
             _hashes = CreateDictionary<HashEntry>(options.StringComparer);
             _lists = CreateDictionary<ListEntry>(options.StringComparer);
             _sets = CreateDictionary<SetEntry>(options.StringComparer);
             _counters = CreateDictionary<CounterEntry>(options.StringComparer);
-            _queues = CreateConcurrentDictionary<QueueEntry>(options.StringComparer);
             _servers = CreateDictionary<ServerEntry>(options.StringComparer);
 
             var expirableEntryComparer = new ExpirableEntryComparer(options.StringComparer);
@@ -63,21 +65,18 @@ namespace Hangfire.InMemory
 
         public InMemoryStorageOptions Options { get; }
 
-#if NET451
-        public ConcurrentDictionary<string, JobEntry> Jobs => _jobs;
-#else
-        public IReadOnlyDictionary<string, JobEntry> Jobs => _jobs;
-#endif
         public IDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
-        public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
-        public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
-        public IReadOnlyDictionary<string, SetEntry> Sets => _sets;
-        public IReadOnlyDictionary<string, CounterEntry> Counters => _counters;
 #if NET451
         public ConcurrentDictionary<string, QueueEntry> Queues => _queues;
 #else
         public IReadOnlyDictionary<string, QueueEntry> Queues => _queues;
 #endif
+
+        public IReadOnlyDictionary<string, JobEntry> Jobs => _jobs;
+        public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
+        public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
+        public IReadOnlyDictionary<string, SetEntry> Sets => _sets;
+        public IReadOnlyDictionary<string, CounterEntry> Counters => _counters;
         public IReadOnlyDictionary<string, ServerEntry> Servers => _servers;
 
         public IReadOnlyDictionary<string, SortedSet<JobEntry>> JobStateIndex => _jobStateIndex;
@@ -101,10 +100,7 @@ namespace Hangfire.InMemory
 
         public void JobCreate(JobEntry entry, MonotonicTime now, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
         {
-            if (!_jobs.TryAdd(entry.Key, entry))
-            {
-                throw new InvalidOperationException($"Background job with key '{entry.Key}' already exists.");
-            }
+            _jobs.Add(entry.Key, entry);
 
             EntryExpire(entry, ExpiringJobsIndex, now, expireIn, ignoreMaxExpirationTime);
         }
