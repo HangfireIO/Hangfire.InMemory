@@ -46,6 +46,39 @@ namespace Hangfire.InMemory
             base.Dispose();
         }
 
+        public override void Commit()
+        {
+            _connection.Dispatcher.QueryAndWait((now, state) =>
+            {
+                try
+                {
+                    foreach (var action in _actions)
+                    {
+                        action(now, state);
+                    }
+
+                    // We reorder queue actions and run them after all the other commands, because
+                    // our GetJobData method is being reordered too
+                    foreach (var action in _queueActions)
+                    {
+                        action(state);
+                    }
+                }
+                finally
+                {
+                    foreach (var acquiredLock in _acquiredLocks)
+                    {
+                        acquiredLock.Dispose();
+                    }
+                }
+
+                foreach (var queue in _enqueued)
+                {
+                    queue.SignalOneWaitNode();
+                }
+            });
+        }
+
         public override void AcquireDistributedLock(string resource, TimeSpan timeout)
         {
             var disposableLock = _connection.AcquireDistributedLock(resource, timeout);
@@ -403,39 +436,6 @@ namespace Hangfire.InMemory
             _actions.Add((now, state) =>
             {
                 if (state.Sets.TryGetValue(key, out var set)) state.SetExpire(set, now, null);
-            });
-        }
-
-        public override void Commit()
-        {
-            _connection.Dispatcher.QueryAndWait((now, state) =>
-            {
-                try
-                {
-                    foreach (var action in _actions)
-                    {
-                        action(now, state);
-                    }
-
-                    // We reorder queue actions and run them after all the other commands, because
-                    // our GetJobData method is being reordered too
-                    foreach (var action in _queueActions)
-                    {
-                        action(state);
-                    }
-                }
-                finally
-                {
-                    foreach (var acquiredLock in _acquiredLocks)
-                    {
-                        acquiredLock.Dispose();
-                    }
-                }
-
-                foreach (var queue in _enqueued)
-                {
-                    queue.SignalOneWaitNode();
-                }
             });
         }
 
