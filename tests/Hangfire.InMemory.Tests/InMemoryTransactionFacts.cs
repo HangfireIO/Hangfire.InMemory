@@ -214,7 +214,7 @@ namespace Hangfire.InMemory.Tests
             var data = InvocationData.SerializeJob(_job);
 
             Assert.Equal(jobId, entry.Key);
-            Assert.NotSame(_parameters, entry.Parameters);
+            Assert.NotSame(_parameters, entry.GetParametersSnapshot(_options.StringComparer));
             Assert.Empty(entry.History);
             Assert.Equal(_now, entry.CreatedAt);
             Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), entry.ExpireAt);
@@ -251,7 +251,7 @@ namespace Hangfire.InMemory.Tests
                 jobId = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
             });
 
-            var parameters = _state.Jobs[jobId].Parameters;
+            var parameters = _state.Jobs[jobId].GetParametersSnapshot(_options.StringComparer);
             Assert.Equal(2, parameters.Count);
             Assert.Equal("1", parameters["RetryCount"]);
             Assert.Equal("en-US", parameters["CurrentCulture"]);
@@ -300,7 +300,7 @@ namespace Hangfire.InMemory.Tests
                 transaction.SetJobParameter(jobId, "name", null);
             });
 
-            Assert.Null(_state.Jobs[jobId].Parameters["name"]);
+            Assert.Null(_state.Jobs[jobId].GetParameter("name", _options.StringComparer));
         }
 
         [Fact]
@@ -323,7 +323,7 @@ namespace Hangfire.InMemory.Tests
                 transaction.SetJobParameter(jobId, "CurrentCulture", "en-US");
             });
 
-            Assert.Equal("en-US", _state.Jobs[jobId].Parameters["CurrentCulture"]);
+            Assert.Equal("en-US", _state.Jobs[jobId].GetParameter("CurrentCulture", _options.StringComparer));
         }
 
         [Fact]
@@ -338,7 +338,7 @@ namespace Hangfire.InMemory.Tests
                 transaction.SetJobParameter(jobId, "RetryCount", "2");
             });
 
-            Assert.Equal("2", _state.Jobs[jobId].Parameters["RetryCount"]);
+            Assert.Equal("2", _state.Jobs[jobId].GetParameter("RetryCount", _options.StringComparer));
         }
 
         [Fact]
@@ -362,7 +362,7 @@ namespace Hangfire.InMemory.Tests
         {
             // Arrange
             _state.JobCreate(
-                new JobEntry("myjob", InvocationData.SerializeJob(_job), _parameters, _now, _options.StringComparer),
+                CreateJobEntry("myjob"),
                 _now,
                 expireIn: null);
 
@@ -378,7 +378,7 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void ExpireJob_AddsEntry_ToExpirationIndex()
         {
-            var entry = new JobEntry("myjob", InvocationData.SerializeJob(_job), _parameters, _now, _options.StringComparer);
+            var entry = CreateJobEntry("myjob");
             _state.JobCreate(entry, _now, expireIn: null);
 
             Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
@@ -406,7 +406,7 @@ namespace Hangfire.InMemory.Tests
         public void PersistJob_ResetsExpirationTime_OfTheGivenJob()
         {
             _state.JobCreate(
-                new JobEntry("myjob", InvocationData.SerializeJob(_job), _parameters, _now, _options.StringComparer),
+                CreateJobEntry("myjob"),
                 _now,
                 expireIn: TimeSpan.Zero);
 
@@ -419,10 +419,9 @@ namespace Hangfire.InMemory.Tests
         public void PersistJob_RemovesEntry_FromExpirationIndex()
         {
             // Arrange
-            var entry = new JobEntry("myjob", InvocationData.SerializeJob(_job), _parameters, _now, _options.StringComparer)
-            {
-                ExpireAt = _now // todo should throw
-            };
+            var entry = CreateJobEntry("myjob");
+            entry.ExpireAt = _now;
+
             _state.JobCreate(entry, _now, expireIn: TimeSpan.Zero);
 
             // Act
@@ -458,7 +457,7 @@ namespace Hangfire.InMemory.Tests
             state.SetupGet(x => x.Name).Returns((string)null);
 
             _state.JobCreate(
-                new JobEntry("myjob", InvocationData.SerializeJob(_job), _parameters, _now, _options.StringComparer),
+                CreateJobEntry("myjob"),
                 _now,
                 expireIn: null);
 
@@ -491,7 +490,7 @@ namespace Hangfire.InMemory.Tests
             state.Setup(x => x.SerializeData()).Returns(new Dictionary<string, string> {{ "Key", "Value" }});
 
             _state.JobCreate(
-                new JobEntry("myjob", InvocationData.SerializeJob(_job), _parameters, _now, _options.StringComparer),
+                CreateJobEntry("myjob"),
                 _now,
                 expireIn: null);
 
@@ -504,7 +503,7 @@ namespace Hangfire.InMemory.Tests
             Assert.NotNull(entry.State);
             Assert.Equal("SomeState", entry.State.Name);
             Assert.Equal("SomeReason", entry.State.Reason);
-            Assert.Equal("Value", entry.State.GetData()["Key"]);
+            Assert.Equal("Value", entry.State.GetData(_options.StringComparer)["Key"]);
             Assert.Equal(_now, entry.State.CreatedAt);
         }
 
@@ -516,7 +515,7 @@ namespace Hangfire.InMemory.Tests
             state.SetupGet(x => x.Name).Returns("SomeState");
 
             _state.JobCreate(
-                new JobEntry("myjob", InvocationData.SerializeJob(_job), _parameters, _now, _options.StringComparer),
+                CreateJobEntry("myjob"),
                 _now,
                 expireIn: null);
 
@@ -534,7 +533,7 @@ namespace Hangfire.InMemory.Tests
             var state = new Mock<IState>();
             state.Setup(x => x.Name).Returns("SomeState");
 
-            var entry = new JobEntry("myjob", InvocationData.SerializeJob(_job), _parameters, _now, _options.StringComparer);
+            var entry = CreateJobEntry("myjob");
             _state.JobCreate(entry, _now, expireIn: null);
 
             // Act
@@ -579,7 +578,7 @@ namespace Hangfire.InMemory.Tests
             state.Setup(x => x.SerializeData()).Returns(new Dictionary<string, string> {{ "Key", "Value" }});
 
             _state.JobCreate(
-                new JobEntry("myjob", InvocationData.SerializeJob(_job), _parameters, _now, _options.StringComparer),
+                CreateJobEntry("myjob"),
                 _now,
                 expireIn: null);
 
@@ -591,7 +590,7 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal("SomeName", entry.Name);
             Assert.Equal("SomeReason", entry.Reason);
-            Assert.Equal("Value", entry.GetData()["Key"]);
+            Assert.Equal("Value", entry.GetData(_options.StringComparer)["Key"]);
             Assert.Equal(_now, entry.CreatedAt);
         }
 
@@ -606,7 +605,7 @@ namespace Hangfire.InMemory.Tests
             var state5 = new Mock<IState>(); state5.SetupGet(x => x.Name).Returns("State5");
 
             _state.JobCreate(
-                new JobEntry("myjob", InvocationData.SerializeJob(_job), _parameters, _now, _options.StringComparer),
+                CreateJobEntry("myjob"),
                 _now,
                 expireIn: null);
 
@@ -1752,6 +1751,11 @@ namespace Hangfire.InMemory.Tests
 
             // Assert
             Assert.Empty(_state.ExpiringSetsIndex);
+        }
+
+        private JobEntry CreateJobEntry(string jobId)
+        {
+            return new JobEntry(jobId, InvocationData.SerializeJob(_job), _parameters, _now);
         }
 
         [Fact]

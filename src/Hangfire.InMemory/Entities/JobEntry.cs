@@ -26,29 +26,72 @@ namespace Hangfire.InMemory.Entities
     {
         private const int StateCountForRegularJob = 4; // (Scheduled) -> Enqueued -> Processing -> Succeeded
         private readonly List<StateEntry> _history = new(StateCountForRegularJob);
+        private readonly List<KeyValuePair<string, string>> _parameters = new List<KeyValuePair<string, string>>();
 
         public JobEntry(
             string key,
             InvocationData data,
             IDictionary<string, string> parameters,
-            MonotonicTime createdAt,
-            StringComparer comparer)
+            MonotonicTime createdAt)
         {
             Key = key;
             InvocationData = data;
-            Parameters = new Dictionary<string, string>(parameters, comparer);
             CreatedAt = createdAt;
+
+            foreach (var parameter in parameters)
+            {
+                _parameters.Add(parameter);
+            }
         }
 
         public string Key { get; }
         public InvocationData InvocationData { get; internal set; }
 
-        public Dictionary<string, string> Parameters { get; }
-
         public StateEntry State { get; set; }
         public IEnumerable<StateEntry> History => _history;
         public MonotonicTime CreatedAt { get; }
         public MonotonicTime? ExpireAt { get; set; }
+
+        public string GetParameter(string name, StringComparer comparer)
+        {
+            foreach (var parameter in _parameters)
+            {
+                if (comparer.Compare(parameter.Key, name) == 0)
+                {
+                    return parameter.Value;
+                }
+            }
+
+            return null;
+        }
+
+        public void SetParameter(string name, string value, StringComparer comparer)
+        {
+            var parameter = new KeyValuePair<string, string>(name, value);
+            
+            for (var i = 0; i < _parameters.Count; i++)
+            {
+                if (comparer.Compare(_parameters[i].Key, name) == 0)
+                {
+                    _parameters[i] = parameter;
+                    return;
+                }
+            }
+
+            _parameters.Add(parameter);
+        }
+
+        public IReadOnlyDictionary<string, string> GetParametersSnapshot(StringComparer comparer)
+        {
+            var result = new Dictionary<string, string>(capacity: _parameters.Count, comparer);
+
+            foreach (var parameter in _parameters)
+            {
+                result.Add(parameter.Key, parameter.Value);
+            }
+
+            return result;
+        }
 
         public void AddHistoryEntry(StateEntry entry, int maxLength)
         {

@@ -72,7 +72,7 @@ namespace Hangfire.InMemory
                             InEnqueuedState = inEnqueuedState,
                             EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt.ToUtcDateTime() : null,
                             StateData = inEnqueuedState && jobEntry?.State != null
-                                ? jobEntry.State.GetData()
+                                ? jobEntry.State.GetData(state.Options.StringComparer)
                                 : null
                         }));
                     }
@@ -131,13 +131,13 @@ namespace Hangfire.InMemory
                     Job = job,
                     InvocationData = entry.InvocationData,
                     LoadException = loadException,
-                    Properties = entry.Parameters.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer),
+                    Properties = entry.GetParametersSnapshot(state.Options.StringComparer).ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer),
                     History = entry.History.Select(x => new StateHistoryDto
                     {
                         CreatedAt = x.CreatedAt.ToUtcDateTime(),
                         StateName = x.Name,
                         Reason = x.Reason,
-                        Data = x.GetData()
+                        Data = x.GetData(state.Options.StringComparer)
                     }).Reverse().ToList()
                 };
             });
@@ -206,7 +206,7 @@ namespace Hangfire.InMemory
                             InEnqueuedState = inEnqueuedState,
                             EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt.ToUtcDateTime() : null,
                             StateData = inEnqueuedState && jobEntry?.State != null
-                                ? jobEntry.State.GetData()
+                                ? jobEntry.State.GetData(state.Options.StringComparer)
                                 : null
                         }));
 
@@ -242,7 +242,7 @@ namespace Hangfire.InMemory
                         var inProcessingState = ProcessingState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
-                        var data = entry.State?.GetData();
+                        var data = entry.State?.GetData(state.Options.StringComparer);
 
                         result.Add(new KeyValuePair<string, ProcessingJobDto>(entry.Key, new ProcessingJobDto
                         {
@@ -287,7 +287,7 @@ namespace Hangfire.InMemory
 
                         result.Add(new KeyValuePair<string, ScheduledJobDto>(entry.Key, new ScheduledJobDto
                         {
-                            EnqueueAt = (entry.State != null && entry.State.GetData().TryGetValue("EnqueueAt", out var enqueueAt)
+                            EnqueueAt = (entry.State != null && entry.State.GetData(state.Options.StringComparer).TryGetValue("EnqueueAt", out var enqueueAt)
                                 ? JobHelper.DeserializeNullableDateTime(enqueueAt)
                                 : null) ?? DateTime.MinValue,
                             Job = job,
@@ -296,7 +296,7 @@ namespace Hangfire.InMemory
                             InScheduledState = inScheduledState,
                             ScheduledAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inScheduledState && entry.State != null
-                                ? entry.State.GetData()
+                                ? entry.State.GetData(state.Options.StringComparer)
                                 : null
                         }));
 
@@ -326,7 +326,7 @@ namespace Hangfire.InMemory
                         var inSucceededState = SucceededState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
-                        var data = entry.State?.GetData();
+                        var data = entry.State?.GetData(state.Options.StringComparer);
 
                         result.Add(new KeyValuePair<string, SucceededJobDto>(entry.Key, new SucceededJobDto
                         {
@@ -370,7 +370,7 @@ namespace Hangfire.InMemory
                         var inFailedState = FailedState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
-                        var data = entry.State?.GetData();
+                        var data = entry.State?.GetData(state.Options.StringComparer);
 
                         result.Add(new KeyValuePair<string, FailedJobDto>(entry.Key, new FailedJobDto
                         {
@@ -423,7 +423,7 @@ namespace Hangfire.InMemory
                             InDeletedState = inDeletedState,
                             DeletedAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inDeletedState && entry.State != null
-                                ? entry.State.GetData()
+                                ? entry.State.GetData(state.Options.StringComparer)
                                 : null
                         }));
 
@@ -457,7 +457,7 @@ namespace Hangfire.InMemory
                         string parentStateName = null;
 
                         if (inAwaitingState && entry.State != null &&
-                            entry.State.GetData().TryGetValue("ParentId", out var parentId) &&
+                            entry.State.GetData(state.Options.StringComparer).TryGetValue("ParentId", out var parentId) &&
                             state.Jobs.TryGetValue(parentId, out var parentEntry))
                         {
                             parentStateName = parentEntry.State?.Name;
@@ -471,7 +471,7 @@ namespace Hangfire.InMemory
                             InAwaitingState = inAwaitingState,
                             AwaitingAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inAwaitingState && entry.State != null
-                                ? entry.State.GetData()
+                                ? entry.State.GetData(state.Options.StringComparer)
                                 : null,
                             ParentStateName = parentStateName
                         }));

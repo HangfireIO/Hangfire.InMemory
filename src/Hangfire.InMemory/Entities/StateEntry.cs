@@ -20,25 +20,43 @@ namespace Hangfire.InMemory.Entities
 {
     internal sealed class StateEntry
     {
-        private readonly Dictionary<string, string> _data;
+        private readonly KeyValuePair<string, string>[] _data;
 
         public StateEntry(string name, string reason, IDictionary<string, string> data, MonotonicTime createdAt, StringComparer comparer)
         {
-            _data = data != null ? new Dictionary<string, string>(data, comparer) : null;
             Name = name;
             Reason = reason;
             CreatedAt = createdAt;
+
+            if (data != null)
+            {
+                _data = new KeyValuePair<string, string>[data.Count];
+
+                var index = 0;
+
+                foreach (var item in data)
+                {
+                    _data[index++] = item;
+                }
+            }
         }
 
         public string Name { get; }
         public string Reason { get; }
         public MonotonicTime CreatedAt { get; }
 
-        public IDictionary<string, string> GetData()
+        public IDictionary<string, string> GetData(StringComparer comparer)
         {
-            return _data != null 
-                ? new Dictionary<string, string>(_data, _data.Comparer)
-                : null;
+            if (_data == null) return null;
+
+            var result = new Dictionary<string, string>(capacity: _data.Length, comparer);
+
+            foreach (var item in _data)
+            {
+                result.Add(item.Key, item.Value);
+            }
+
+            return result;
         }
     }
 }

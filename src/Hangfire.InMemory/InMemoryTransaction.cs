@@ -99,8 +99,7 @@ namespace Hangfire.InMemory
                     key,
                     data,
                     parameters,
-                    now,
-                    state.Options.StringComparer);
+                    now);
 
                 state.JobCreate(entry, now, expireIn);
             });
@@ -120,7 +119,7 @@ namespace Hangfire.InMemory
             {
                 if (state.Jobs.TryGetValue(id, out var jobEntry))
                 {
-                    jobEntry.Parameters[name] = value;
+                    jobEntry.SetParameter(name, value, state.Options.StringComparer);
                 }
             });
         }

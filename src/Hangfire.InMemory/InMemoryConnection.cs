@@ -97,8 +97,7 @@ namespace Hangfire.InMemory
                     key,
                     data,
                     parameters,
-                    now,
-                    state.Options.StringComparer);
+                    now);
 
                 // Background job is not yet initialized after calling this method, and
                 // transaction is expected a few moments later that will initialize this
@@ -184,7 +183,7 @@ namespace Hangfire.InMemory
             {
                 if (state.Jobs.TryGetValue(id, out var jobEntry))
                 {
-                    jobEntry.Parameters[name] = value;
+                    jobEntry.SetParameter(name, value, state.Options.StringComparer);
                 }
 
                 return true;
@@ -198,9 +197,9 @@ namespace Hangfire.InMemory
 
             return Dispatcher.QueryAndWait(state =>
             {
-                if (state.Jobs.TryGetValue(id, out var entry) && entry.Parameters.TryGetValue(name, out var value))
+                if (state.Jobs.TryGetValue(id, out var entry))
                 {
-                    return value;
+                    return entry.GetParameter(name, state.Options.StringComparer);
                 }
 
                 return null;
@@ -223,7 +222,7 @@ namespace Hangfire.InMemory
                     entry.InvocationData,
                     State = entry.State?.Name,
                     entry.CreatedAt,
-                    ParametersSnapshot = entry.Parameters.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer)
+                    ParametersSnapshot = entry.GetParametersSnapshot(state.Options.StringComparer)
                 };
             });
 
@@ -255,7 +254,7 @@ namespace Hangfire.InMemory
                 {
                     Name = jobEntry.State.Name,
                     Reason = jobEntry.State.Reason,
-                    Data = jobEntry.State.GetData()
+                    Data = jobEntry.State.GetData(state.Options.StringComparer)
                 };
             });
         }
