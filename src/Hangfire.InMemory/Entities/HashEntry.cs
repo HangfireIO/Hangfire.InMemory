@@ -23,7 +23,7 @@ namespace Hangfire.InMemory.Entities
         public HashEntry(string id, StringComparer comparer)
         {
             Key = id;
-            Value = new Dictionary<string, string>(comparer);
+            Value = new SortedDictionary<string, string>(comparer);
         }
 
         public string Key { get; }

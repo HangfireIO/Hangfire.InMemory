@@ -21,12 +21,12 @@ namespace Hangfire.InMemory.Entities
 {
     internal sealed class SetEntry : IExpirableEntry, IEnumerable<SortedSetItem>
     {
-        private readonly Dictionary<string, SortedSetItem> _hash;
+        private readonly SortedDictionary<string, SortedSetItem> _hash;
         private readonly SortedSet<SortedSetItem> _value;
 
         public SetEntry(string id, StringComparer stringComparer)
         {
-            _hash = new Dictionary<string, SortedSetItem>(stringComparer);
+            _hash = new SortedDictionary<string, SortedSetItem>(stringComparer);
             _value = new SortedSet<SortedSetItem>(new SortedSetItemComparer(stringComparer));
             Key = id;
         }

@@ -1147,7 +1147,7 @@ namespace Hangfire.InMemory.Tests
 
             Assert.True(_state.Lists.ContainsKey("key"));
             Assert.Equal(1, _state.Lists["key"].Count);
-            Assert.Equal("value", _state.Lists["key"][0]);
+            Assert.Equal("value", _state.Lists["key"].First());
         }
 
         [Fact]
@@ -1156,9 +1156,11 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.InsertToList("key", "value1"));
             Commit(x => x.InsertToList("key", "value2"));
 
-            Assert.Equal(2, _state.Lists["key"].Count);
-            Assert.Equal("value2", _state.Lists["key"][0]);
-            Assert.Equal("value1", _state.Lists["key"][1]);
+            var list = _state.Lists["key"].ToList();
+
+            Assert.Equal(2, list.Count);
+            Assert.Equal("value2", list[0]);
+            Assert.Equal("value1", list[1]);
         }
 
         [Fact]
@@ -1169,12 +1171,12 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.InsertToList("key", "3"));
             Commit(x => x.InsertToList("key", "2"));
 
-            var entry = _state.Lists["key"];
-            Assert.Equal(4, entry.Count);
-            Assert.Equal("2", entry[0]);
-            Assert.Equal("3", entry[1]);
-            Assert.Equal("2", entry[2]);
-            Assert.Equal("1", entry[3]);
+            var list = _state.Lists["key"].ToList();
+            Assert.Equal(4, list.Count);
+            Assert.Equal("2", list[0]);
+            Assert.Equal("3", list[1]);
+            Assert.Equal("2", list[2]);
+            Assert.Equal("1", list[3]);
         }
 
         [Fact]
@@ -1214,11 +1216,8 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.RemoveFromList("key", "2"));
 
-            var entry = _state.Lists["key"];
-            Assert.Equal(3, entry.Count);
-            Assert.Equal("1", entry[0]);
-            Assert.Equal("3", entry[1]);
-            Assert.Equal("1", entry[2]);
+            var list = _state.Lists["key"].ToArray();
+            Assert.Equal(new [] { "1", "3", "1" }, list);
         }
 
         [Fact]
@@ -1259,7 +1258,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.TrimList("key", 1, 2));
 
-            var list = _state.Lists["key"];
+            var list = _state.Lists["key"].ToList();
             Assert.Equal(2, list.Count);
             Assert.Equal("3", list[0]);
             Assert.Equal("2", list[1]);
@@ -1274,7 +1273,7 @@ namespace Hangfire.InMemory.Tests
 
             Commit(x => x.TrimList("key", 1, 100));
 
-            var list = _state.Lists["key"];
+            var list = _state.Lists["key"].ToList();
             Assert.Equal(2, list.Count);
             Assert.Equal("1", list[0]);
             Assert.Equal("0", list[1]);
@@ -1298,9 +1297,19 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.InsertToList("key", "2"));
             Commit(x => x.InsertToList("key", "3"));
 
-            Commit(x => x.TrimList("key", 2, 1));
+            Commit(x => x.TrimList("key", 0, -1));
 
             Assert.False(_state.Lists.ContainsKey("key"));
+        }
+
+        [Fact]
+        public void TrimList_DoesNotLeadToFailure_WithNegativeNumbers()
+        {
+            Commit(x => x.InsertToList("key", "0"));
+
+            Commit(x => x.TrimList("key", -5, 5));
+            
+            Assert.Equal(new [] { "0" }, _state.Lists["key"]);
         }
 
         [Fact]

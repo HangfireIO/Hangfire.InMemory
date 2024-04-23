@@ -32,12 +32,12 @@ namespace Hangfire.InMemory
         private readonly Dictionary<string, LockEntry<JobStorageConnection>> _locks;
         private readonly ConcurrentDictionary<string, QueueEntry> _queues;
 
-        private readonly Dictionary<string, JobEntry> _jobs;
-        private readonly Dictionary<string, HashEntry> _hashes;
-        private readonly Dictionary<string, ListEntry> _lists;
-        private readonly Dictionary<string, SetEntry> _sets;
-        private readonly Dictionary<string, CounterEntry> _counters;
-        private readonly Dictionary<string, ServerEntry> _servers;
+        private readonly SortedDictionary<string, JobEntry> _jobs;
+        private readonly SortedDictionary<string, HashEntry> _hashes;
+        private readonly SortedDictionary<string, ListEntry> _lists;
+        private readonly SortedDictionary<string, SetEntry> _sets;
+        private readonly SortedDictionary<string, CounterEntry> _counters;
+        private readonly SortedDictionary<string, ServerEntry> _servers;
 
         public InMemoryState(InMemoryStorageOptions options)
         {
@@ -48,12 +48,12 @@ namespace Hangfire.InMemory
             _locks = CreateDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
             _queues = CreateConcurrentDictionary<QueueEntry>(options.StringComparer);
 
-            _jobs = CreateDictionary<JobEntry>(options.StringComparer);
-            _hashes = CreateDictionary<HashEntry>(options.StringComparer);
-            _lists = CreateDictionary<ListEntry>(options.StringComparer);
-            _sets = CreateDictionary<SetEntry>(options.StringComparer);
-            _counters = CreateDictionary<CounterEntry>(options.StringComparer);
-            _servers = CreateDictionary<ServerEntry>(options.StringComparer);
+            _jobs = CreateSortedDictionary<JobEntry>(options.StringComparer);
+            _hashes = CreateSortedDictionary<HashEntry>(options.StringComparer);
+            _lists = CreateSortedDictionary<ListEntry>(options.StringComparer);
+            _sets = CreateSortedDictionary<SetEntry>(options.StringComparer);
+            _counters = CreateSortedDictionary<CounterEntry>(options.StringComparer);
+            _servers = CreateSortedDictionary<ServerEntry>(options.StringComparer);
 
             var expirableEntryComparer = new ExpirableEntryComparer(options.StringComparer);
             ExpiringJobsIndex = new SortedSet<JobEntry>(expirableEntryComparer);
@@ -72,12 +72,12 @@ namespace Hangfire.InMemory
         public IReadOnlyDictionary<string, QueueEntry> Queues => _queues;
 #endif
 
-        public IReadOnlyDictionary<string, JobEntry> Jobs => _jobs;
-        public IReadOnlyDictionary<string, HashEntry> Hashes => _hashes;
-        public IReadOnlyDictionary<string, ListEntry> Lists => _lists;
-        public IReadOnlyDictionary<string, SetEntry> Sets => _sets;
-        public IReadOnlyDictionary<string, CounterEntry> Counters => _counters;
-        public IReadOnlyDictionary<string, ServerEntry> Servers => _servers;
+        public IDictionary<string, JobEntry> Jobs => _jobs;
+        public IDictionary<string, HashEntry> Hashes => _hashes;
+        public IDictionary<string, ListEntry> Lists => _lists;
+        public IDictionary<string, SetEntry> Sets => _sets;
+        public IDictionary<string, CounterEntry> Counters => _counters;
+        public IDictionary<string, ServerEntry> Servers => _servers;
 
         public IReadOnlyDictionary<string, SortedSet<JobEntry>> JobStateIndex => _jobStateIndex;
 
@@ -183,7 +183,7 @@ namespace Hangfire.InMemory
         {
             if (!_lists.TryGetValue(key, out var list))
             {
-                _lists.Add(key, list = new ListEntry(key, Options.StringComparer));
+                _lists.Add(key, list = new ListEntry(key));
             }
 
             return list;
@@ -290,6 +290,11 @@ namespace Hangfire.InMemory
         private static Dictionary<string, T> CreateDictionary<T>(StringComparer comparer)
         {
             return new Dictionary<string, T>(comparer);
+        }
+
+        private static SortedDictionary<string, T> CreateSortedDictionary<T>(StringComparer comparer)
+        {
+            return new SortedDictionary<string, T>(comparer);
         }
 
         private static ConcurrentDictionary<string, T> CreateConcurrentDictionary<T>(StringComparer comparer)

@@ -577,17 +577,12 @@ namespace Hangfire.InMemory
 
             return Dispatcher.QueryAndWait(state =>
             {
-                var result = new List<string>();
-
                 if (state.Lists.TryGetValue(key, out var list))
                 {
-                    for (var i = 0; i < list.Count; i++)
-                    {
-                        result.Add(list[i]);
-                    }
+                    return new List<string>(list);
                 }
 
-                return result;
+                return new List<string>();
             });
         }
 
@@ -595,7 +590,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (startingFrom < 0) throw new ArgumentException("The value must be greater than or equal to zero.", nameof(startingFrom));
-            if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater or equal to the `{nameof(startingFrom)}` value.", nameof(endingAt));
+            if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater than the `{nameof(startingFrom)}` value.", nameof(endingAt));
 
             return Dispatcher.QueryAndWait(state =>
             {
@@ -603,12 +598,13 @@ namespace Hangfire.InMemory
 
                 if (state.Lists.TryGetValue(key, out var list))
                 {
-                    for (var index = 0; index < list.Count; index++)
+                    var count = endingAt - startingFrom + 1;
+                    foreach (var item in list)
                     {
-                        if (index < startingFrom) continue;
-                        if (index > endingAt) break;
+                        if (startingFrom-- > 0) continue;
+                        if (count-- == 0) break;
 
-                        result.Add(list[index]);
+                        result.Add(item);
                     }
                 }
 

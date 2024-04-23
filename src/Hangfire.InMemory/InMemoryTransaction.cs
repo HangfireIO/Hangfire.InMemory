@@ -293,9 +293,10 @@ namespace Hangfire.InMemory
             _actions.Add((_, state) =>
             {
                 var list = state.ListGetOrAdd(key);
-                list.RemoveAll(value);
-
-                if (list.Count == 0) state.ListDelete(list);
+                if (list.RemoveAll(value, state.Options.StringComparer) == 0)
+                {
+                    state.ListDelete(list);
+                }
             });
         }
 
