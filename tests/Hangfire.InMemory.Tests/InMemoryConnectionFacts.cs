@@ -181,6 +181,18 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void CreateExpiredJob_WithZeroExpireInValue_LeadsToImmediateEviction()
+        {
+            UseConnection(connection =>
+            {
+                connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.Zero);
+
+                Assert.Empty(_state.Jobs);
+                Assert.Empty(_state.ExpiringJobsIndex);
+            });
+        }
+
+        [Fact]
         public void SetJobParameter_ThrowsAnException_WhenIdIsNull()
         {
             UseConnection(connection =>

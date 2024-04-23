@@ -287,6 +287,18 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void CreateJob_WithZeroExpireInValue_LeadsToImmediateEviction()
+        {
+            Commit(transaction =>
+            {
+                transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.Zero);
+            });
+
+            Assert.Empty(_state.Jobs);
+            Assert.Empty(_state.ExpiringJobsIndex);
+        }
+
+        [Fact]
         public void SetJobParameter_ThrowsAnException_WhenIdIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
@@ -399,6 +411,18 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
 
             Assert.Same(entry, _state.ExpiringJobsIndex.First());
+        }
+
+        [Fact]
+        public void ExpireJob_WithZeroExpireInValue_LeadsToImmediateEviction()
+        {
+            var entry = CreateJobEntry("myjob");
+            _state.JobCreate(entry, _now, expireIn: null);
+
+            Commit(x => x.ExpireJob("myjob", TimeSpan.Zero));
+
+            Assert.Empty(_state.Jobs);
+            Assert.Empty(_state.ExpiringJobsIndex);
         }
 
         [Fact]
@@ -839,6 +863,17 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void IncrementCounter_WithExpiry_WithZeroExpireInValue_LeadsToImmediateEviction()
+        {
+            Commit(x => x.IncrementCounter("somecounter"));
+
+            Commit(x => x.IncrementCounter("somecounter", TimeSpan.Zero));
+
+            Assert.Empty(_state.Counters);
+            Assert.Empty(_state.ExpiringCountersIndex);
+        }
+
+        [Fact]
         public void DecrementCounter_ThrowsAnException_WhenKeyIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
@@ -974,6 +1009,17 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.DecrementCounter("somecounter", TimeSpan.FromMinutes(10)));
 
             Assert.DoesNotContain("somecounter", _state.Counters.Keys);
+            Assert.Empty(_state.ExpiringCountersIndex);
+        }
+
+        [Fact]
+        public void DecrementCounter_WithExpiry_WithZeroExpireInValue_LeadsToImmediateEviction()
+        {
+            Commit(x => x.DecrementCounter("somecounter"));
+
+            Commit(x => x.DecrementCounter("somecounter", TimeSpan.Zero));
+
+            Assert.Empty(_state.Counters);
             Assert.Empty(_state.ExpiringCountersIndex);
         }
 
@@ -1567,6 +1613,17 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void ExpireHash_WithZeroExpireInValue_LeadsToImmediateEviction()
+        {
+            Commit(x => x.SetRangeInHash("key", new Dictionary<string, string> { { "field", "value" } }));
+
+            Commit(x => x.ExpireHash("key", TimeSpan.Zero));
+
+            Assert.Empty(_state.Hashes);
+            Assert.Empty(_state.ExpiringHashesIndex);
+        }
+
+        [Fact]
         public void ExpireList_ThrowsAnException_WhenKeyIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(() => Commit(
@@ -1608,6 +1665,17 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void ExpireList_WithZeroExpireInValue_LeadsToImmediateEviction()
+        {
+            Commit(x => x.InsertToList("key", "value"));
+
+            Commit(x => x.ExpireList("key", TimeSpan.Zero));
+
+            Assert.Empty(_state.Lists);
+            Assert.Empty(_state.ExpiringListsIndex);
+        }
+
+        [Fact]
         public void ExpireSet_ThrowsAnException_WhenKeyIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(() => Commit(
@@ -1646,6 +1714,17 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.ExpireSet("key", TimeSpan.FromMinutes(30)));
 
             Assert.Equal("key", _state.ExpiringSetsIndex.Single().Key);
+        }
+
+        [Fact]
+        public void ExpireSet_WithZeroExpireInValue_LeadsToImmediateEviction()
+        {
+            Commit(x => x.AddToSet("key", "value"));
+
+            Commit(x => x.ExpireSet("key", TimeSpan.Zero));
+
+            Assert.Empty(_state.Sets);
+            Assert.Empty(_state.ExpiringSetsIndex);
         }
 
         [Fact]

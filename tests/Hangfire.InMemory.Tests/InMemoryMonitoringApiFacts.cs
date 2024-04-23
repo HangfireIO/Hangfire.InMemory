@@ -386,7 +386,7 @@ namespace Hangfire.InMemory.Tests
                     Job.FromExpression<ITestServices>(x => x.Empty()),
                     new Dictionary<string, string>(), 
                     _now.ToUtcDateTime(),
-                    TimeSpan.Zero);
+                    TimeSpan.FromMinutes(1));
 
                 using (var transaction = connection.CreateWriteTransaction())
                 {
@@ -429,7 +429,7 @@ namespace Hangfire.InMemory.Tests
                 Job.FromExpression<ITestServices>(x => x.Empty()),
                 new Dictionary<string, string>(),
                 _now.ToUtcDateTime(),
-                TimeSpan.Zero));
+                TimeSpan.FromMinutes(1)));
 
             _state.Jobs[jobId].InvocationData = new InvocationData("asfasf", "232", "afasf", "gg");
 
@@ -1550,7 +1550,7 @@ namespace Hangfire.InMemory.Tests
                     job,
                     new Dictionary<string, string>(),
                     _now.ToUtcDateTime(),
-                    TimeSpan.Zero);
+                    TimeSpan.FromMinutes(1));
 
                 using (var transaction = connection.CreateWriteTransaction())
                 {

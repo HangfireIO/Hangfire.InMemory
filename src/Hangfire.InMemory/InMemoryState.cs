@@ -102,7 +102,10 @@ namespace Hangfire.InMemory
         {
             _jobs.Add(entry.Key, entry);
 
-            EntryExpire(entry, ExpiringJobsIndex, now, expireIn, ignoreMaxExpirationTime);
+            if (EntryExpire(entry, ExpiringJobsIndex, now, expireIn, ignoreMaxExpirationTime))
+            {
+                JobDelete(entry);
+            }
         }
 
         public void JobSetState(JobEntry entry, StateEntry state)
@@ -125,7 +128,10 @@ namespace Hangfire.InMemory
 
         public void JobExpire(JobEntry entry, MonotonicTime now, TimeSpan? expireIn)
         {
-            EntryExpire(entry, ExpiringJobsIndex, now, expireIn);
+            if (EntryExpire(entry, ExpiringJobsIndex, now, expireIn))
+            {
+                JobDelete(entry);
+            }
         }
 
         public void JobDelete(JobEntry entry)
@@ -151,7 +157,10 @@ namespace Hangfire.InMemory
 
         public void HashExpire(HashEntry hash, MonotonicTime now, TimeSpan? expireIn)
         {
-            EntryExpire(hash, ExpiringHashesIndex, now, expireIn);
+            if (EntryExpire(hash, ExpiringHashesIndex, now, expireIn))
+            {
+                HashDelete(hash);
+            }
         }
 
         public void HashDelete(HashEntry hash)
@@ -171,7 +180,10 @@ namespace Hangfire.InMemory
 
         public void SetExpire(SetEntry set, MonotonicTime now, TimeSpan? expireIn)
         {
-            EntryExpire(set, ExpiringSetsIndex, now, expireIn);
+            if (EntryExpire(set, ExpiringSetsIndex, now, expireIn))
+            {
+                SetDelete(set);
+            }
         }
 
         public void SetDelete(SetEntry set)
@@ -191,7 +203,10 @@ namespace Hangfire.InMemory
 
         public void ListExpire(ListEntry entry, MonotonicTime now, TimeSpan? expireIn)
         {
-            EntryExpire(entry, ExpiringListsIndex, now, expireIn);
+            if (EntryExpire(entry, ExpiringListsIndex, now, expireIn))
+            {
+                ListDelete(entry);
+            }
         }
 
         public void ListDelete(ListEntry list)
@@ -214,7 +229,10 @@ namespace Hangfire.InMemory
             // We don't apply MaxExpirationTime rules for counters, because they
             // usually have fixed size, and because statistics should be kept for
             // days.
-            EntryExpire(counter, ExpiringCountersIndex, now, expireIn, ignoreMaxExpirationTime: true);
+            if (EntryExpire(counter, ExpiringCountersIndex, now, expireIn, ignoreMaxExpirationTime: true))
+            {
+                CounterDelete(counter);
+            }
         }
 
         public void CounterDelete(CounterEntry entry)
@@ -263,7 +281,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        private void EntryExpire<T>(T entry, ISet<T> index, MonotonicTime now, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
+        private bool EntryExpire<T>(T entry, ISet<T> index, MonotonicTime now, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
             where T : IExpirableEntry
         {
             if (entry.ExpireAt.HasValue)
@@ -278,13 +296,19 @@ namespace Hangfire.InMemory
                     expireIn = Options.MaxExpirationTime;
                 }
 
+                if (expireIn <= TimeSpan.Zero)
+                {
+                    entry.ExpireAt = null; // Expiration Index doesn't contain this entry
+                    return true;
+                }
+
                 entry.ExpireAt = now.Add(expireIn.Value);
                 index.Add(entry);
+                return false;
             }
-            else
-            {
-                entry.ExpireAt = null;
-            }
+
+            entry.ExpireAt = null;
+            return false;
         }
 
         private static Dictionary<string, T> CreateDictionary<T>(StringComparer comparer)
