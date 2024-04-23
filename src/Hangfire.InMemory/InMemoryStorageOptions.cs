@@ -55,5 +55,11 @@ namespace Hangfire.InMemory
         /// default case-insensitive rules.
         /// </summary>
         public StringComparer StringComparer { get; set; } = StringComparer.Ordinal;
+
+        /// <summary>
+        /// This option is deprecated now.
+        /// </summary>
+        [Obsolete("Doesn't affect anything now, serialization is always enabled. Will be removed in 1.0.0.")]
+        public bool DisableJobSerialization { get; set; }
     }
 }
