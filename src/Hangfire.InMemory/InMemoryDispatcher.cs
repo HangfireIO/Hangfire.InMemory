@@ -108,7 +108,6 @@ namespace Hangfire.InMemory
                                 throw;
                             }
 
-                            // TODO: Run this before action?
                             if (Environment.TickCount - startTime >= DefaultExpirationIntervalMs)
                             {
                                 EvictExpiredEntries();
