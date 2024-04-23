@@ -272,7 +272,7 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
-        public void CreateExpiredJob_DoesNotUseMaxExpirationTimeLimit_ToEnsureJobCanNotBeEvictedBeforeInitialization()
+        public void CreateJob_DoesNotUseMaxExpirationTimeLimit_ToEnsureJobCanNotBeEvictedBeforeInitialization()
         {
             string jobId = null;
 
