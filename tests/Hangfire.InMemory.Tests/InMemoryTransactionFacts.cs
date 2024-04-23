@@ -272,6 +272,21 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void CreateExpiredJob_DoesNotUseMaxExpirationTimeLimit_ToEnsureJobCanNotBeEvictedBeforeInitialization()
+        {
+            string jobId = null;
+
+            Commit(transaction =>
+            {
+                _options.MaxExpirationTime = TimeSpan.FromMinutes(30);
+                jobId = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromDays(30));
+            });
+
+            Assert.True(_state.Jobs[jobId].ExpireAt.HasValue);
+            Assert.Equal(_now.Add(TimeSpan.FromDays(30)), _state.Jobs[jobId].ExpireAt.Value);
+        }
+
+        [Fact]
         public void SetJobParameter_ThrowsAnException_WhenIdIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
@@ -408,7 +423,7 @@ namespace Hangfire.InMemory.Tests
             _state.JobCreate(
                 CreateJobEntry("myjob"),
                 _now,
-                expireIn: TimeSpan.Zero);
+                expireIn: TimeSpan.FromMinutes(1));
 
             Commit(x => x.PersistJob("myjob"));
 

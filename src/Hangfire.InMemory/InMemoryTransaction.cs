@@ -101,7 +101,7 @@ namespace Hangfire.InMemory
                     parameters,
                     now);
 
-                state.JobCreate(entry, now, expireIn);
+                state.JobCreate(entry, now, expireIn, ignoreMaxExpirationTime: true);
             });
 
             return key;
