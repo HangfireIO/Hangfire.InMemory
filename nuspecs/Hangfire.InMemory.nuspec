@@ -16,6 +16,14 @@
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
 
+0.9.0
+• Added – Implement the disposable pattern for the `InMemoryStorage` class.
+• Changed – Use more compact representation of job parameters and state data.
+• Changed – Move to `SortedDictionary` and `LinkedList` to avoid using Large Object Heap.
+• Changed – `TimeSpan.Zero` value for `MaxExpirationTime` now causes immediate entry eviction.
+• Fixed – Ensure near-zero max expiration limit can't lead to uninitialized job eviction.
+• Deprecated – `DisableJobSerialization` option is now obsolete, serialization is always enabled.
+
 0.8.1
 • Fixed – Incorrect validation in the `MaxStateHistoryLength` setter (by @DPschichholz).
 
