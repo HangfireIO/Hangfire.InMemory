@@ -169,7 +169,7 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
-        public void CreateExpiredJob_ThrowsAnException_WhenJobIsNull()
+        public void CreateJob_ThrowsAnException_WhenJobIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
                 () => Commit(x => x.CreateJob(null, _parameters, _now.ToUtcDateTime(), TimeSpan.Zero)));
@@ -178,7 +178,7 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
-        public void CreateExpiredJob_ThrowsAnException_WhenParametersArgumentIsNull()
+        public void CreateJob_ThrowsAnException_WhenParametersArgumentIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
                 () => Commit(x => x.CreateJob(_job, null, _now.ToUtcDateTime(), TimeSpan.Zero)));
@@ -187,7 +187,7 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
-        public void CreateExpiredJob_ReturnsUniqueBackgroundJobId_EachTime()
+        public void CreateJob_ReturnsUniqueBackgroundJobId_EachTime()
         {
             Commit(transaction =>
             {
@@ -199,7 +199,7 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
-        public void CreateExpiredJob_CreatesCorrespondingBackgroundJobEntry()
+        public void CreateJob_CreatesCorrespondingBackgroundJobEntry()
         {
             string jobId = null;
 
@@ -226,7 +226,7 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
-        public void CreateExpiredJob_AddsBackgroundJobEntry_ToExpirationIndex()
+        public void CreateJob_AddsBackgroundJobEntry_ToExpirationIndex()
         {
             string jobId = null;
 
@@ -239,7 +239,7 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
-        public void CreateExpiredJob_PreservesAllTheGivenParameters()
+        public void CreateJob_PreservesAllTheGivenParameters()
         {
             string jobId = null;
 
@@ -258,7 +258,7 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
-        public void CreateExpiredJob_CapturesJobQueue_Field()
+        public void CreateJob_CapturesJobQueue_Field()
         {
             string jobId = null;
 
