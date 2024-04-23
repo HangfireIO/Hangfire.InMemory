@@ -23,23 +23,17 @@ namespace ConsoleSample
         {
             var sw = Stopwatch.StartNew();
 
-            Parallel.For(0, 250_000, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },  i =>
+            Parallel.For(0, 25_000, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },  i =>
             {
-                _backgroundJobs.Enqueue(() => EmptyDefault());
-                _backgroundJobs.Enqueue(() => EmptyCritical());
+                _backgroundJobs.Enqueue("default" ,() => Empty());
+                _backgroundJobs.Enqueue("critical", () => Empty());
             });
 
             _logger.LogInformation($"Enqueued in {sw.Elapsed}");
             return Task.CompletedTask;
         }
 
-        [Queue("default")]
-        public static void EmptyDefault()
-        {
-        }
-
-        [Queue("critical")]
-        public static void EmptyCritical()
+        public static void Empty()
         {
         }
     }
