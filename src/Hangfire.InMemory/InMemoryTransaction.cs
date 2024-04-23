@@ -25,6 +25,7 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryTransaction : JobStorageTransaction
     {
+        // TODO: Possible LOH usage on large transactions, non-reclaimable
         private readonly List<Action<MonotonicTime, InMemoryState>> _actions = new List<Action<MonotonicTime, InMemoryState>>();
         private readonly List<Action<InMemoryState>> _queueActions = new List<Action<InMemoryState>>();
         private readonly HashSet<QueueEntry> _enqueued = new HashSet<QueueEntry>();
