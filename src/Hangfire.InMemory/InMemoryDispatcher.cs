@@ -15,15 +15,13 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Hangfire.Logging;
 
 namespace Hangfire.InMemory
 {
-    [SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "Instances of this class aren't meant to be disposed.")]
-    internal sealed class InMemoryDispatcher : InMemoryDispatcherBase
+    internal sealed class InMemoryDispatcher : InMemoryDispatcherBase, IDisposable
     {
         private const uint DefaultExpirationIntervalMs = 1000U;
         private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(15);
@@ -32,6 +30,7 @@ namespace Hangfire.InMemory
         private readonly ConcurrentQueue<InMemoryDispatcherCallback> _queries = new ConcurrentQueue<InMemoryDispatcherCallback>();
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
+        private bool _disposed;
 
         private PaddedInt64 _outstandingRequests;
 
@@ -45,8 +44,19 @@ namespace Hangfire.InMemory
             _thread.Start();
         }
 
+        public void Dispose()
+        {
+            if (_disposed) return;
+
+            _disposed = true;
+            _semaphore.Dispose();
+            _thread.Join();
+        }
+
         protected override object QueryAndWait(Func<MonotonicTime, InMemoryState, object> query)
         {
+            if (_disposed) ThrowObjectDisposedException();
+
             using (var callback = new InMemoryDispatcherCallback(query))
             {
                 _queries.Enqueue(callback);
@@ -77,7 +87,7 @@ namespace Hangfire.InMemory
         {
             try
             {
-                while (true)
+                while (!_disposed)
                 {
                     if (_semaphore.Wait(TimeSpan.FromMilliseconds(DefaultExpirationIntervalMs)))
                     {
@@ -112,10 +122,19 @@ namespace Hangfire.InMemory
                     }
                 }
             }
+            catch (ObjectDisposedException ex) when (_disposed)
+            {
+                _logger.DebugException("Query dispatched stopped, because it was disposed.", ex);
+            }
             catch (Exception ex) when (ExceptionHelper.IsCatchableExceptionType(ex))
             {
                 _logger.FatalException("Query dispatcher stopped due to an exception, no queries will be processed. Please report this problem to Hangfire.InMemory developers.", ex);
             }
+        }
+
+        private static void ThrowObjectDisposedException()
+        {
+            throw new ObjectDisposedException(typeof(InMemoryDispatcher).FullName);
         }
 
         [StructLayout(LayoutKind.Explicit, Size = 2 * CacheLineSize)]

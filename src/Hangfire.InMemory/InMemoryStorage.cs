@@ -24,9 +24,9 @@ namespace Hangfire.InMemory
     /// A class that represents an in-memory job storage that stores all data
     /// related to background processing in a process' memory.
     /// </summary>
-    public sealed class InMemoryStorage : JobStorage
+    public sealed class InMemoryStorage : JobStorage, IDisposable
     {
-        private readonly InMemoryDispatcherBase _dispatcher;
+        private readonly InMemoryDispatcher _dispatcher;
 
         // These options don't relate to the defined storage comparison options
         private readonly Dictionary<string, bool> _features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
@@ -64,6 +64,12 @@ namespace Hangfire.InMemory
             Options = options ?? throw new ArgumentNullException(nameof(options));
 
             _dispatcher = new InMemoryDispatcher(MonotonicTime.GetCurrent, new InMemoryState(Options));
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _dispatcher.Dispose();
         }
 
         /// <summary>
