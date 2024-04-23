@@ -8,13 +8,6 @@ Read and write queries are processed by a single thread to avoid additional sync
 
 Distributed locks (heh, in an in-process storage), queue fetch logic (even from multiple queues) and transactional queries are implemented as blocking operations, so there is no active polling in these cases. Every data returned by storage can be safely changed without causing underlying storage state to be changed with bypassing required transactional processing logic, so everything is safe (but increase load on GC). Every data structure, including indexes and their records, is removed when empty to avoid memory leaks.
 
-## TODO
-
-* Control `OutOfMemoryException` by providing some kind of limits which can be established easily, e.g. total number of jobs.
-* Avoid unnecessary object allocations without sacrificing the safety property (as described above).
-* Can avoid synchronization in some read-only methods in the `MemoryConnection`class.
-* Avoid using large object heap at any cost by large collections – millions of jobs can be created.
-
 ## Installation
 
 [Hangfire.InMemory](https://www.nuget.org/packages/Hangfire.InMemory/) is available on NuGet so we can install it as usual using your favorite package manager.
