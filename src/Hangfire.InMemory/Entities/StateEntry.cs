@@ -22,7 +22,7 @@ namespace Hangfire.InMemory.Entities
     {
         private readonly KeyValuePair<string, string>[] _data;
 
-        public StateEntry(string name, string reason, IDictionary<string, string> data, MonotonicTime createdAt, StringComparer comparer)
+        public StateEntry(string name, string reason, IDictionary<string, string> data, MonotonicTime createdAt)
         {
             Name = name;
             Reason = reason;

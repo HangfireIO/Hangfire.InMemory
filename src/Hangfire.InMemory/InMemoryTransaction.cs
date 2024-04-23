@@ -170,8 +170,7 @@ namespace Hangfire.InMemory
                         name,
                         reason,
                         data,
-                        now,
-                        memory.Options.StringComparer);
+                        now);
 
                     job.AddHistoryEntry(stateEntry, memory.Options.MaxStateHistoryLength);
                     memory.JobSetState(job, stateEntry);
@@ -198,8 +197,7 @@ namespace Hangfire.InMemory
                         name,
                         reason,
                         data,
-                        now,
-                        memory.Options.StringComparer);
+                        now);
 
                     job.AddHistoryEntry(stateEntry, memory.Options.MaxStateHistoryLength);
                 }
