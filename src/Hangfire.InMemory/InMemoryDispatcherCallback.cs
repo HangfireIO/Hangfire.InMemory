@@ -20,6 +20,7 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryDispatcherCallback : IDisposable
     {
+        private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
         private volatile object _result;
 
         public InMemoryDispatcherCallback(Func<MonotonicTime, InMemoryState, object> callback)
@@ -28,34 +29,39 @@ namespace Hangfire.InMemory
         }
 
         public Func<MonotonicTime, InMemoryState, object> Callback { get; }
-        public ManualResetEventSlim Ready { get; } = new ManualResetEventSlim(false);
         public bool IsFaulted { get; private set; }
 
         public object Result => _result;
 
-        internal void SetResult(object value)
+        public void SetResult(object value)
         {
             _result = value;
             TrySetReady();
         }
 
-        internal void SetException(Exception value)
+        public void SetException(Exception value)
         {
             _result = value;
             IsFaulted = true;
             TrySetReady();
         }
 
+        public bool Wait(TimeSpan timeout, CancellationToken token)
+        {
+            token.ThrowIfCancellationRequested();
+            return _ready.Wait(timeout, token);
+        }
+
         public void Dispose()
         {
-            Ready?.Dispose();
+            _ready.Dispose();
         }
 
         private void TrySetReady()
         {
             try
             {
-                Ready.Set();
+                _ready.Set();
             }
             catch (ObjectDisposedException)
             {

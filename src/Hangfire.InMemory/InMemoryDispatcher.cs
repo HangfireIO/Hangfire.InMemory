@@ -69,7 +69,7 @@ namespace Hangfire.InMemory
                     }
                 }
 
-                if (!callback.Ready.Wait(DefaultQueryTimeout))
+                if (!callback.Wait(DefaultQueryTimeout, CancellationToken.None))
                 {
                     throw new TimeoutException();
                 }
