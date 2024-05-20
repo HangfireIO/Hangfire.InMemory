@@ -30,7 +30,7 @@ namespace Hangfire.InMemory
         private readonly ConcurrentQueue<InMemoryDispatcherCallback> _queries = new ConcurrentQueue<InMemoryDispatcherCallback>();
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
-        private bool _disposed;
+        private volatile bool _disposed;
 
         private PaddedInt64 _outstandingRequests;
 
