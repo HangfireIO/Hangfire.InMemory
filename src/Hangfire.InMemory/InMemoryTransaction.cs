@@ -97,7 +97,7 @@ namespace Hangfire.InMemory
                 parameters,
                 _connection.Dispatcher.GetMonotonicTime());
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 state.JobCreate(entry, expireIn, ignoreMaxExpirationTime: true);
             });
@@ -113,7 +113,7 @@ namespace Hangfire.InMemory
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (state.Jobs.TryGetValue(id, out var jobEntry))
                 {
@@ -128,7 +128,7 @@ namespace Hangfire.InMemory
 
             var now = _connection.Dispatcher.GetMonotonicTime();
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (state.Jobs.TryGetValue(jobId, out var job))
                 {
@@ -141,7 +141,7 @@ namespace Hangfire.InMemory
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (state.Jobs.TryGetValue(jobId, out var job))
                 {
@@ -164,7 +164,7 @@ namespace Hangfire.InMemory
                 state.SerializeData(),
                 _connection.Dispatcher.GetMonotonicTime());
 
-            _actions.AddLast(memory =>
+            AddAction(memory =>
             {
                 if (memory.Jobs.TryGetValue(jobId, out var job))
                 {
@@ -187,7 +187,7 @@ namespace Hangfire.InMemory
                 state.SerializeData(),
                 _connection.Dispatcher.GetMonotonicTime());
 
-            _actions.AddLast(memory =>
+            AddAction(memory =>
             {
                 if (memory.Jobs.TryGetValue(jobId, out var job))
                 {
@@ -201,7 +201,7 @@ namespace Hangfire.InMemory
             if (queue == null) throw new ArgumentNullException(nameof(queue));
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
-            _queueActions.AddLast(state =>
+            AddAction(state =>
             {
                 var entry = state.QueueGetOrCreate(queue);
                 entry.Queue.Enqueue(jobId);
@@ -218,7 +218,7 @@ namespace Hangfire.InMemory
         public override void IncrementCounter([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
-            _actions.AddLast(state => CounterIncrement(state, key, value: 1, now: null, expireIn: null));
+            AddAction(state => CounterIncrement(state, key, value: 1, now: null, expireIn: null));
         }
 
         public override void IncrementCounter([NotNull] string key, TimeSpan expireIn)
@@ -226,13 +226,13 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            _actions.AddLast(state => CounterIncrement(state, key, value: 1, now, expireIn));
+            AddAction(state => CounterIncrement(state, key, value: 1, now, expireIn));
         }
 
         public override void DecrementCounter([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
-            _actions.AddLast(state => CounterIncrement(state, key, value: -1, now: null, expireIn: null));
+            AddAction(state => CounterIncrement(state, key, value: -1, now: null, expireIn: null));
         }
 
         public override void DecrementCounter([NotNull] string key, TimeSpan expireIn)
@@ -240,7 +240,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            _actions.AddLast(state => CounterIncrement(state, key, value: -1, now, expireIn));
+            AddAction(state => CounterIncrement(state, key, value: -1, now, expireIn));
         }
 
         public override void AddToSet([NotNull] string key, [NotNull] string value)
@@ -253,7 +253,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            _actions.AddLast(state => state.SetGetOrAdd(key).Add(value, score));
+            AddAction(state => state.SetGetOrAdd(key).Add(value, score));
         }
 
         public override void RemoveFromSet([NotNull] string key, [NotNull] string value)
@@ -261,7 +261,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (!state.Sets.TryGetValue(key, out var set)) return;
 
@@ -276,7 +276,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            _actions.AddLast(state => state.ListGetOrAdd(key).Add(value));
+            AddAction(state => state.ListGetOrAdd(key).Add(value));
         }
 
         public override void RemoveFromList([NotNull] string key, [NotNull] string value)
@@ -284,7 +284,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 var list = state.ListGetOrAdd(key);
                 if (list.RemoveAll(value, state.Options.StringComparer) == 0)
@@ -298,7 +298,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (!state.Lists.TryGetValue(key, out var list)) return;
 
@@ -314,7 +314,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (keyValuePairs == null) throw new ArgumentNullException(nameof(keyValuePairs));
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 var hash = state.HashGetOrAdd(key);
 
@@ -334,7 +334,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash)) state.HashDelete(hash);
             });
@@ -352,7 +352,7 @@ namespace Hangfire.InMemory
 
             if (items.Count == 0) return;
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 var set = state.SetGetOrAdd(key);
 
@@ -367,7 +367,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set)) state.SetDelete(set);
             });
@@ -379,7 +379,7 @@ namespace Hangfire.InMemory
 
             var now = _connection.Dispatcher.GetMonotonicTime();
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash)) state.HashExpire(hash, now, expireIn);
             });
@@ -391,7 +391,7 @@ namespace Hangfire.InMemory
 
             var now = _connection.Dispatcher.GetMonotonicTime();
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (state.Lists.TryGetValue(key, out var list)) state.ListExpire(list, now, expireIn);
             });
@@ -403,7 +403,7 @@ namespace Hangfire.InMemory
 
             var now = _connection.Dispatcher.GetMonotonicTime();
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set)) state.SetExpire(set, now, expireIn);
             });
@@ -413,7 +413,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash)) state.HashExpire(hash, now: null, expireIn: null);
             });
@@ -423,7 +423,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (state.Lists.TryGetValue(key, out var list)) state.ListExpire(list, now: null, expireIn: null);
             });
@@ -433,10 +433,15 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            _actions.AddLast(state =>
+            AddAction(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set)) state.SetExpire(set, now: null, expireIn: null);
             });
+        }
+
+        private void AddAction(Action<InMemoryState> action)
+        {
+            _actions.AddLast(action);
         }
 
         private static void CounterIncrement(InMemoryState state, string key, int value, MonotonicTime? now, TimeSpan? expireIn)
