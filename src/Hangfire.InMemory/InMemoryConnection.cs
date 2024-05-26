@@ -95,10 +95,8 @@ namespace Hangfire.InMemory
                 parameters,
                 Dispatcher.GetMonotonicTime());
 
-            Dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryWriteAndWait(state =>
             {
-                
-
                 // Background job is not yet initialized after calling this method, and
                 // transaction is expected a few moments later that will initialize this
                 // job. To prevent early, non-expected eviction when max expiration time
@@ -179,7 +177,7 @@ namespace Hangfire.InMemory
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            Dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryWriteAndWait(state =>
             {
                 if (state.Jobs.TryGetValue(id, out var jobEntry))
                 {
@@ -195,7 +193,7 @@ namespace Hangfire.InMemory
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 if (state.Jobs.TryGetValue(id, out var entry))
                 {
@@ -210,7 +208,7 @@ namespace Hangfire.InMemory
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
-            var data = Dispatcher.QueryAndWait(state =>
+            var data = Dispatcher.QueryReadAndWait(state =>
             {
                 if (!state.Jobs.TryGetValue(jobId, out var entry))
                 {
@@ -243,7 +241,7 @@ namespace Hangfire.InMemory
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 if (!state.Jobs.TryGetValue(jobId, out var jobEntry) || jobEntry.State == null)
                 {
@@ -266,7 +264,7 @@ namespace Hangfire.InMemory
 
             var now = Dispatcher.GetMonotonicTime();
 
-            Dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryWriteAndWait(state =>
             {
                 if (!state.Servers.ContainsKey(serverId))
                 {
@@ -283,7 +281,7 @@ namespace Hangfire.InMemory
         {
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
-            Dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryWriteAndWait(state =>
             {
                 state.ServerRemove(serverId);
                 return true;
@@ -296,7 +294,7 @@ namespace Hangfire.InMemory
 
             var now = Dispatcher.GetMonotonicTime();
 
-            var result = Dispatcher.QueryAndWait(state =>
+            var result = Dispatcher.QueryWriteAndWait(state =>
             {
                 if (state.Servers.TryGetValue(serverId, out var server))
                 {
@@ -322,7 +320,7 @@ namespace Hangfire.InMemory
 
             var now = Dispatcher.GetMonotonicTime();
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryWriteAndWait(state =>
             {
                 var serversToRemove = new List<string>();
 
@@ -353,7 +351,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 var result = new HashSet<string>(state.Options.StringComparer);
 
@@ -374,7 +372,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be greater or equal to the `fromScore` value.", nameof(toScore));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -391,7 +389,7 @@ namespace Hangfire.InMemory
             if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be greater or equal to the `fromScore` value.", nameof(toScore));
             if (count <= 0) throw new ArgumentException("The value must be a positive number", nameof(count));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -407,7 +405,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 return state.Sets.TryGetValue(key, out var set) && set.Contains(value);
             });
@@ -417,7 +415,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait(
+            return Dispatcher.QueryReadAndWait(
                 state => state.Sets.TryGetValue(key, out var set)
                     ? set.Count
                     : 0);
@@ -428,7 +426,7 @@ namespace Hangfire.InMemory
             if (keys == null) throw new ArgumentNullException(nameof(keys));
             if (limit < 0) throw new ArgumentOutOfRangeException(nameof(limit), "Value must be greater or equal to 0.");
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 var count = 0;
 
@@ -448,7 +446,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait(
+            return Dispatcher.QueryReadAndWait(
                 state => state.Lists.TryGetValue(key, out var list)
                     ? list.Count
                     : 0);
@@ -458,7 +456,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait(
+            return Dispatcher.QueryReadAndWait(
                 state => state.Counters.TryGetValue(key, out var counter)
                     ? counter.Value
                     : 0);
@@ -468,7 +466,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait(
+            return Dispatcher.QueryReadAndWait(
                 state => state.Hashes.TryGetValue(key, out var hash)
                     ? hash.Value.Count 
                     : 0);
@@ -478,7 +476,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryAndWait(state =>
+            var expireAt = Dispatcher.QueryReadAndWait(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.ExpireAt.HasValue)
                 {
@@ -499,7 +497,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryAndWait(state =>
+            var expireAt = Dispatcher.QueryReadAndWait(state =>
             {
                 if (state.Lists.TryGetValue(key, out var list) && list.ExpireAt.HasValue)
                 {
@@ -520,7 +518,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryAndWait(state =>
+            var expireAt = Dispatcher.QueryReadAndWait(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set) && set.ExpireAt.HasValue)
                 {
@@ -542,7 +540,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (keyValuePairs == null) throw new ArgumentNullException(nameof(keyValuePairs));
 
-            Dispatcher.QueryAndWait(state =>
+            Dispatcher.QueryWriteAndWait(state =>
             {
                 var hash = state.HashGetOrAdd(key);
 
@@ -564,7 +562,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash))
                 {
@@ -580,7 +578,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.Value.TryGetValue(name, out var result))
                 {
@@ -595,7 +593,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 if (state.Lists.TryGetValue(key, out var list))
                 {
@@ -612,7 +610,7 @@ namespace Hangfire.InMemory
             if (startingFrom < 0) throw new ArgumentException("The value must be greater than or equal to zero.", nameof(startingFrom));
             if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater than the `{nameof(startingFrom)}` value.", nameof(endingAt));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 var result = new List<string>();
 
@@ -638,7 +636,7 @@ namespace Hangfire.InMemory
             if (startingFrom < 0) throw new ArgumentException("The value must be greater than or equal to zero.", nameof(startingFrom));
             if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater or equal to the `{nameof(startingFrom)}` value.", nameof(endingAt));
 
-            return Dispatcher.QueryAndWait(state =>
+            return Dispatcher.QueryReadAndWait(state =>
             {
                 var result = new List<string>();
 

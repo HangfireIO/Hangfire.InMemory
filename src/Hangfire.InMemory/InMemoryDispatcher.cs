@@ -27,6 +27,7 @@ namespace Hangfire.InMemory
         private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(15);
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
+        private readonly ConcurrentQueue<InMemoryDispatcherCallback> _readQueries = new ConcurrentQueue<InMemoryDispatcherCallback>();
         private readonly ConcurrentQueue<InMemoryDispatcherCallback> _queries = new ConcurrentQueue<InMemoryDispatcherCallback>();
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
@@ -53,7 +54,7 @@ namespace Hangfire.InMemory
             _thread.Join();
         }
 
-        protected override object QueryAndWait(Func<InMemoryState, object> query)
+        protected override object QueryWriteAndWait(Func<InMemoryState, object> query)
         {
             if (_disposed) ThrowObjectDisposedException();
 
@@ -83,6 +84,36 @@ namespace Hangfire.InMemory
             }
         }
 
+        protected override object QueryReadAndWait(Func<InMemoryState, object> query)
+        {
+            if (_disposed) ThrowObjectDisposedException();
+
+            using (var callback = new InMemoryDispatcherCallback(query))
+            {
+                _readQueries.Enqueue(callback);
+
+                if (Volatile.Read(ref _outstandingRequests.Value) == 0)
+                {
+                    if (Interlocked.Exchange(ref _outstandingRequests.Value, 1) == 0)
+                    {
+                        _semaphore.Release();
+                    }
+                }
+
+                if (!callback.Wait(DefaultQueryTimeout, CancellationToken.None))
+                {
+                    throw new TimeoutException();
+                }
+
+                if (callback.IsFaulted)
+                {
+                    throw new InvalidOperationException("An exception occurred while executing a read query. Please see inner exception for details.", (Exception)callback.Result);
+                }
+
+                return callback.Result;
+            }
+        }
+
         private void DoWork()
         {
             try
@@ -95,11 +126,11 @@ namespace Hangfire.InMemory
 
                         var startTime = Environment.TickCount;
 
-                        while (_queries.TryDequeue(out var next))
+                        while (_readQueries.TryDequeue(out var next) || _queries.TryDequeue(out next))
                         {
                             try
                             {
-                                var result = base.QueryAndWait(next.Callback);
+                                var result = base.QueryWriteAndWait(next.Callback);
                                 next.SetResult(result);
                             }
                             catch (Exception ex) when (ExceptionHelper.IsCatchableExceptionType(ex))

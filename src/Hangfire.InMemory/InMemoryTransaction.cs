@@ -48,7 +48,7 @@ namespace Hangfire.InMemory
 
         public override void Commit()
         {
-            _connection.Dispatcher.QueryAndWait(state =>
+            _connection.Dispatcher.QueryWriteAndWait(state =>
             {
                 try
                 {

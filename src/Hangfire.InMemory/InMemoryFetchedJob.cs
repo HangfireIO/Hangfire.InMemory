@@ -39,7 +39,7 @@ namespace Hangfire.InMemory
 
         public void Requeue()
         {
-            var entry = _dispatcher.QueryAndWait(state =>
+            var entry = _dispatcher.QueryWriteAndWait(state =>
             {
                 var value = state.QueueGetOrCreate(QueueName);
                 value.Queue.Enqueue(JobId);
