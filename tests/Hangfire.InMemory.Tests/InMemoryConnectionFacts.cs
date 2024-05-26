@@ -115,7 +115,7 @@ namespace Hangfire.InMemory.Tests
                 var data = InvocationData.SerializeJob(_job);
 
                 Assert.Equal(jobId, entry.Key);
-                Assert.NotSame(_parameters, entry.GetParametersSnapshot(_options.StringComparer));
+                Assert.NotSame(_parameters, entry.GetParameters());
                 Assert.Empty(entry.History);
                 Assert.Equal(_now, entry.CreatedAt);
                 Assert.Equal(_now.Add(TimeSpan.FromMinutes(30)), entry.ExpireAt);
@@ -148,7 +148,7 @@ namespace Hangfire.InMemory.Tests
 
                 var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromMinutes(30));
 
-                var parameters = _state.Jobs[jobId].GetParametersSnapshot(_options.StringComparer);
+                var parameters = _state.Jobs[jobId].GetParameters().ToDictionary(x => x.Key, x => x.Value);
                 Assert.Equal(2, parameters.Count);
                 Assert.Equal("1", parameters["RetryCount"]);
                 Assert.Equal("en-US", parameters["CurrentCulture"]);

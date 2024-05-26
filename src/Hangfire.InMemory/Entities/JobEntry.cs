@@ -23,7 +23,7 @@ namespace Hangfire.InMemory.Entities
     {
         private const int StateCountForRegularJob = 4; // (Scheduled) -> Enqueued -> Processing -> Succeeded
         private readonly List<StateEntry> _history = new(StateCountForRegularJob);
-        private readonly List<KeyValuePair<string, string>> _parameters = new List<KeyValuePair<string, string>>();
+        private KeyValuePair<string, string>[] _parameters;
 
         public JobEntry(
             string key,
@@ -35,9 +35,12 @@ namespace Hangfire.InMemory.Entities
             InvocationData = data;
             CreatedAt = createdAt;
 
+            _parameters = new KeyValuePair<string, string>[parameters.Count];
+
+            var index = 0;
             foreach (var parameter in parameters)
             {
-                _parameters.Add(parameter);
+                _parameters[index++] = parameter;
             }
         }
 
@@ -66,7 +69,7 @@ namespace Hangfire.InMemory.Entities
         {
             var parameter = new KeyValuePair<string, string>(name, value);
             
-            for (var i = 0; i < _parameters.Count; i++)
+            for (var i = 0; i < _parameters.Length; i++)
             {
                 if (comparer.Compare(_parameters[i].Key, name) == 0)
                 {
@@ -75,19 +78,16 @@ namespace Hangfire.InMemory.Entities
                 }
             }
 
-            _parameters.Add(parameter);
+            var arrayToResize = _parameters;
+            Array.Resize(ref arrayToResize, _parameters.Length + 1);
+            arrayToResize[arrayToResize.Length - 1] = parameter;
+
+            _parameters = arrayToResize;
         }
 
-        public IReadOnlyDictionary<string, string> GetParametersSnapshot(StringComparer comparer)
+        public KeyValuePair<string, string>[] GetParameters()
         {
-            var result = new Dictionary<string, string>(capacity: _parameters.Count, comparer);
-
-            foreach (var parameter in _parameters)
-            {
-                result.Add(parameter.Key, parameter.Value);
-            }
-
-            return result;
+            return _parameters;
         }
 
         public void AddHistoryEntry(StateEntry entry, int maxLength)

@@ -131,7 +131,7 @@ namespace Hangfire.InMemory
                     Job = job,
                     InvocationData = entry.InvocationData,
                     LoadException = loadException,
-                    Properties = entry.GetParametersSnapshot(state.Options.StringComparer).ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer),
+                    Properties = entry.GetParameters().ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer),
                     History = entry.History.Select(x => new StateHistoryDto
                     {
                         CreatedAt = x.CreatedAt.ToUtcDateTime(),

@@ -220,7 +220,8 @@ namespace Hangfire.InMemory
                     entry.InvocationData,
                     State = entry.State?.Name,
                     entry.CreatedAt,
-                    ParametersSnapshot = entry.GetParametersSnapshot(state.Options.StringComparer)
+                    Parameters = entry.GetParameters(),
+                    state.Options.StringComparer
                 };
             });
 
@@ -233,7 +234,7 @@ namespace Hangfire.InMemory
                 CreatedAt = data.CreatedAt.ToUtcDateTime(),
                 State = data.State,
                 InvocationData = data.InvocationData,
-                ParametersSnapshot = data.ParametersSnapshot
+                ParametersSnapshot = data.Parameters.ToDictionary(x => x.Key, x => x.Value, data.StringComparer)
             };
         }
 
