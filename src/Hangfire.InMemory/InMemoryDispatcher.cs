@@ -27,8 +27,8 @@ namespace Hangfire.InMemory
         private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(15);
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
-        private readonly ConcurrentQueue<InMemoryDispatcherCallback> _readQueries = new ConcurrentQueue<InMemoryDispatcherCallback>();
-        private readonly ConcurrentQueue<InMemoryDispatcherCallback> _queries = new ConcurrentQueue<InMemoryDispatcherCallback>();
+        private readonly ConcurrentBag<InMemoryDispatcherCallback> _readQueries = new ConcurrentBag<InMemoryDispatcherCallback>();
+        private readonly ConcurrentBag<InMemoryDispatcherCallback> _queries = new ConcurrentBag<InMemoryDispatcherCallback>();
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
         private volatile bool _disposed;
@@ -60,7 +60,7 @@ namespace Hangfire.InMemory
 
             using (var callback = new InMemoryDispatcherCallback(query))
             {
-                _queries.Enqueue(callback);
+                _queries.Add(callback);
 
                 if (Volatile.Read(ref _outstandingRequests.Value) == 0)
                 {
@@ -90,7 +90,7 @@ namespace Hangfire.InMemory
 
             using (var callback = new InMemoryDispatcherCallback(query))
             {
-                _readQueries.Enqueue(callback);
+                _readQueries.Add(callback);
 
                 if (Volatile.Read(ref _outstandingRequests.Value) == 0)
                 {
@@ -126,7 +126,7 @@ namespace Hangfire.InMemory
 
                         var startTime = Environment.TickCount;
 
-                        while (_readQueries.TryDequeue(out var next) || _queries.TryDequeue(out next))
+                        while (_readQueries.TryTake(out var next) || _queries.TryTake(out next))
                         {
                             try
                             {
