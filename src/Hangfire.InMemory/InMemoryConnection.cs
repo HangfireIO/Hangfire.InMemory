@@ -88,16 +88,16 @@ namespace Hangfire.InMemory
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            var key = Guid.NewGuid().ToString();
-            var data = InvocationData.SerializeJob(job);
+            var key = Guid.NewGuid().ToString(); // TODO: Change it with long?
+            var jobEntry = new JobEntry(
+                key,
+                InvocationData.SerializeJob(job),
+                parameters,
+                Dispatcher.GetMonotonicTime());
 
-            Dispatcher.QueryAndWait((now, state) =>
+            Dispatcher.QueryAndWait(state =>
             {
-                var jobEntry = new JobEntry(
-                    key,
-                    data,
-                    parameters,
-                    now);
+                
 
                 // Background job is not yet initialized after calling this method, and
                 // transaction is expected a few moments later that will initialize this
@@ -105,7 +105,7 @@ namespace Hangfire.InMemory
                 // limit is low or close to zero, that can lead to exceptions, we just
                 // ignoring this limit in very rare occasions when background job is not
                 // initialized for reasons I can't even realize with an in-memory storage.
-                state.JobCreate(jobEntry, now, expireIn, ignoreMaxExpirationTime: true);
+                state.JobCreate(jobEntry, expireIn, ignoreMaxExpirationTime: true);
             });
 
             return key;
@@ -264,7 +264,9 @@ namespace Hangfire.InMemory
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
             if (context == null) throw new ArgumentNullException(nameof(context));
 
-            Dispatcher.QueryAndWait((now, state) =>
+            var now = Dispatcher.GetMonotonicTime();
+
+            Dispatcher.QueryAndWait(state =>
             {
                 if (!state.Servers.ContainsKey(serverId))
                 {
@@ -292,7 +294,9 @@ namespace Hangfire.InMemory
         {
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
-            var result = Dispatcher.QueryAndWait((now, state) =>
+            var now = Dispatcher.GetMonotonicTime();
+
+            var result = Dispatcher.QueryAndWait(state =>
             {
                 if (state.Servers.TryGetValue(serverId, out var server))
                 {
@@ -316,7 +320,9 @@ namespace Hangfire.InMemory
                 throw new ArgumentException("The `timeout` value must be positive.", nameof(timeout));
             }
 
-            return Dispatcher.QueryAndWait((now, state) =>
+            var now = Dispatcher.GetMonotonicTime();
+
+            return Dispatcher.QueryAndWait(state =>
             {
                 var serversToRemove = new List<string>();
 
@@ -472,49 +478,63 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait((now, state) =>
+            var expireAt = Dispatcher.QueryAndWait(state =>
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.ExpireAt.HasValue)
                 {
-                    var expireIn = hash.ExpireAt.Value - now;
-                    return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
+                    return hash.ExpireAt;
                 }
 
-                return Timeout.InfiniteTimeSpan;
+                return null;
             });
-        }
 
+            if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
+
+            var now = Dispatcher.GetMonotonicTime();
+            var expireIn = expireAt.Value - now;
+            return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
+        }
 
         public override TimeSpan GetListTtl([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait((now, state) =>
+            var expireAt = Dispatcher.QueryAndWait(state =>
             {
                 if (state.Lists.TryGetValue(key, out var list) && list.ExpireAt.HasValue)
                 {
-                    var expireIn = list.ExpireAt.Value - now;
-                    return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
+                    return list.ExpireAt;
                 }
 
-                return Timeout.InfiniteTimeSpan;
+                return null;
             });
+
+            if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
+
+            var now = Dispatcher.GetMonotonicTime();
+            var expireIn = expireAt.Value - now;
+            return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
         }
 
         public override TimeSpan GetSetTtl([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryAndWait((now, state) =>
+            var expireAt = Dispatcher.QueryAndWait(state =>
             {
                 if (state.Sets.TryGetValue(key, out var set) && set.ExpireAt.HasValue)
                 {
-                    var expireIn = set.ExpireAt.Value - now;
-                    return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
+                    return set.ExpireAt;
                 }
 
-                return Timeout.InfiniteTimeSpan;
+                return null;
             });
+            
+            if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
+
+            var now = Dispatcher.GetMonotonicTime();
+            var expireIn = expireAt.Value - now;
+            return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
         }
 
         public override void SetRangeInHash([NotNull] string key, [NotNull] IEnumerable<KeyValuePair<string, string>> keyValuePairs)

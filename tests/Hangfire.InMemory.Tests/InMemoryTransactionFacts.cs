@@ -388,10 +388,7 @@ namespace Hangfire.InMemory.Tests
         public void ExpireJob_SetsExpirationTime_OfTheGivenJob()
         {
             // Arrange
-            _state.JobCreate(
-                CreateJobEntry("myjob"),
-                _now,
-                expireIn: null);
+            _state.JobCreate(CreateJobEntry("myjob"), expireIn: null);
 
             // Act
             Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
@@ -406,7 +403,7 @@ namespace Hangfire.InMemory.Tests
         public void ExpireJob_AddsEntry_ToExpirationIndex()
         {
             var entry = CreateJobEntry("myjob");
-            _state.JobCreate(entry, _now, expireIn: null);
+            _state.JobCreate(entry, expireIn: null);
 
             Commit(x => x.ExpireJob("myjob", TimeSpan.FromMinutes(30)));
 
@@ -417,7 +414,7 @@ namespace Hangfire.InMemory.Tests
         public void ExpireJob_WithZeroExpireInValue_LeadsToImmediateEviction()
         {
             var entry = CreateJobEntry("myjob");
-            _state.JobCreate(entry, _now, expireIn: null);
+            _state.JobCreate(entry, expireIn: null);
 
             Commit(x => x.ExpireJob("myjob", TimeSpan.Zero));
 
@@ -444,10 +441,7 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void PersistJob_ResetsExpirationTime_OfTheGivenJob()
         {
-            _state.JobCreate(
-                CreateJobEntry("myjob"),
-                _now,
-                expireIn: TimeSpan.FromMinutes(1));
+            _state.JobCreate(CreateJobEntry("myjob"), expireIn: TimeSpan.FromMinutes(1));
 
             Commit(x => x.PersistJob("myjob"));
 
@@ -461,7 +455,7 @@ namespace Hangfire.InMemory.Tests
             var entry = CreateJobEntry("myjob");
             entry.ExpireAt = _now;
 
-            _state.JobCreate(entry, _now, expireIn: TimeSpan.Zero);
+            _state.JobCreate(entry, expireIn: TimeSpan.Zero);
 
             // Act
             Commit(x => x.PersistJob("myjob"));
@@ -495,10 +489,7 @@ namespace Hangfire.InMemory.Tests
             var state = new Mock<IState>();
             state.SetupGet(x => x.Name).Returns((string)null);
 
-            _state.JobCreate(
-                CreateJobEntry("myjob"),
-                _now,
-                expireIn: null);
+            _state.JobCreate(CreateJobEntry("myjob"), expireIn: null);
 
             // Act
             var exception = Assert.Throws<ArgumentException>(() => Commit(
@@ -528,10 +519,7 @@ namespace Hangfire.InMemory.Tests
             state.SetupGet(x => x.Reason).Returns("SomeReason");
             state.Setup(x => x.SerializeData()).Returns(new Dictionary<string, string> {{ "Key", "Value" }});
 
-            _state.JobCreate(
-                CreateJobEntry("myjob"),
-                _now,
-                expireIn: null);
+            _state.JobCreate(CreateJobEntry("myjob"), expireIn: null);
 
             // Act
             Commit(x => x.SetJobState("myjob", state.Object));
@@ -553,10 +541,7 @@ namespace Hangfire.InMemory.Tests
             var state = new Mock<IState>();
             state.SetupGet(x => x.Name).Returns("SomeState");
 
-            _state.JobCreate(
-                CreateJobEntry("myjob"),
-                _now,
-                expireIn: null);
+            _state.JobCreate(CreateJobEntry("myjob"), expireIn: null);
 
             // Act
             Commit(x => x.SetJobState("myjob", state.Object));
@@ -573,7 +558,7 @@ namespace Hangfire.InMemory.Tests
             state.Setup(x => x.Name).Returns("SomeState");
 
             var entry = CreateJobEntry("myjob");
-            _state.JobCreate(entry, _now, expireIn: null);
+            _state.JobCreate(entry, expireIn: null);
 
             // Act
             Commit(x => x.SetJobState("myjob", state.Object));
@@ -616,10 +601,7 @@ namespace Hangfire.InMemory.Tests
             state.SetupGet(x => x.Reason).Returns("SomeReason");
             state.Setup(x => x.SerializeData()).Returns(new Dictionary<string, string> {{ "Key", "Value" }});
 
-            _state.JobCreate(
-                CreateJobEntry("myjob"),
-                _now,
-                expireIn: null);
+            _state.JobCreate(CreateJobEntry("myjob"), expireIn: null);
 
             // Act
             Commit(x => x.AddJobState("myjob", state.Object));
@@ -643,10 +625,7 @@ namespace Hangfire.InMemory.Tests
             var state4 = new Mock<IState>(); state4.SetupGet(x => x.Name).Returns("State4");
             var state5 = new Mock<IState>(); state5.SetupGet(x => x.Name).Returns("State5");
 
-            _state.JobCreate(
-                CreateJobEntry("myjob"),
-                _now,
-                expireIn: null);
+            _state.JobCreate(CreateJobEntry("myjob"), expireIn: null);
 
             _options.MaxStateHistoryLength = 3;
 

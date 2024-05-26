@@ -53,7 +53,7 @@ namespace Hangfire.InMemory
             _thread.Join();
         }
 
-        protected override object QueryAndWait(Func<MonotonicTime, InMemoryState, object> query)
+        protected override object QueryAndWait(Func<InMemoryState, object> query)
         {
             if (_disposed) ThrowObjectDisposedException();
 

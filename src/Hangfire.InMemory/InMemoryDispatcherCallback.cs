@@ -23,12 +23,12 @@ namespace Hangfire.InMemory
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
         private volatile object _result;
 
-        public InMemoryDispatcherCallback(Func<MonotonicTime, InMemoryState, object> callback)
+        public InMemoryDispatcherCallback(Func<InMemoryState, object> callback)
         {
             Callback = callback ?? throw new ArgumentNullException(nameof(callback));
         }
 
-        public Func<MonotonicTime, InMemoryState, object> Callback { get; }
+        public Func<InMemoryState, object> Callback { get; }
         public bool IsFaulted { get; private set; }
 
         public object Result => _result;

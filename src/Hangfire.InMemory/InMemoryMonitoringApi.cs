@@ -531,32 +531,38 @@ namespace Hangfire.InMemory
 
         public override IDictionary<DateTime, long> SucceededByDatesCount()
         {
-            return _dispatcher.QueryAndWait((now, state) => GetTimelineStats(state, now, "succeeded"));
+            var now = _dispatcher.GetMonotonicTime();
+            return _dispatcher.QueryAndWait(state => GetTimelineStats(state, now, "succeeded"));
         }
 
         public override IDictionary<DateTime, long> FailedByDatesCount()
         {
-            return _dispatcher.QueryAndWait((now, state) => GetTimelineStats(state, now, "failed"));
+            var now = _dispatcher.GetMonotonicTime();
+            return _dispatcher.QueryAndWait(state => GetTimelineStats(state, now, "failed"));
         }
 
         public override IDictionary<DateTime, long> DeletedByDatesCount()
         {
-            return _dispatcher.QueryAndWait((now, state) => GetTimelineStats(state, now, "deleted"));
+            var now = _dispatcher.GetMonotonicTime();
+            return _dispatcher.QueryAndWait(state => GetTimelineStats(state, now, "deleted"));
         }
 
         public override IDictionary<DateTime, long> HourlySucceededJobs()
         {
-            return _dispatcher.QueryAndWait((now, state) => GetHourlyTimelineStats(state, now, "succeeded"));
+            var now = _dispatcher.GetMonotonicTime();
+            return _dispatcher.QueryAndWait(state => GetHourlyTimelineStats(state, now, "succeeded"));
         }
 
         public override IDictionary<DateTime, long> HourlyFailedJobs()
         {
-            return _dispatcher.QueryAndWait((now, state) => GetHourlyTimelineStats(state, now, "failed"));
+            var now = _dispatcher.GetMonotonicTime();
+            return _dispatcher.QueryAndWait(state => GetHourlyTimelineStats(state, now, "failed"));
         }
 
         public override IDictionary<DateTime, long> HourlyDeletedJobs()
         {
-            return _dispatcher.QueryAndWait((now, state) => GetHourlyTimelineStats(state, now, "deleted"));
+            var now = _dispatcher.GetMonotonicTime();
+            return _dispatcher.QueryAndWait(state => GetHourlyTimelineStats(state, now, "deleted"));
         }
 
         private long GetCountByStateName(string stateName)

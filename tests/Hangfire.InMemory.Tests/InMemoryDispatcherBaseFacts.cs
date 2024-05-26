@@ -64,9 +64,9 @@ namespace Hangfire.InMemory.Tests
         public void EvictEntries_EvictsExpiredJobs()
         {
             // Arrange
-            _state.JobCreate(CreateJobEntry("job-1"), _now, expireIn: TimeSpan.FromSeconds(-1));
-            _state.JobCreate(CreateJobEntry("job-2"), _now, expireIn: TimeSpan.FromMinutes(-1));
-            _state.JobCreate(CreateJobEntry("job-3"), _now, expireIn: TimeSpan.FromHours(-1));
+            _state.JobCreate(CreateJobEntry("job-1"), expireIn: TimeSpan.FromSeconds(-1));
+            _state.JobCreate(CreateJobEntry("job-2"), expireIn: TimeSpan.FromMinutes(-1));
+            _state.JobCreate(CreateJobEntry("job-3"), expireIn: TimeSpan.FromHours(-1));
 
             // Act
             _dispatcher.EvictExpiredEntries();
@@ -139,7 +139,7 @@ namespace Hangfire.InMemory.Tests
         public void EvictEntries_DoesNotEvict_NonExpiringEntries()
         {
             // Arrange
-            _state.JobCreate(CreateJobEntry("my-job"), _now, expireIn: null);
+            _state.JobCreate(CreateJobEntry("my-job"), expireIn: null);
             _state.HashExpire(_state.HashGetOrAdd("my-hash"), _now, expireIn: null);
             _state.SetExpire(_state.SetGetOrAdd("my-set"), _now, expireIn: null);
             _state.ListExpire(_state.ListGetOrAdd("my-list"), _now, expireIn: null);
@@ -160,7 +160,7 @@ namespace Hangfire.InMemory.Tests
         public void EvictEntries_DoesNotEvict_StillExpiringEntries()
         {
             // Arrange
-            _state.JobCreate(CreateJobEntry("my-job"), _now, expireIn: TimeSpan.FromMinutes(30));
+            _state.JobCreate(CreateJobEntry("my-job"), expireIn: TimeSpan.FromMinutes(30));
             _state.HashExpire(_state.HashGetOrAdd("my-hash"), _now, expireIn: TimeSpan.FromMinutes(30));
             _state.SetExpire(_state.SetGetOrAdd("my-set"), _now, expireIn: TimeSpan.FromMinutes(30));
             _state.ListExpire(_state.ListGetOrAdd("my-list"), _now, expireIn: TimeSpan.FromMinutes(30));
@@ -181,10 +181,10 @@ namespace Hangfire.InMemory.Tests
         public void EvictEntries_DoesStumbleUpon_NonExpiredEntries()
         {
             // Arrange
-            _state.JobCreate(CreateJobEntry("job-0"), _now, expireIn: TimeSpan.Zero);
-            _state.JobCreate(CreateJobEntry("job-1"), _now, expireIn: null);
-            _state.JobCreate(CreateJobEntry("job-2"), _now, expireIn: TimeSpan.FromMinutes(30));
-            _state.JobCreate(CreateJobEntry("job-3"), _now, expireIn: TimeSpan.FromMinutes(-30));
+            _state.JobCreate(CreateJobEntry("job-0"), expireIn: TimeSpan.Zero);
+            _state.JobCreate(CreateJobEntry("job-1"), expireIn: null);
+            _state.JobCreate(CreateJobEntry("job-2"), expireIn: TimeSpan.FromMinutes(30));
+            _state.JobCreate(CreateJobEntry("job-3"), expireIn: TimeSpan.FromMinutes(-30));
             _state.HashExpire(_state.HashGetOrAdd("hash-0"), _now, expireIn: TimeSpan.Zero);
             _state.HashExpire(_state.HashGetOrAdd("hash-1"), _now, expireIn: null);
             _state.HashExpire(_state.HashGetOrAdd("hash-2"), _now, expireIn: TimeSpan.FromMinutes(30));
@@ -213,7 +213,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(new [] { "counter-1", "counter-2" }, _state.Counters.Keys.OrderBy(x => x));
         }
 
-        private JobEntry CreateJobEntry(string jobId)
+        private JobEntry  CreateJobEntry(string jobId)
         {
             return new JobEntry(jobId, InvocationData.SerializeJob(_job), _parameters, _now);
         }

@@ -108,27 +108,21 @@ namespace Hangfire.InMemory
             }
         }
 
-        public T QueryAndWait<T>(Func<InMemoryState, T> query)
+        public void QueryAndWait(Action<InMemoryState> query)
         {
-            T Callback(MonotonicTime _, InMemoryState state) => query(state);
-            return QueryAndWait(Callback);
-        }
-
-        public void QueryAndWait(Action<MonotonicTime, InMemoryState> query)
-        {
-            bool Callback(MonotonicTime now, InMemoryState state) { query(now, state); return true; }
+            bool Callback(InMemoryState state) { query(state); return true; }
             QueryAndWait(Callback);
         }
 
-        public T QueryAndWait<T>(Func<MonotonicTime, InMemoryState, T> query)
+        public T QueryAndWait<T>(Func<InMemoryState, T> query)
         {
-            object Callback(MonotonicTime now, InMemoryState state) => query(now, state);
+            object Callback(InMemoryState state) => query(state);
             return (T)QueryAndWait(Callback);
         }
 
-        protected virtual object QueryAndWait(Func<MonotonicTime, InMemoryState, object> query)
+        protected virtual object QueryAndWait(Func<InMemoryState, object> query)
         {
-            return query(GetMonotonicTime(), _state);
+            return query(_state);
         }
 
         protected void EvictExpiredEntries()
