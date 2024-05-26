@@ -15,7 +15,7 @@
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class CounterEntry : IExpirableEntry
+    internal sealed class CounterEntry : IExpirableEntry<string>
     {
         public CounterEntry(string id)
         {

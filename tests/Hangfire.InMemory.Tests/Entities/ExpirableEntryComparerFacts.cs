@@ -25,12 +25,10 @@ namespace Hangfire.InMemory.Tests.Entities
         private readonly StringComparer _stringComparer = StringComparer.Ordinal;
 
         [Fact]
-        public void Ctor_ThrowsAnException_WhenStringComparerIsNull()
+        public void Ctor_DoesNotThrowAnException_WhenComparerIsNull()
         {
-            var exception = Assert.Throws<ArgumentNullException>(
-                () => new ExpirableEntryComparer(null));
-
-            Assert.Equal("stringComparer", exception.ParamName);
+            var comparer = new ExpirableEntryComparer<string>(null);
+            Assert.NotNull(comparer);
         }
 
         [Fact]
@@ -38,7 +36,7 @@ namespace Hangfire.InMemory.Tests.Entities
         {
             var comparer = CreateComparer();
             var exception = Assert.Throws<ArgumentNullException>(
-                () => comparer.Compare(null, new ExpirableEntryStub(null, null)));
+                () => comparer.Compare(null, new ExpirableEntryStub<string>(null, null)));
 
             Assert.Equal("x", exception.ParamName);
         }
@@ -48,7 +46,7 @@ namespace Hangfire.InMemory.Tests.Entities
         {
             var comparer = CreateComparer();
             var exception = Assert.Throws<ArgumentNullException>(
-                () => comparer.Compare(new ExpirableEntryStub(null, null), null));
+                () => comparer.Compare(new ExpirableEntryStub<string>(null, null), null));
 
             Assert.Equal("y", exception.ParamName);
         }
@@ -57,7 +55,7 @@ namespace Hangfire.InMemory.Tests.Entities
         public void Compare_ReturnsZero_ForSameEntries_WithNullExpireAt()
         {
             var comparer = CreateComparer();
-            var entry = new ExpirableEntryStub(null, null);
+            var entry = new ExpirableEntryStub<string>(null, null);
 
             var result = comparer.Compare(entry, entry);
 
@@ -68,7 +66,7 @@ namespace Hangfire.InMemory.Tests.Entities
         public void Compare_ReturnsZero_ForSameEntries_WithNonNullExpireAt()
         {
             var comparer = CreateComparer();
-            var entry = new ExpirableEntryStub("key", MonotonicTime.GetCurrent());
+            var entry = new ExpirableEntryStub<string>("key", MonotonicTime.GetCurrent());
 
             var result = comparer.Compare(entry, entry);
 
@@ -82,8 +80,8 @@ namespace Hangfire.InMemory.Tests.Entities
             var now = MonotonicTime.GetCurrent();
 
             var result = comparer.Compare(
-                new ExpirableEntryStub("key", now),
-                new ExpirableEntryStub("key", now));
+                new ExpirableEntryStub<string>("key", now),
+                new ExpirableEntryStub<string>("key", now));
 
             Assert.Equal(0, result);
         }
@@ -95,8 +93,8 @@ namespace Hangfire.InMemory.Tests.Entities
             var now = MonotonicTime.GetCurrent();
 
             var result = comparer.Compare(
-                new ExpirableEntryStub(null, now),
-                new ExpirableEntryStub(null, now));
+                new ExpirableEntryStub<string>(null, now),
+                new ExpirableEntryStub<string>(null, now));
 
             Assert.Equal(0, result);
         }
@@ -107,8 +105,8 @@ namespace Hangfire.InMemory.Tests.Entities
             var comparer = CreateComparer();
 
             var result = comparer.Compare(
-                new ExpirableEntryStub("key", null),
-                new ExpirableEntryStub("key", null));
+                new ExpirableEntryStub<string>("key", null),
+                new ExpirableEntryStub<string>("key", null));
 
             Assert.Equal(0, result);
         }
@@ -119,8 +117,8 @@ namespace Hangfire.InMemory.Tests.Entities
             var comparer = CreateComparer();
 
             var result = comparer.Compare(
-                new ExpirableEntryStub(null, null),
-                new ExpirableEntryStub(null, null));
+                new ExpirableEntryStub<string>(null, null),
+                new ExpirableEntryStub<string>(null, null));
 
             Assert.Equal(0, result);
         }
@@ -130,12 +128,12 @@ namespace Hangfire.InMemory.Tests.Entities
         {
             var comparer = CreateComparer();
             var now = MonotonicTime.GetCurrent();
-            var x = new ExpirableEntryStub("key-1", null);
+            var x = new ExpirableEntryStub<string>("key-1", null);
 
             Assert.Equal(-1, _stringComparer.Compare("key-1", "key-2")); // Just to check
-            Assert.Equal(+1, comparer.Compare(x, new ExpirableEntryStub("key-2", now)));
-            Assert.Equal(+1, comparer.Compare(x, new ExpirableEntryStub("key-1", now)));
-            Assert.Equal(+1, comparer.Compare(x, new ExpirableEntryStub(null, now)));
+            Assert.Equal(+1, comparer.Compare(x, new ExpirableEntryStub<string>("key-2", now)));
+            Assert.Equal(+1, comparer.Compare(x, new ExpirableEntryStub<string>("key-1", now)));
+            Assert.Equal(+1, comparer.Compare(x, new ExpirableEntryStub<string>(null, now)));
         }
 
         [Fact]
@@ -143,9 +141,9 @@ namespace Hangfire.InMemory.Tests.Entities
         {
             var comparer = CreateComparer();
             var now = MonotonicTime.GetCurrent();
-            var x = new ExpirableEntryStub("key", now);
+            var x = new ExpirableEntryStub<string>("key", now);
             
-            Assert.Equal(+1, comparer.Compare(x, new ExpirableEntryStub("key", now.Add(TimeSpan.FromSeconds(-1)))));
+            Assert.Equal(+1, comparer.Compare(x, new ExpirableEntryStub<string>("key", now.Add(TimeSpan.FromSeconds(-1)))));
         }
 
         [Fact]
@@ -153,12 +151,12 @@ namespace Hangfire.InMemory.Tests.Entities
         {
             var comparer = CreateComparer();
             var now = MonotonicTime.GetCurrent();
-            var y = new ExpirableEntryStub("key-1", null);
+            var y = new ExpirableEntryStub<string>("key-1", null);
 
             Assert.Equal(+1, _stringComparer.Compare("key-2", "key-1")); // Just to check
-            Assert.Equal(-1, comparer.Compare(new ExpirableEntryStub("key-2", now), y));
-            Assert.Equal(-1, comparer.Compare(new ExpirableEntryStub("key-1", now), y));
-            Assert.Equal(-1, comparer.Compare(new ExpirableEntryStub(null, now), y));
+            Assert.Equal(-1, comparer.Compare(new ExpirableEntryStub<string>("key-2", now), y));
+            Assert.Equal(-1, comparer.Compare(new ExpirableEntryStub<string>("key-1", now), y));
+            Assert.Equal(-1, comparer.Compare(new ExpirableEntryStub<string>(null, now), y));
         }
 
         [Fact]
@@ -166,32 +164,55 @@ namespace Hangfire.InMemory.Tests.Entities
         {
             var comparer = CreateComparer();
             var now = MonotonicTime.GetCurrent();
-            var x = new ExpirableEntryStub("key", now);
+            var x = new ExpirableEntryStub<string>("key", now);
             
-            Assert.Equal(-1, comparer.Compare(x, new ExpirableEntryStub("key", now.Add(TimeSpan.FromSeconds(1)))));
+            Assert.Equal(-1, comparer.Compare(x, new ExpirableEntryStub<string>("key", now.Add(TimeSpan.FromSeconds(1)))));
         }
 
         [Fact]
-        public void Compare_FallsBackToStringComparer_WhenExpireAtAreEqual_OrNull()
+        public void Compare_FallsBackToComparer_WhenItPassed_WhenExpireAtAreEqual_OrNull()
         {
             var comparer = CreateComparer();
             var now = MonotonicTime.GetCurrent();
             
             Assert.Equal(-1, comparer.Compare(
-                new ExpirableEntryStub("key-1", now),
-                new ExpirableEntryStub("key-2", now)));
+                new ExpirableEntryStub<string>("key-1", now),
+                new ExpirableEntryStub<string>("key-2", now)));
 
             Assert.Equal(+1, comparer.Compare(
-                new ExpirableEntryStub("key-2", now),
-                new ExpirableEntryStub("key-1", now)));
+                new ExpirableEntryStub<string>("key-2", now),
+                new ExpirableEntryStub<string>("key-1", now)));
 
             Assert.Equal(-1, comparer.Compare(
-                new ExpirableEntryStub("key-1", null),
-                new ExpirableEntryStub("key-2", null)));
+                new ExpirableEntryStub<string>("key-1", null),
+                new ExpirableEntryStub<string>("key-2", null)));
 
             Assert.Equal(+1, comparer.Compare(
-                new ExpirableEntryStub("key-2", null),
-                new ExpirableEntryStub("key-1", null)));
+                new ExpirableEntryStub<string>("key-2", null),
+                new ExpirableEntryStub<string>("key-1", null)));
+        }
+
+        [Fact]
+        public void Compare_FallsBackToEntities_WhenItPassed_WhenExpireAtAreEqual_OrNull()
+        {
+            var comparer = new ExpirableEntryComparer<long>(null);
+            var now = MonotonicTime.GetCurrent();
+            
+            Assert.Equal(-1, comparer.Compare(
+                new ExpirableEntryStub<long>(1, now),
+                new ExpirableEntryStub<long>(2, now)));
+
+            Assert.Equal(+1, comparer.Compare(
+                new ExpirableEntryStub<long>(2, now),
+                new ExpirableEntryStub<long>(1, now)));
+
+            Assert.Equal(-1, comparer.Compare(
+                new ExpirableEntryStub<long>(1, null),
+                new ExpirableEntryStub<long>(2, null)));
+
+            Assert.Equal(+1, comparer.Compare(
+                new ExpirableEntryStub<long>(2, null),
+                new ExpirableEntryStub<long>(1, null)));
         }
 
         [Fact]
@@ -200,9 +221,9 @@ namespace Hangfire.InMemory.Tests.Entities
             var now = MonotonicTime.GetCurrent();
             var array = new []
             {
-                new ExpirableEntryStub("key", now),
-                new ExpirableEntryStub("key", now.Add(TimeSpan.FromHours(-1))),
-                new ExpirableEntryStub("key", now.Add(TimeSpan.FromDays(1)))
+                new ExpirableEntryStub<string>("key", now),
+                new ExpirableEntryStub<string>("key", now.Add(TimeSpan.FromHours(-1))),
+                new ExpirableEntryStub<string>("key", now.Add(TimeSpan.FromDays(1)))
             };
 
             var comparer = CreateComparer();
@@ -217,9 +238,9 @@ namespace Hangfire.InMemory.Tests.Entities
             var now = MonotonicTime.GetCurrent();
             var array = new[]
             {
-                new ExpirableEntryStub("key", null),
-                new ExpirableEntryStub("key", now),
-                new ExpirableEntryStub("key", now.Add(TimeSpan.FromSeconds(1)))
+                new ExpirableEntryStub<string>("key", null),
+                new ExpirableEntryStub<string>("key", now),
+                new ExpirableEntryStub<string>("key", now.Add(TimeSpan.FromSeconds(1)))
             };
 
             var comparer = CreateComparer();
@@ -228,20 +249,20 @@ namespace Hangfire.InMemory.Tests.Entities
             Assert.Equal(new [] { array[1], array[2], array[0] }, result);
         }
 
-        private ExpirableEntryComparer CreateComparer()
+        private ExpirableEntryComparer<string> CreateComparer()
         {
-            return new ExpirableEntryComparer(_stringComparer);
+            return new ExpirableEntryComparer<string>(_stringComparer);
         }
 
-        private sealed class ExpirableEntryStub : IExpirableEntry
+        private sealed class ExpirableEntryStub<T> : IExpirableEntry<T>
         {
-            public ExpirableEntryStub(string key, MonotonicTime? expireAt)
+            public ExpirableEntryStub(T key, MonotonicTime? expireAt)
             {
                 Key = key;
                 ExpireAt = expireAt;
             }
 
-            public string Key { get; }
+            public T Key { get; }
             public MonotonicTime? ExpireAt { get; set; }
         }
     }

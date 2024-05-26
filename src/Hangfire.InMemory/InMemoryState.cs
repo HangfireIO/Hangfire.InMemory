@@ -55,7 +55,7 @@ namespace Hangfire.InMemory
             _counters = CreateSortedDictionary<CounterEntry>(options.StringComparer);
             _servers = CreateSortedDictionary<ServerEntry>(options.StringComparer);
 
-            var expirableEntryComparer = new ExpirableEntryComparer(options.StringComparer);
+            var expirableEntryComparer = new ExpirableEntryComparer<string>(options.StringComparer);
             ExpiringJobsIndex = new SortedSet<JobEntry>(expirableEntryComparer);
             ExpiringCountersIndex = new SortedSet<CounterEntry>(expirableEntryComparer);
             ExpiringHashesIndex = new SortedSet<HashEntry>(expirableEntryComparer);
@@ -102,7 +102,7 @@ namespace Hangfire.InMemory
         {
             _jobs.Add(entry.Key, entry);
 
-            if (EntryExpire(entry, ExpiringJobsIndex, entry.CreatedAt, expireIn, ignoreMaxExpirationTime))
+            if (EntryExpire<string, JobEntry>(entry, ExpiringJobsIndex, entry.CreatedAt, expireIn, ignoreMaxExpirationTime))
             {
                 JobDelete(entry);
             }
@@ -128,7 +128,7 @@ namespace Hangfire.InMemory
 
         public void JobExpire(JobEntry entry, MonotonicTime? now, TimeSpan? expireIn)
         {
-            if (EntryExpire(entry, ExpiringJobsIndex, now, expireIn))
+            if (EntryExpire<string, JobEntry>(entry, ExpiringJobsIndex, now, expireIn))
             {
                 JobDelete(entry);
             }
@@ -157,7 +157,7 @@ namespace Hangfire.InMemory
 
         public void HashExpire(HashEntry hash, MonotonicTime? now, TimeSpan? expireIn)
         {
-            if (EntryExpire(hash, ExpiringHashesIndex, now, expireIn))
+            if (EntryExpire<string, HashEntry>(hash, ExpiringHashesIndex, now, expireIn))
             {
                 HashDelete(hash);
             }
@@ -180,7 +180,7 @@ namespace Hangfire.InMemory
 
         public void SetExpire(SetEntry set, MonotonicTime? now, TimeSpan? expireIn)
         {
-            if (EntryExpire(set, ExpiringSetsIndex, now, expireIn))
+            if (EntryExpire<string, SetEntry>(set, ExpiringSetsIndex, now, expireIn))
             {
                 SetDelete(set);
             }
@@ -203,7 +203,7 @@ namespace Hangfire.InMemory
 
         public void ListExpire(ListEntry entry, MonotonicTime? now, TimeSpan? expireIn)
         {
-            if (EntryExpire(entry, ExpiringListsIndex, now, expireIn))
+            if (EntryExpire<string, ListEntry>(entry, ExpiringListsIndex, now, expireIn))
             {
                 ListDelete(entry);
             }
@@ -229,7 +229,7 @@ namespace Hangfire.InMemory
             // We don't apply MaxExpirationTime rules for counters, because they
             // usually have fixed size, and because statistics should be kept for
             // days.
-            if (EntryExpire(counter, ExpiringCountersIndex, now, expireIn, ignoreMaxExpirationTime: true))
+            if (EntryExpire<string, CounterEntry>(counter, ExpiringCountersIndex, now, expireIn, ignoreMaxExpirationTime: true))
             {
                 CounterDelete(counter);
             }
@@ -252,17 +252,17 @@ namespace Hangfire.InMemory
 
         public void EvictExpiredEntries(MonotonicTime now)
         {
-            EvictFromIndex(now, ExpiringJobsIndex, JobDelete);
-            EvictFromIndex(now, ExpiringHashesIndex, HashDelete);
-            EvictFromIndex(now, ExpiringListsIndex, ListDelete);
-            EvictFromIndex(now, ExpiringSetsIndex, SetDelete);
-            EvictFromIndex(now, ExpiringCountersIndex, CounterDelete);
+            EvictFromIndex<string, JobEntry>(now, ExpiringJobsIndex, JobDelete);
+            EvictFromIndex<string, HashEntry>(now, ExpiringHashesIndex, HashDelete);
+            EvictFromIndex<string, ListEntry>(now, ExpiringListsIndex, ListDelete);
+            EvictFromIndex<string, SetEntry>(now, ExpiringSetsIndex, SetDelete);
+            EvictFromIndex<string, CounterEntry>(now, ExpiringCountersIndex, CounterDelete);
         }
 
-        private static void EvictFromIndex<T>(MonotonicTime now, SortedSet<T> index, Action<T> action)
-            where T : IExpirableEntry
+        private static void EvictFromIndex<TKey, TEntry>(MonotonicTime now, SortedSet<TEntry> index, Action<TEntry> action)
+            where TEntry : IExpirableEntry<TKey>
         {
-            T entry;
+            TEntry entry;
 
             while (index.Count > 0 && (entry = index.Min).ExpireAt.HasValue && now >= entry.ExpireAt)
             {
@@ -270,8 +270,8 @@ namespace Hangfire.InMemory
             }
         }
 
-        private static void EntryRemove<T>(T entry, IDictionary<string, T> index, ISet<T> expirationIndex)
-            where T : IExpirableEntry
+        private static void EntryRemove<TKey, TEntry>(TEntry entry, IDictionary<TKey, TEntry> index, ISet<TEntry> expirationIndex)
+            where TEntry : IExpirableEntry<TKey>
         {
             index.Remove(entry.Key);
 
@@ -281,8 +281,8 @@ namespace Hangfire.InMemory
             }
         }
 
-        private bool EntryExpire<T>(T entry, ISet<T> index, MonotonicTime? now, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
-            where T : IExpirableEntry
+        private bool EntryExpire<TKey, TEntry>(TEntry entry, ISet<TEntry> index, MonotonicTime? now, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
+            where TEntry : IExpirableEntry<TKey>
         {
             if (entry.ExpireAt.HasValue)
             {

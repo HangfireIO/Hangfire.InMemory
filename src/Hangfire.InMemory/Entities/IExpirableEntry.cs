@@ -15,9 +15,9 @@
 
 namespace Hangfire.InMemory.Entities
 {
-    internal interface IExpirableEntry
+    internal interface IExpirableEntry<out T>
     {
-        string Key { get; }
+        T Key { get; }
         MonotonicTime? ExpireAt { get; set; }
     }
 }

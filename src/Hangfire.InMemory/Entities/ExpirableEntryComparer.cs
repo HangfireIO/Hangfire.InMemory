@@ -18,16 +18,17 @@ using System.Collections.Generic;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class ExpirableEntryComparer : IComparer<IExpirableEntry>
+    internal sealed class ExpirableEntryComparer<T> : IComparer<IExpirableEntry<T>>
+        where T : IComparable<T>
     {
-        private readonly StringComparer _stringComparer;
+        private readonly IComparer<T> _comparer;
 
-        public ExpirableEntryComparer(StringComparer stringComparer)
+        public ExpirableEntryComparer(IComparer<T> comparer)
         {
-            _stringComparer = stringComparer ?? throw new ArgumentNullException(nameof(stringComparer));
+            _comparer = comparer;
         }
 
-        public int Compare(IExpirableEntry x, IExpirableEntry y)
+        public int Compare(IExpirableEntry<T> x, IExpirableEntry<T> y)
         {
             if (x == null) throw new ArgumentNullException(nameof(x));
             if (y == null) throw new ArgumentNullException(nameof(y));
@@ -51,7 +52,7 @@ namespace Hangfire.InMemory.Entities
                 return -1;
             }
 
-            return _stringComparer.Compare(x.Key, y.Key);
+            return _comparer?.Compare(x.Key, y.Key) ?? x.Key.CompareTo(y.Key);
         }
     }
 }

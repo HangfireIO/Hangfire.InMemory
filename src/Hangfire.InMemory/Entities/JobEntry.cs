@@ -19,7 +19,7 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class JobEntry : IExpirableEntry
+    internal sealed class JobEntry : IExpirableEntry<string>
     {
         private const int StateCountForRegularJob = 4; // (Scheduled) -> Enqueued -> Processing -> Succeeded
         private readonly List<StateEntry> _history = new(StateCountForRegularJob);

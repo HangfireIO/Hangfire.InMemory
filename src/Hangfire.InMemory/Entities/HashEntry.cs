@@ -18,7 +18,7 @@ using System.Collections.Generic;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class HashEntry : IExpirableEntry
+    internal sealed class HashEntry : IExpirableEntry<string>
     {
         public HashEntry(string id, StringComparer comparer)
         {

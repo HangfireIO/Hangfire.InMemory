@@ -19,7 +19,7 @@ using System.Collections.Generic;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class ListEntry : IExpirableEntry, IEnumerable<string>
+    internal sealed class ListEntry : IExpirableEntry<string>, IEnumerable<string>
     {
         private readonly LinkedList<string> _list = new LinkedList<string>();
 

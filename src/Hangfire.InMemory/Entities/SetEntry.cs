@@ -19,7 +19,7 @@ using System.Collections.Generic;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class SetEntry : IExpirableEntry, IEnumerable<SortedSetItem>
+    internal sealed class SetEntry : IExpirableEntry<string>, IEnumerable<SortedSetItem>
     {
         private readonly SortedDictionary<string, SortedSetItem> _hash;
         private readonly SortedSet<SortedSetItem> _value;
