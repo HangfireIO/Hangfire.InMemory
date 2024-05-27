@@ -39,7 +39,7 @@ namespace Hangfire.InMemory
 
         public override IList<QueueWithTopEnqueuedJobsDto> Queues()
         {
-            return _dispatcher.QueryReadAndWait(state =>
+            return QueryMonitoringAndWait(state =>
             {
                 var result = new List<QueueWithTopEnqueuedJobsDto>();
 
@@ -75,7 +75,7 @@ namespace Hangfire.InMemory
                             InEnqueuedState = inEnqueuedState,
                             EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt.ToUtcDateTime() : null,
                             StateData = inEnqueuedState && jobEntry?.State != null
-                                ? jobEntry.State.GetData(state.Options.StringComparer)
+                                ? jobEntry.State.Data?.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer)
                                 : null
                         }));
                     }
@@ -94,7 +94,7 @@ namespace Hangfire.InMemory
 
         public override IList<ServerDto> Servers()
         {
-            return _dispatcher.QueryReadAndWait(state =>
+            return QueryMonitoringAndWait(state =>
             {
                 var result = new List<ServerDto>(state.Servers.Count);
 
@@ -123,7 +123,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            return _dispatcher.QueryReadAndWait(state =>
+            return QueryMonitoringAndWait(state =>
             {
                 if (!state.Jobs.TryGetValue(jobKey, out var entry))
                 {
@@ -145,7 +145,7 @@ namespace Hangfire.InMemory
                         CreatedAt = x.CreatedAt.ToUtcDateTime(),
                         StateName = x.Name,
                         Reason = x.Reason,
-                        Data = x.GetData(state.Options.StringComparer)
+                        Data = x.Data?.ToDictionary(d => d.Key, d => d.Value, state.Options.StringComparer)
                     }).Reverse().ToList()
                 };
             });
@@ -153,7 +153,7 @@ namespace Hangfire.InMemory
 
         public override StatisticsDto GetStatistics()
         {
-            return _dispatcher.QueryReadAndWait(state => new StatisticsDto
+            return QueryMonitoringAndWait(state => new StatisticsDto
             {
                 Enqueued = GetCountByStateName(EnqueuedState.StateName, state),
                 Scheduled = GetCountByStateName(ScheduledState.StateName, state),
@@ -179,7 +179,7 @@ namespace Hangfire.InMemory
         {
             if (queueName == null) throw new ArgumentNullException(nameof(queueName));
 
-            return _dispatcher.QueryReadAndWait(state =>
+            return QueryMonitoringAndWait(state =>
             {
                 var result = new JobList<EnqueuedJobDto>(Enumerable.Empty<KeyValuePair<string, EnqueuedJobDto>>());
 
@@ -214,7 +214,7 @@ namespace Hangfire.InMemory
                             InEnqueuedState = inEnqueuedState,
                             EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt.ToUtcDateTime() : null,
                             StateData = inEnqueuedState && jobEntry?.State != null
-                                ? jobEntry.State.GetData(state.Options.StringComparer)
+                                ? jobEntry.State.Data?.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer)
                                 : null
                         }));
 
@@ -234,7 +234,7 @@ namespace Hangfire.InMemory
 
         public override JobList<ProcessingJobDto> ProcessingJobs(int from, int count)
         {
-            return _dispatcher.QueryReadAndWait(state =>
+            return QueryMonitoringAndWait(state =>
             {
                 var result = new JobList<ProcessingJobDto>(Enumerable.Empty<KeyValuePair<string, ProcessingJobDto>>());
                 if (state.JobStateIndex.TryGetValue(ProcessingState.StateName, out var indexEntry))
@@ -250,7 +250,7 @@ namespace Hangfire.InMemory
                         var inProcessingState = ProcessingState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
-                        var data = entry.State?.GetData(state.Options.StringComparer);
+                        var data = entry.State?.Data?.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer);
 
                         result.Add(new KeyValuePair<string, ProcessingJobDto>(_keyProvider.ToString(entry.Key), new ProcessingJobDto
                         {
@@ -275,7 +275,7 @@ namespace Hangfire.InMemory
 
         public override JobList<ScheduledJobDto> ScheduledJobs(int from, int count)
         {
-            return _dispatcher.QueryReadAndWait(state =>
+            return QueryMonitoringAndWait(state =>
             {
                 var result = new JobList<ScheduledJobDto>(Enumerable.Empty<KeyValuePair<string, ScheduledJobDto>>());
                 if (state.JobStateIndex.TryGetValue(ScheduledState.StateName, out var indexEntry))
@@ -295,7 +295,7 @@ namespace Hangfire.InMemory
 
                         result.Add(new KeyValuePair<string, ScheduledJobDto>(_keyProvider.ToString(entry.Key), new ScheduledJobDto
                         {
-                            EnqueueAt = (entry.State != null && entry.State.GetData(state.Options.StringComparer).TryGetValue("EnqueueAt", out var enqueueAt)
+                            EnqueueAt = (entry.State?.Data != null && entry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer).TryGetValue("EnqueueAt", out var enqueueAt)
                                 ? JobHelper.DeserializeNullableDateTime(enqueueAt)
                                 : null) ?? DateTime.MinValue,
                             Job = job,
@@ -304,7 +304,7 @@ namespace Hangfire.InMemory
                             InScheduledState = inScheduledState,
                             ScheduledAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inScheduledState && entry.State != null
-                                ? entry.State.GetData(state.Options.StringComparer)
+                                ? entry.State.Data?.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer)
                                 : null
                         }));
 
@@ -318,7 +318,7 @@ namespace Hangfire.InMemory
 
         public override JobList<SucceededJobDto> SucceededJobs(int from, int count)
         {
-            return _dispatcher.QueryReadAndWait(state =>
+            return QueryMonitoringAndWait(state =>
             {
                 var result = new JobList<SucceededJobDto>(Enumerable.Empty<KeyValuePair<string, SucceededJobDto>>());
                 if (state.JobStateIndex.TryGetValue(SucceededState.StateName, out var indexEntry))
@@ -334,7 +334,7 @@ namespace Hangfire.InMemory
                         var inSucceededState = SucceededState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
-                        var data = entry.State?.GetData(state.Options.StringComparer);
+                        var data = entry.State?.Data?.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer);
 
                         result.Add(new KeyValuePair<string, SucceededJobDto>(_keyProvider.ToString(entry.Key), new SucceededJobDto
                         {
@@ -362,7 +362,7 @@ namespace Hangfire.InMemory
 
         public override JobList<FailedJobDto> FailedJobs(int from, int count)
         {
-            return _dispatcher.QueryReadAndWait(state =>
+            return QueryMonitoringAndWait(state =>
             {
                 var result = new JobList<FailedJobDto>(Enumerable.Empty<KeyValuePair<string, FailedJobDto>>());
                 if (state.JobStateIndex.TryGetValue(FailedState.StateName, out var indexEntry))
@@ -378,7 +378,7 @@ namespace Hangfire.InMemory
                         var inFailedState = FailedState.StateName.Equals(
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
-                        var data = entry.State?.GetData(state.Options.StringComparer);
+                        var data = entry.State?.Data?.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer);
 
                         result.Add(new KeyValuePair<string, FailedJobDto>(_keyProvider.ToString(entry.Key), new FailedJobDto
                         {
@@ -406,7 +406,7 @@ namespace Hangfire.InMemory
 
         public override JobList<DeletedJobDto> DeletedJobs(int from, int count)
         {
-            return _dispatcher.QueryReadAndWait(state =>
+            return QueryMonitoringAndWait(state =>
             {
                 var result = new JobList<DeletedJobDto>(Enumerable.Empty<KeyValuePair<string, DeletedJobDto>>());
                 if (state.JobStateIndex.TryGetValue(DeletedState.StateName, out var indexEntry))
@@ -431,7 +431,7 @@ namespace Hangfire.InMemory
                             InDeletedState = inDeletedState,
                             DeletedAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inDeletedState && entry.State != null
-                                ? entry.State.GetData(state.Options.StringComparer)
+                                ? entry.State.Data?.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer)
                                 : null
                         }));
 
@@ -445,7 +445,7 @@ namespace Hangfire.InMemory
 
         public override JobList<AwaitingJobDto> AwaitingJobs(int from, int count)
         {
-            return _dispatcher.QueryReadAndWait(state =>
+            return QueryMonitoringAndWait(state =>
             {
                 var result = new JobList<AwaitingJobDto>(Enumerable.Empty<KeyValuePair<string, AwaitingJobDto>>());
                 if (state.JobStateIndex.TryGetValue(AwaitingState.StateName, out var indexEntry))
@@ -464,8 +464,8 @@ namespace Hangfire.InMemory
 
                         string parentStateName = null;
 
-                        if (inAwaitingState && entry.State != null &&
-                            entry.State.GetData(state.Options.StringComparer).TryGetValue("ParentId", out var parentId) &&
+                        if (inAwaitingState && entry.State?.Data != null &&
+                            entry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer).TryGetValue("ParentId", out var parentId) &&
                             _keyProvider.TryParse(parentId, out var parentKey) &&
                             state.Jobs.TryGetValue(parentKey, out var parentEntry))
                         {
@@ -480,7 +480,7 @@ namespace Hangfire.InMemory
                             InAwaitingState = inAwaitingState,
                             AwaitingAt = entry.State?.CreatedAt.ToUtcDateTime(),
                             StateData = inAwaitingState && entry.State != null
-                                ? entry.State.GetData(state.Options.StringComparer)
+                                ? entry.State.Data?.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer)
                                 : null,
                             ParentStateName = parentStateName
                         }));
@@ -502,7 +502,7 @@ namespace Hangfire.InMemory
         {
             if (queueName == null) throw new ArgumentNullException(nameof(queueName));
 
-            return _dispatcher.QueryReadAndWait(state => state.Queues.TryGetValue(queueName, out var queue) 
+            return QueryMonitoringAndWait(state => state.Queues.TryGetValue(queueName, out var queue) 
                 ? queue.Queue.Count
                 : 0);
         }
@@ -541,42 +541,42 @@ namespace Hangfire.InMemory
         public override IDictionary<DateTime, long> SucceededByDatesCount()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(state => GetTimelineStats(state, now, "succeeded"));
+            return QueryMonitoringAndWait(state => GetTimelineStats(state, now, "succeeded"));
         }
 
         public override IDictionary<DateTime, long> FailedByDatesCount()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(state => GetTimelineStats(state, now, "failed"));
+            return QueryMonitoringAndWait(state => GetTimelineStats(state, now, "failed"));
         }
 
         public override IDictionary<DateTime, long> DeletedByDatesCount()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(state => GetTimelineStats(state, now, "deleted"));
+            return QueryMonitoringAndWait(state => GetTimelineStats(state, now, "deleted"));
         }
 
         public override IDictionary<DateTime, long> HourlySucceededJobs()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(state => GetHourlyTimelineStats(state, now, "succeeded"));
+            return QueryMonitoringAndWait(state => GetHourlyTimelineStats(state, now, "succeeded"));
         }
 
         public override IDictionary<DateTime, long> HourlyFailedJobs()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(state => GetHourlyTimelineStats(state, now, "failed"));
+            return QueryMonitoringAndWait(state => GetHourlyTimelineStats(state, now, "failed"));
         }
 
         public override IDictionary<DateTime, long> HourlyDeletedJobs()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(state => GetHourlyTimelineStats(state, now, "deleted"));
+            return QueryMonitoringAndWait(state => GetHourlyTimelineStats(state, now, "deleted"));
         }
 
         private long GetCountByStateName(string stateName)
         {
-            return _dispatcher.QueryReadAndWait(state => GetCountByStateName(stateName, state));
+            return QueryMonitoringAndWait(state => GetCountByStateName(stateName, state));
         }
 
         private static int GetCountByStateName(string stateName, InMemoryState<TKey> state)
@@ -634,6 +634,19 @@ namespace Hangfire.InMemory
             }
 
             return result;
+        }
+
+        private T QueryMonitoringAndWait<T>(Func<InMemoryState<TKey>, T> callback)
+        {
+            return _dispatcher.QueryReadAndWait<T>(new MonitoringQuery<T>(callback));
+        }
+
+        private sealed class MonitoringQuery<T>(Func<InMemoryState<TKey>, T> callback) : IInMemoryCommand<TKey>
+        {
+            public object Execute(InMemoryState<TKey> state)
+            {
+                return callback(state);
+            }
         }
     }
 }

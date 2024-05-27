@@ -24,12 +24,12 @@ namespace Hangfire.InMemory
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
         private volatile object _result;
 
-        public InMemoryDispatcherCallback(Func<InMemoryState<TKey>, object> callback)
+        public InMemoryDispatcherCallback(IInMemoryCommand<TKey> command)
         {
-            Callback = callback ?? throw new ArgumentNullException(nameof(callback));
+            Command = command ?? throw new ArgumentNullException(nameof(command));
         }
 
-        public Func<InMemoryState<TKey>, object> Callback { get; }
+        public IInMemoryCommand<TKey> Command { get; }
         public bool IsFaulted { get; private set; }
 
         public object Result => _result;

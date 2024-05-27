@@ -23,7 +23,7 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction
+    internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction, IInMemoryCommand<TKey>
         where TKey : IComparable<TKey>
     {
         private readonly LinkedList<IInMemoryCommand<TKey>> _commands = new LinkedList<IInMemoryCommand<TKey>>();
@@ -48,28 +48,7 @@ namespace Hangfire.InMemory
 
         public override void Commit()
         {
-            _connection.Dispatcher.QueryWriteAndWait(state =>
-            {
-                try
-                {
-                    foreach (var command in _commands)
-                    {
-                        command.Execute(state);
-                    }
-                }
-                finally
-                {
-                    foreach (var acquiredLock in _acquiredLocks)
-                    {
-                        acquiredLock.Dispose();
-                    }
-                }
-
-                foreach (var queue in _enqueued)
-                {
-                    queue.SignalOneWaitNode();
-                }
-            });
+            _connection.Dispatcher.QueryWriteAndWait(this);
         }
 
         public override void AcquireDistributedLock(string resource, TimeSpan timeout)
@@ -93,10 +72,16 @@ namespace Hangfire.InMemory
             return _connection.KeyProvider.ToString(entry.Key);
         }
 
-        private sealed class CreateJobCommand(JobEntry<TKey> entry, TimeSpan? expireIn) : IInMemoryCommand<TKey>
+        internal sealed class CreateJobCommand(JobEntry<TKey> entry, TimeSpan expireIn) : IInMemoryCommand<TKey>
         {
             public object Execute(InMemoryState<TKey> state)
             {
+                // Background job is not yet initialized after calling this method, and
+                // transaction is expected a few moments later that will initialize this
+                // job. To prevent early, non-expected eviction when max expiration time
+                // limit is low or close to zero, that can lead to exceptions, we just
+                // ignoring this limit in very rare occasions when background job is not
+                // initialized for reasons I can't even realize with an in-memory storage.
                 state.JobCreate(entry, expireIn, ignoreMaxExpirationTime: true);
                 return null;
             }
@@ -118,7 +103,7 @@ namespace Hangfire.InMemory
             AddCommand(new SetJobParameterCommand(key, name, value));
         }
 
-        private sealed class SetJobParameterCommand(TKey key, string name, string value) : IInMemoryCommand<TKey>
+        internal sealed class SetJobParameterCommand(TKey key, string name, string value) : IInMemoryCommand<TKey>
         {
             public object Execute(InMemoryState<TKey> state)
             {
@@ -264,7 +249,7 @@ namespace Hangfire.InMemory
             AddCommand(new AddToQueueCommand(queue, key, _enqueued));
         }
 
-        private sealed class AddToQueueCommand(string queue, TKey key, HashSet<QueueEntry<TKey>> enqueued)
+        internal sealed class AddToQueueCommand(string queue, TKey key, HashSet<QueueEntry<TKey>> enqueued)
             : IInMemoryCommand<TKey>
         {
             public object Execute(InMemoryState<TKey> state)
@@ -272,8 +257,8 @@ namespace Hangfire.InMemory
                 var entry = state.QueueGetOrCreate(queue);
                 entry.Queue.Enqueue(key);
 
-                enqueued.Add(entry);
-                return null;
+                enqueued?.Add(entry);
+                return entry;
             }
         }
 
@@ -425,7 +410,7 @@ namespace Hangfire.InMemory
             AddCommand(new SetRangeInHashCommand(key, keyValuePairs));
         }
 
-        private sealed class SetRangeInHashCommand(string key, IEnumerable<KeyValuePair<string, string>> items)
+        internal sealed class SetRangeInHashCommand(string key, IEnumerable<KeyValuePair<string, string>> items)
             : IInMemoryCommand<TKey>
         {
             public object Execute(InMemoryState<TKey> state)
@@ -586,6 +571,31 @@ namespace Hangfire.InMemory
         private void AddCommand(IInMemoryCommand<TKey> action)
         {
             _commands.AddLast(action);
+        }
+
+        object IInMemoryCommand<TKey>.Execute(InMemoryState<TKey> state)
+        {
+            try
+            {
+                foreach (var command in _commands)
+                {
+                    command.Execute(state);
+                }
+            }
+            finally
+            {
+                foreach (var acquiredLock in _acquiredLocks)
+                {
+                    acquiredLock.Dispose();
+                }
+            }
+
+            foreach (var queue in _enqueued)
+            {
+                queue.SignalOneWaitNode();
+            }
+
+            return null;
         }
 
         private sealed class CounterIncrementCommand(string key, long value, TimeSpan? expireIn, MonotonicTime? now)

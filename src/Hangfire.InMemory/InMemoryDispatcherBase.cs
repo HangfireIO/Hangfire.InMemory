@@ -109,30 +109,22 @@ namespace Hangfire.InMemory
             }
         }
 
-        public void QueryWriteAndWait(Action<InMemoryState<TKey>> query)
+        public T QueryWriteAndWait<T>(IInMemoryCommand<TKey> query)
         {
-            bool Callback(InMemoryState<TKey> state) { query(state); return true; }
-            QueryWriteAndWait(Callback);
+            return (T)QueryWriteAndWait(query as IInMemoryCommand<TKey>);
         }
 
-        public T QueryWriteAndWait<T>(Func<InMemoryState<TKey>, T> query)
+        public virtual object QueryWriteAndWait(IInMemoryCommand<TKey> query)
         {
-            object Callback(InMemoryState<TKey> state) => query(state);
-            return (T)QueryWriteAndWait(Callback);
+            return query.Execute(_state);
         }
 
-        protected virtual object QueryWriteAndWait(Func<InMemoryState<TKey>, object> query)
+        public T QueryReadAndWait<T>(IInMemoryCommand<TKey> query)
         {
-            return query(_state);
+            return (T)QueryReadAndWait(query as IInMemoryCommand<TKey>);
         }
 
-        public T QueryReadAndWait<T>(Func<InMemoryState<TKey>, T> query)
-        {
-            object Callback(InMemoryState<TKey> state) => query(state);
-            return (T)QueryReadAndWait(Callback);
-        }
-
-        protected virtual object QueryReadAndWait(Func<InMemoryState<TKey>, object> query)
+        public virtual object QueryReadAndWait(IInMemoryCommand<TKey> query)
         {
             return QueryWriteAndWait(query);
         }
