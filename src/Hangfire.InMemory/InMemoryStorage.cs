@@ -24,10 +24,9 @@ namespace Hangfire.InMemory
     /// A class that represents an in-memory job storage that stores all data
     /// related to background processing in a process' memory.
     /// </summary>
-    public sealed class InMemoryStorage : JobStorage, IDisposable
+    public sealed class InMemoryStorage : JobStorage, IKeyProvider<Guid>, IDisposable
     {
-        private readonly InMemoryDispatcher<string> _dispatcher;
-        private readonly StringKeyProvider _keyProvider;
+        private readonly InMemoryDispatcher<Guid> _dispatcher;
 
         // These options don't relate to the defined storage comparison options
         private readonly Dictionary<string, bool> _features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
@@ -64,8 +63,7 @@ namespace Hangfire.InMemory
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
 
-            _dispatcher = new InMemoryDispatcher<string>(MonotonicTime.GetCurrent, new InMemoryState<string>(Options, Options.StringComparer));
-            _keyProvider = new StringKeyProvider();
+            _dispatcher = new InMemoryDispatcher<Guid>(MonotonicTime.GetCurrent, new InMemoryState<Guid>(Options, null));
         }
 
         /// <inheritdoc />
@@ -97,19 +95,34 @@ namespace Hangfire.InMemory
         /// <inheritdoc />
         public override IMonitoringApi GetMonitoringApi()
         {
-            return new InMemoryMonitoringApi<string>(_dispatcher, _keyProvider);
+            return new InMemoryMonitoringApi<Guid>(_dispatcher, this);
         }
 
         /// <inheritdoc />
         public override IStorageConnection GetConnection()
         {
-            return new InMemoryConnection<string>(_dispatcher, _keyProvider);
+            return new InMemoryConnection<Guid>(_dispatcher, this);
         }
 
         /// <inheritdoc />
         public override string ToString()
         {
             return "In-Memory Storage";
+        }
+
+        Guid IKeyProvider<Guid>.GetUniqueKey()
+        {
+            return Guid.NewGuid();
+        }
+
+        bool IKeyProvider<Guid>.TryParse(string input, out Guid key)
+        {
+            return Guid.TryParse(input, out key);
+        }
+
+        string IKeyProvider<Guid>.ToString(Guid key)
+        {
+            return key.ToString("D");
         }
     }
 }

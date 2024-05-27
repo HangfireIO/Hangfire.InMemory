@@ -15,7 +15,7 @@
 
 using System;
 
-namespace Hangfire.InMemory
+namespace Hangfire.InMemory.Tests
 {
     internal sealed class StringKeyProvider : IKeyProvider<string>
     {
