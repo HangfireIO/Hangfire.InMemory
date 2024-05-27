@@ -23,6 +23,10 @@ namespace Hangfire.InMemory.Entities
     {
         private readonly IComparer<T> _comparer;
 
+        public JobStateCreatedAtComparer() : this(comparer: null)
+        {
+        }
+
         public JobStateCreatedAtComparer(IComparer<T> comparer)
         {
             _comparer = comparer;

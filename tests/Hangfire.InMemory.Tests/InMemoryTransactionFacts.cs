@@ -36,9 +36,11 @@ namespace Hangfire.InMemory.Tests
     public class InMemoryTransactionFacts
     {
         private readonly InMemoryStorageOptions _options;
-        private readonly InMemoryState _state;
+        private readonly InMemoryState<string> _state;
+        private readonly TestInMemoryDispatcher<string> _dispatcher;
+        private readonly IKeyProvider<string> _keyProvider;
         private readonly MonotonicTime _now;
-        private readonly InMemoryConnection _connection;
+        private readonly InMemoryConnection<string> _connection;
         private readonly Dictionary<string,string> _parameters;
         private readonly Job _job;
 
@@ -46,7 +48,9 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions { StringComparer = StringComparer.Ordinal };
             _now = MonotonicTime.GetCurrent();
-            _state = new InMemoryState(_options);
+            _state = new InMemoryState<string>(_options, _options.StringComparer);
+            _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
+            _keyProvider = new StringKeyProvider();
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
             _connection = CreateConnection();
@@ -55,7 +59,7 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void Ctor_ThrowsAnException_WhenConnectionIsNull()
         {
-            var exception = Assert.Throws<ArgumentNullException>(() => new InMemoryTransaction(null));
+            var exception = Assert.Throws<ArgumentNullException>(() => new InMemoryTransaction<string>(null));
             Assert.Equal("connection", exception.ParamName);
         }
 
@@ -76,8 +80,8 @@ namespace Hangfire.InMemory.Tests
         {
             using (var connection1 = CreateConnection())
             using (var connection2 = CreateConnection())
-            using (var transaction1 = new InMemoryTransaction(connection1))
-            using (var transaction2 = new InMemoryTransaction(connection2))
+            using (var transaction1 = new InMemoryTransaction<string>(connection1))
+            using (var transaction2 = new InMemoryTransaction<string>(connection2))
             {
                 Assert.Throws<DistributedLockTimeoutException>(() =>
                 {
@@ -99,8 +103,8 @@ namespace Hangfire.InMemory.Tests
         {
             using (var connection1 = CreateConnection())
             using (var connection2 = CreateConnection())
-            using (var transaction1 = new InMemoryTransaction(connection1))
-            using (var transaction2 = new InMemoryTransaction(connection2))
+            using (var transaction1 = new InMemoryTransaction<string>(connection1))
+            using (var transaction2 = new InMemoryTransaction<string>(connection2))
             {
                 transaction1.AcquireDistributedLock("resource1", TimeSpan.FromSeconds(1));
                 transaction2.AcquireDistributedLock("resource2", TimeSpan.FromSeconds(1));
@@ -124,7 +128,7 @@ namespace Hangfire.InMemory.Tests
         public void AcquireDistributedLock_Granted_OnSameResource_OnConnectionAndItsTransaction()
         {
             using (var connection = CreateConnection())
-            using (var transaction = new InMemoryTransaction(connection))
+            using (var transaction = new InMemoryTransaction<string>(connection))
             {
                 using (connection.AcquireDistributedLock("resource", TimeSpan.FromSeconds(5)))
                 {
@@ -139,8 +143,8 @@ namespace Hangfire.InMemory.Tests
         {
             using (var connection1 = CreateConnection())
             using (var connection2 = CreateConnection())
-            using (var transaction1 = new InMemoryTransaction(connection1))
-            using (var transaction2 = new InMemoryTransaction(connection2))
+            using (var transaction1 = new InMemoryTransaction<string>(connection1))
+            using (var transaction2 = new InMemoryTransaction<string>(connection2))
             {
                 transaction1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
                 var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
@@ -156,8 +160,8 @@ namespace Hangfire.InMemory.Tests
         {
             using (var connection1 = CreateConnection())
             using (var connection2 = CreateConnection())
-            using (var transaction1 = new InMemoryTransaction(connection1))
-            using (var transaction2 = new InMemoryTransaction(connection2))
+            using (var transaction1 = new InMemoryTransaction<string>(connection1))
+            using (var transaction2 = new InMemoryTransaction<string>(connection2))
             {
                 transaction1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
                 var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
@@ -1846,18 +1850,18 @@ namespace Hangfire.InMemory.Tests
             Commit(x => { });
         }
 
-        private void Commit(Action<InMemoryTransaction> action, InMemoryConnection connection = null)
+        private void Commit(Action<InMemoryTransaction<string>> action, InMemoryConnection<string> connection = null)
         {
-            using (var transaction = new InMemoryTransaction(connection ?? _connection))
+            using (var transaction = new InMemoryTransaction<string>(connection ?? _connection))
             {
                 action(transaction);
                 transaction.Commit();
             }
         }
 
-        private InMemoryConnection CreateConnection()
+        private InMemoryConnection<string> CreateConnection()
         {
-            return new InMemoryConnection(new TestInMemoryDispatcher(() => _now, _state));
+            return new InMemoryConnection<string>(_dispatcher, _keyProvider);
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test

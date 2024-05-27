@@ -26,7 +26,8 @@ namespace Hangfire.InMemory
     /// </summary>
     public sealed class InMemoryStorage : JobStorage, IDisposable
     {
-        private readonly InMemoryDispatcher _dispatcher;
+        private readonly InMemoryDispatcher<string> _dispatcher;
+        private readonly StringKeyProvider _keyProvider;
 
         // These options don't relate to the defined storage comparison options
         private readonly Dictionary<string, bool> _features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
@@ -63,7 +64,8 @@ namespace Hangfire.InMemory
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
 
-            _dispatcher = new InMemoryDispatcher(MonotonicTime.GetCurrent, new InMemoryState(Options));
+            _dispatcher = new InMemoryDispatcher<string>(MonotonicTime.GetCurrent, new InMemoryState<string>(Options, Options.StringComparer));
+            _keyProvider = new StringKeyProvider();
         }
 
         /// <inheritdoc />
@@ -95,13 +97,13 @@ namespace Hangfire.InMemory
         /// <inheritdoc />
         public override IMonitoringApi GetMonitoringApi()
         {
-            return new InMemoryMonitoringApi(_dispatcher);
+            return new InMemoryMonitoringApi<string>(_dispatcher, _keyProvider);
         }
 
         /// <inheritdoc />
         public override IStorageConnection GetConnection()
         {
-            return new InMemoryConnection(_dispatcher);
+            return new InMemoryConnection<string>(_dispatcher, _keyProvider);
         }
 
         /// <inheritdoc />

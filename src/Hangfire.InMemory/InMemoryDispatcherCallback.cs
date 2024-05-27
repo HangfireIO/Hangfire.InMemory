@@ -18,17 +18,18 @@ using System.Threading;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class InMemoryDispatcherCallback : IDisposable
+    internal sealed class InMemoryDispatcherCallback<TKey> : IDisposable
+        where TKey : IComparable<TKey>
     {
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
         private volatile object _result;
 
-        public InMemoryDispatcherCallback(Func<InMemoryState, object> callback)
+        public InMemoryDispatcherCallback(Func<InMemoryState<TKey>, object> callback)
         {
             Callback = callback ?? throw new ArgumentNullException(nameof(callback));
         }
 
-        public Func<InMemoryState, object> Callback { get; }
+        public Func<InMemoryState<TKey>, object> Callback { get; }
         public bool IsFaulted { get; private set; }
 
         public object Result => _result;

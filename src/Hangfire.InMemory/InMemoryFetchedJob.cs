@@ -19,12 +19,13 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal class InMemoryFetchedJob : IFetchedJob
+    internal class InMemoryFetchedJob<TKey> : IFetchedJob
+        where TKey : IComparable<TKey>
     {
-        private readonly InMemoryDispatcherBase _dispatcher;
+        private readonly InMemoryDispatcherBase<TKey> _dispatcher;
 
         public InMemoryFetchedJob(
-            [NotNull] InMemoryDispatcherBase dispatcher,
+            [NotNull] InMemoryDispatcherBase<TKey> dispatcher,
             [NotNull] string queueName,
             [NotNull] string jobId)
         {

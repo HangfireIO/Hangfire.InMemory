@@ -29,22 +29,35 @@ namespace Hangfire.InMemory.Tests
     public class InMemoryMonitoringApiFacts
     {
         private readonly InMemoryStorageOptions _options;
-        private readonly InMemoryState _state;
+        private readonly InMemoryState<string> _state;
+        private readonly TestInMemoryDispatcher<string> _dispatcher;
+        private readonly IKeyProvider<string> _keyProvider;
         private MonotonicTime _now;
 
         public InMemoryMonitoringApiFacts()
         {
             _options = new InMemoryStorageOptions { StringComparer = StringComparer.Ordinal };
-            _state = new InMemoryState(_options);
+            _state = new InMemoryState<string>(_options, _options.StringComparer);
+            _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
+            _keyProvider = new StringKeyProvider();
         }
 
         [Fact]
         public void Ctor_ThrowsAnException_WhenDispatcherIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new InMemoryMonitoringApi(null));
+                () => new InMemoryMonitoringApi<string>(null, _keyProvider));
             
             Assert.Equal("dispatcher", exception.ParamName);
+        }
+
+        [Fact]
+        public void Ctor_ThrowsAnException_WhenKeyProviderIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => new InMemoryMonitoringApi<string>(_dispatcher, null));
+            
+            Assert.Equal("keyProvider", exception.ParamName);
         }
 
         [Fact]
@@ -1567,14 +1580,14 @@ namespace Hangfire.InMemory.Tests
             return createdId;
         }
 
-        private InMemoryMonitoringApi CreateMonitoringApi()
+        private InMemoryMonitoringApi<string> CreateMonitoringApi()
         {
-            return new InMemoryMonitoringApi(new TestInMemoryDispatcher(() => _now, _state));
+            return new InMemoryMonitoringApi<string>(_dispatcher, _keyProvider);
         }
 
-        private T UseConnection<T>(Func<InMemoryConnection, T> action)
+        private T UseConnection<T>(Func<InMemoryConnection<string>, T> action)
         {
-            using (var connection = new InMemoryConnection(new TestInMemoryDispatcher(() => _now, _state)))
+            using (var connection = new InMemoryConnection<string>(_dispatcher, _keyProvider))
             {
                 return action(connection);
             }

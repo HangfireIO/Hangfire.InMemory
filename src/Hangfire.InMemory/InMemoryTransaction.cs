@@ -23,15 +23,16 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class InMemoryTransaction : JobStorageTransaction
+    internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction
+        where TKey : IComparable<TKey>
     {
-        private readonly LinkedList<Action<InMemoryState>> _actions = new LinkedList<Action<InMemoryState>>();
-        private readonly LinkedList<Action<InMemoryState>> _queueActions = new LinkedList<Action<InMemoryState>>();
+        private readonly LinkedList<Action<InMemoryState<TKey>>> _actions = new LinkedList<Action<InMemoryState<TKey>>>();
+        private readonly LinkedList<Action<InMemoryState<TKey>>> _queueActions = new LinkedList<Action<InMemoryState<TKey>>>();
         private readonly HashSet<QueueEntry> _enqueued = new HashSet<QueueEntry>();
-        private readonly InMemoryConnection _connection;
+        private readonly InMemoryConnection<TKey> _connection;
         private readonly List<IDisposable> _acquiredLocks = new List<IDisposable>();
 
-        public InMemoryTransaction([NotNull] InMemoryConnection connection)
+        public InMemoryTransaction([NotNull] InMemoryConnection<TKey> connection)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
         }
@@ -90,9 +91,8 @@ namespace Hangfire.InMemory
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            var key = Guid.NewGuid().ToString(); // TODO: Change with Long type
-            var entry = new JobEntry<string>(
-                key,
+            var entry = new JobEntry<TKey>(
+                _connection.KeyProvider.GetUniqueKey(),
                 InvocationData.SerializeJob(job),
                 parameters,
                 _connection.Dispatcher.GetMonotonicTime());
@@ -102,7 +102,7 @@ namespace Hangfire.InMemory
                 state.JobCreate(entry, expireIn, ignoreMaxExpirationTime: true);
             });
 
-            return key;
+            return _connection.KeyProvider.ToString(entry.Key);
         }
 
         public override void SetJobParameter(
@@ -113,9 +113,14 @@ namespace Hangfire.InMemory
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
+            if (!_connection.KeyProvider.TryParse(id, out var jobKey))
+            {
+                return;
+            }
+
             AddAction(state =>
             {
-                if (state.Jobs.TryGetValue(id, out var jobEntry))
+                if (state.Jobs.TryGetValue(jobKey, out var jobEntry))
                 {
                     jobEntry.SetParameter(name, value, state.Options.StringComparer);
                 }
@@ -126,11 +131,16 @@ namespace Hangfire.InMemory
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
+            if (!_connection.KeyProvider.TryParse(jobId, out var jobKey))
+            {
+                return;
+            }
+
             var now = _connection.Dispatcher.GetMonotonicTime();
 
             AddAction(state =>
             {
-                if (state.Jobs.TryGetValue(jobId, out var job))
+                if (state.Jobs.TryGetValue(jobKey, out var job))
                 {
                     state.JobExpire(job, now, expireIn);
                 }
@@ -141,9 +151,14 @@ namespace Hangfire.InMemory
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
+            if (!_connection.KeyProvider.TryParse(jobId, out var jobKey))
+            {
+                return;
+            }
+
             AddAction(state =>
             {
-                if (state.Jobs.TryGetValue(jobId, out var job))
+                if (state.Jobs.TryGetValue(jobKey, out var job))
                 {
                     state.JobExpire(job, now: null, expireIn: null);
                 }
@@ -156,6 +171,11 @@ namespace Hangfire.InMemory
             if (state == null) throw new ArgumentNullException(nameof(state));
             if (state.Name == null) throw new ArgumentException("Name property must not return null.", nameof(state));
 
+            if (!_connection.KeyProvider.TryParse(jobId, out var jobKey))
+            {
+                return;
+            }
+
             // IState can be implemented by user, and potentially can throw exceptions.
             // Getting data here, out of the dispatcher thread, to avoid killing it.
             var stateEntry = new StateEntry(
@@ -166,7 +186,7 @@ namespace Hangfire.InMemory
 
             AddAction(memory =>
             {
-                if (memory.Jobs.TryGetValue(jobId, out var job))
+                if (memory.Jobs.TryGetValue(jobKey, out var job))
                 {
                     job.AddHistoryEntry(stateEntry, memory.Options.MaxStateHistoryLength);
                     memory.JobSetState(job, stateEntry);
@@ -179,6 +199,11 @@ namespace Hangfire.InMemory
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
             if (state == null) throw new ArgumentNullException(nameof(state));
 
+            if (!_connection.KeyProvider.TryParse(jobId, out var jobKey))
+            {
+                return;
+            }
+
             // IState can be implemented by user, and potentially can throw exceptions.
             // Getting data here, out of the dispatcher thread, to avoid killing it.
             var stateEntry = new StateEntry(
@@ -189,7 +214,7 @@ namespace Hangfire.InMemory
 
             AddAction(memory =>
             {
-                if (memory.Jobs.TryGetValue(jobId, out var job))
+                if (memory.Jobs.TryGetValue(jobKey, out var job))
                 {
                     job.AddHistoryEntry(stateEntry, memory.Options.MaxStateHistoryLength);
                 }
@@ -439,12 +464,12 @@ namespace Hangfire.InMemory
             });
         }
 
-        private void AddAction(Action<InMemoryState> action)
+        private void AddAction(Action<InMemoryState<TKey>> action)
         {
             _actions.AddLast(action);
         }
 
-        private static void CounterIncrement(InMemoryState state, string key, int value, MonotonicTime? now, TimeSpan? expireIn)
+        private static void CounterIncrement(InMemoryState<TKey> state, string key, int value, MonotonicTime? now, TimeSpan? expireIn)
         {
             var counter = state.CounterGetOrAdd(key);
             counter.Value += value;

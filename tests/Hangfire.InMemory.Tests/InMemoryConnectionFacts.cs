@@ -29,7 +29,9 @@ namespace Hangfire.InMemory.Tests
     public class InMemoryConnectionFacts
     {
         private readonly InMemoryStorageOptions _options;
-        private readonly InMemoryState _state;
+        private readonly InMemoryState<string> _state;
+        private readonly TestInMemoryDispatcher<string> _dispatcher;
+        private readonly IKeyProvider<string> _keyProvider;
         private readonly Dictionary<string, string> _parameters;
         private readonly Job _job;
         private MonotonicTime _now;
@@ -38,7 +40,9 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions();
             _now = MonotonicTime.GetCurrent();
-            _state = new InMemoryState(_options);
+            _state = new InMemoryState<string>(_options, _options.StringComparer);
+            _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
+            _keyProvider = new StringKeyProvider();
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
         }
@@ -47,9 +51,18 @@ namespace Hangfire.InMemory.Tests
         public void Ctor_ThrowsAnException_WhenDispatcherIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new InMemoryConnection(null));
+                () => new InMemoryConnection<string>(null, _keyProvider));
 
             Assert.Equal("dispatcher", exception.ParamName);
+        }
+
+        [Fact]
+        public void Ctor_ThrowsAnException_WhenKeyProviderIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => new InMemoryConnection<string>(_dispatcher, null));
+
+            Assert.Equal("keyProvider", exception.ParamName);
         }
 
         [Fact]
@@ -2302,7 +2315,7 @@ namespace Hangfire.InMemory.Tests
             }
         }
 
-        private void UseConnection(Action<InMemoryConnection> action)
+        private void UseConnection(Action<InMemoryConnection<string>> action)
         {
             using (var connection = CreateConnection())
             {
@@ -2319,9 +2332,9 @@ namespace Hangfire.InMemory.Tests
             }
         }
 
-        private InMemoryConnection CreateConnection()
+        private InMemoryConnection<string> CreateConnection()
         {
-            return new InMemoryConnection(new TestInMemoryDispatcher(() => _now, _state));
+            return new InMemoryConnection<string>(_dispatcher, _keyProvider);
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test

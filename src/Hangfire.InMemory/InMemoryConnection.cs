@@ -25,16 +25,21 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class InMemoryConnection : JobStorageConnection
+    internal sealed class InMemoryConnection<TKey> : JobStorageConnection
+        where TKey : IComparable<TKey>
     {
         private readonly HashSet<IDisposable> _acquiredLocks = new HashSet<IDisposable>();
 
-        public InMemoryConnection([NotNull] InMemoryDispatcherBase dispatcher)
+        public InMemoryConnection(
+            [NotNull] InMemoryDispatcherBase<TKey> dispatcher,
+            [NotNull] IKeyProvider<TKey> keyProvider)
         {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            KeyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));
         }
 
-        public InMemoryDispatcherBase Dispatcher { get; }
+        public InMemoryDispatcherBase<TKey> Dispatcher { get; }
+        public IKeyProvider<TKey> KeyProvider { get; }
 
         public override void Dispose()
         {
@@ -51,7 +56,7 @@ namespace Hangfire.InMemory
 
         public override IWriteOnlyTransaction CreateWriteTransaction()
         {
-            return new InMemoryTransaction(this);
+            return new InMemoryTransaction<TKey>(this);
         }
 
         public override IDisposable AcquireDistributedLock([NotNull] string resource, TimeSpan timeout)
@@ -88,9 +93,8 @@ namespace Hangfire.InMemory
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            var key = Guid.NewGuid().ToString(); // TODO: Change it with long?
-            var jobEntry = new JobEntry<string>(
-                key,
+            var jobEntry = new JobEntry<TKey>(
+                KeyProvider.GetUniqueKey(),
                 InvocationData.SerializeJob(job),
                 parameters,
                 Dispatcher.GetMonotonicTime());
@@ -106,7 +110,7 @@ namespace Hangfire.InMemory
                 state.JobCreate(jobEntry, expireIn, ignoreMaxExpirationTime: true);
             });
 
-            return key;
+            return KeyProvider.ToString(jobEntry.Key);
         }
 
         public override IFetchedJob FetchNextJob([NotNull] string[] queues, CancellationToken cancellationToken)
@@ -136,7 +140,7 @@ namespace Hangfire.InMemory
                             if (entry.Value.Queue.TryDequeue(out var jobId))
                             {
                                 entry.Value.SignalOneWaitNode();
-                                return new InMemoryFetchedJob(Dispatcher, entry.Key, jobId);
+                                return new InMemoryFetchedJob<TKey>(Dispatcher, entry.Key, jobId);
                             }
                         }
 
@@ -177,9 +181,14 @@ namespace Hangfire.InMemory
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
+            if (!KeyProvider.TryParse(id, out var jobKey))
+            {
+                return;
+            }
+
             Dispatcher.QueryWriteAndWait(state =>
             {
-                if (state.Jobs.TryGetValue(id, out var jobEntry))
+                if (state.Jobs.TryGetValue(jobKey, out var jobEntry))
                 {
                     jobEntry.SetParameter(name, value, state.Options.StringComparer);
                 }
@@ -193,9 +202,14 @@ namespace Hangfire.InMemory
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
+            if (!KeyProvider.TryParse(id, out var jobKey))
+            {
+                return null;
+            }
+
             return Dispatcher.QueryReadAndWait(state =>
             {
-                if (state.Jobs.TryGetValue(id, out var entry))
+                if (state.Jobs.TryGetValue(jobKey, out var entry))
                 {
                     return entry.GetParameter(name, state.Options.StringComparer);
                 }
@@ -208,9 +222,14 @@ namespace Hangfire.InMemory
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
+            if (!KeyProvider.TryParse(jobId, out var jobKey))
+            {
+                return null;
+            }
+
             var data = Dispatcher.QueryReadAndWait(state =>
             {
-                if (!state.Jobs.TryGetValue(jobId, out var entry))
+                if (!state.Jobs.TryGetValue(jobKey, out var entry))
                 {
                     return null;
                 }
@@ -242,9 +261,14 @@ namespace Hangfire.InMemory
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
+            if (!KeyProvider.TryParse(jobId, out var jobKey))
+            {
+                return null;
+            }
+
             return Dispatcher.QueryReadAndWait(state =>
             {
-                if (!state.Jobs.TryGetValue(jobId, out var jobEntry) || jobEntry.State == null)
+                if (!state.Jobs.TryGetValue(jobKey, out var jobEntry) || jobEntry.State == null)
                 {
                     return null;
                 }
@@ -662,12 +686,12 @@ namespace Hangfire.InMemory
 
         private sealed class LockDisposable : IDisposable
         {
-            private readonly InMemoryConnection _reference;
+            private readonly InMemoryConnection<TKey> _reference;
             private readonly string _resource;
             private readonly LockEntry<JobStorageConnection> _entry;
             private bool _disposed;
 
-            public LockDisposable(InMemoryConnection reference, string resource, LockEntry<JobStorageConnection> entry)
+            public LockDisposable(InMemoryConnection<TKey> reference, string resource, LockEntry<JobStorageConnection> entry)
             {
                 _reference = reference ?? throw new ArgumentNullException(nameof(reference));
                 _resource = resource ?? throw new ArgumentNullException(nameof(resource));

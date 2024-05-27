@@ -25,13 +25,16 @@ using Hangfire.Storage.Monitoring;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class InMemoryMonitoringApi : JobStorageMonitor
+    internal sealed class InMemoryMonitoringApi<TKey> : JobStorageMonitor
+        where TKey : IComparable<TKey>
     {
-        private readonly InMemoryDispatcherBase _dispatcher;
+        private readonly InMemoryDispatcherBase<TKey> _dispatcher;
+        private readonly IKeyProvider<TKey> _keyProvider;
 
-        public InMemoryMonitoringApi([NotNull] InMemoryDispatcherBase dispatcher)
+        public InMemoryMonitoringApi([NotNull] InMemoryDispatcherBase<TKey> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _keyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));
         }
 
         public override IList<QueueWithTopEnqueuedJobsDto> Queues()
@@ -50,10 +53,11 @@ namespace Hangfire.InMemory
                     {
                         if (index++ >= count) break;
 
+                        Entities.JobEntry<TKey> jobEntry = null;
                         Job job = null;
                         JobLoadException loadException = null;
 
-                        if (state.Jobs.TryGetValue(message, out var jobEntry))
+                        if (_keyProvider.TryParse(message, out var key) && state.Jobs.TryGetValue(key, out jobEntry))
                         {
                             job = jobEntry.InvocationData.TryGetJob(out loadException);
                         }
@@ -115,9 +119,14 @@ namespace Hangfire.InMemory
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
+            if (!_keyProvider.TryParse(jobId, out var jobKey))
+            {
+                return null;
+            }
+
             return _dispatcher.QueryReadAndWait(state =>
             {
-                if (!state.Jobs.TryGetValue(jobId, out var entry))
+                if (!state.Jobs.TryGetValue(jobKey, out var entry))
                 {
                     return null;
                 }
@@ -184,10 +193,11 @@ namespace Hangfire.InMemory
                         if (counter < from) { counter++; continue; }
                         if (counter >= from + perPage) break;
 
+                        Entities.JobEntry<TKey> jobEntry = null;
                         Job job = null;
                         JobLoadException loadException = null;
 
-                        if (state.Jobs.TryGetValue(message, out var jobEntry))
+                        if (_keyProvider.TryParse(message, out var key) && state.Jobs.TryGetValue(key, out jobEntry))
                         {
                             job = jobEntry.InvocationData.TryGetJob(out loadException);
                         }
@@ -244,7 +254,7 @@ namespace Hangfire.InMemory
                             StringComparison.OrdinalIgnoreCase);
                         var data = entry.State?.GetData(state.Options.StringComparer);
 
-                        result.Add(new KeyValuePair<string, ProcessingJobDto>(entry.Key, new ProcessingJobDto
+                        result.Add(new KeyValuePair<string, ProcessingJobDto>(_keyProvider.ToString(entry.Key), new ProcessingJobDto
                         {
                             ServerId = data?.ContainsKey("ServerId") ?? false ? data["ServerId"] : null,
                             Job = job,
@@ -285,7 +295,7 @@ namespace Hangfire.InMemory
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
 
-                        result.Add(new KeyValuePair<string, ScheduledJobDto>(entry.Key, new ScheduledJobDto
+                        result.Add(new KeyValuePair<string, ScheduledJobDto>(_keyProvider.ToString(entry.Key), new ScheduledJobDto
                         {
                             EnqueueAt = (entry.State != null && entry.State.GetData(state.Options.StringComparer).TryGetValue("EnqueueAt", out var enqueueAt)
                                 ? JobHelper.DeserializeNullableDateTime(enqueueAt)
@@ -328,7 +338,7 @@ namespace Hangfire.InMemory
                             StringComparison.OrdinalIgnoreCase);
                         var data = entry.State?.GetData(state.Options.StringComparer);
 
-                        result.Add(new KeyValuePair<string, SucceededJobDto>(entry.Key, new SucceededJobDto
+                        result.Add(new KeyValuePair<string, SucceededJobDto>(_keyProvider.ToString(entry.Key), new SucceededJobDto
                         {
                             Result = data?.ContainsKey("Result") ?? false ? data["Result"] : null,
                             TotalDuration = (data?.ContainsKey("PerformanceDuration") ?? false) && (data?.ContainsKey("Latency") ?? false) 
@@ -372,7 +382,7 @@ namespace Hangfire.InMemory
                             StringComparison.OrdinalIgnoreCase);
                         var data = entry.State?.GetData(state.Options.StringComparer);
 
-                        result.Add(new KeyValuePair<string, FailedJobDto>(entry.Key, new FailedJobDto
+                        result.Add(new KeyValuePair<string, FailedJobDto>(_keyProvider.ToString(entry.Key), new FailedJobDto
                         {
                             Job = job,
                             InvocationData = entry.InvocationData,
@@ -415,7 +425,7 @@ namespace Hangfire.InMemory
                             entry.State?.Name,
                             StringComparison.OrdinalIgnoreCase);
 
-                        result.Add(new KeyValuePair<string, DeletedJobDto>(entry.Key, new DeletedJobDto
+                        result.Add(new KeyValuePair<string, DeletedJobDto>(_keyProvider.ToString(entry.Key), new DeletedJobDto
                         {
                             Job = job,
                             InvocationData = entry.InvocationData,
@@ -458,12 +468,13 @@ namespace Hangfire.InMemory
 
                         if (inAwaitingState && entry.State != null &&
                             entry.State.GetData(state.Options.StringComparer).TryGetValue("ParentId", out var parentId) &&
-                            state.Jobs.TryGetValue(parentId, out var parentEntry))
+                            _keyProvider.TryParse(parentId, out var parentKey) &&
+                            state.Jobs.TryGetValue(parentKey, out var parentEntry))
                         {
                             parentStateName = parentEntry.State?.Name;
                         }
 
-                        result.Add(new KeyValuePair<string, AwaitingJobDto>(entry.Key, new AwaitingJobDto
+                        result.Add(new KeyValuePair<string, AwaitingJobDto>(_keyProvider.ToString(entry.Key), new AwaitingJobDto
                         {
                             Job = job,
                             InvocationData = entry.InvocationData,
@@ -570,7 +581,7 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryReadAndWait(state => GetCountByStateName(stateName, state));
         }
 
-        private static int GetCountByStateName(string stateName, InMemoryState state)
+        private static int GetCountByStateName(string stateName, InMemoryState<TKey> state)
         {
             if (state.JobStateIndex.TryGetValue(stateName, out var index))
             {
@@ -580,7 +591,7 @@ namespace Hangfire.InMemory
             return 0;
         }
 
-        private static Dictionary<DateTime, long> GetHourlyTimelineStats(InMemoryState state, MonotonicTime now, string type)
+        private static Dictionary<DateTime, long> GetHourlyTimelineStats(InMemoryState<TKey> state, MonotonicTime now, string type)
         {
             var endDate = now.ToUtcDateTime();
             var dates = new List<DateTime>();
@@ -602,7 +613,7 @@ namespace Hangfire.InMemory
             return result;
         }
 
-        private static Dictionary<DateTime, long> GetTimelineStats(InMemoryState state, MonotonicTime now, string type)
+        private static Dictionary<DateTime, long> GetTimelineStats(InMemoryState<TKey> state, MonotonicTime now, string type)
         {
             var endDate = now.ToUtcDateTime().Date;
             var startDate = endDate.AddDays(-7);

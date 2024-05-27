@@ -21,42 +21,45 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class InMemoryState
+    internal sealed class InMemoryState<TKey>
+        where TKey : IComparable<TKey>
     {
-        private readonly JobStateCreatedAtComparer<string> _jobEntryComparer;
+        private readonly JobStateCreatedAtComparer<TKey> _jobEntryComparer;
 
         // State index uses case-insensitive comparisons, despite the current settings. SQL Server
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
-        private readonly Dictionary<string, SortedSet<JobEntry<string>>> _jobStateIndex = new Dictionary<string, SortedSet<JobEntry<string>>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, SortedSet<JobEntry<TKey>>> _jobStateIndex = new Dictionary<string, SortedSet<JobEntry<TKey>>>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Dictionary<string, LockEntry<JobStorageConnection>> _locks;
         private readonly ConcurrentDictionary<string, QueueEntry> _queues;
 
-        private readonly SortedDictionary<string, JobEntry<string>> _jobs;
+        private readonly SortedDictionary<TKey, JobEntry<TKey>> _jobs;
         private readonly SortedDictionary<string, HashEntry> _hashes;
         private readonly SortedDictionary<string, ListEntry> _lists;
         private readonly SortedDictionary<string, SetEntry> _sets;
         private readonly SortedDictionary<string, CounterEntry> _counters;
         private readonly SortedDictionary<string, ServerEntry> _servers;
 
-        public InMemoryState(InMemoryStorageOptions options)
+        public InMemoryState(InMemoryStorageOptions options, IComparer<TKey> keyComparer)
         {
             Options = options;
 
-            _jobEntryComparer = new JobStateCreatedAtComparer<string>(options.StringComparer);
+            _jobEntryComparer = new JobStateCreatedAtComparer<TKey>(keyComparer);
 
             _locks = CreateDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
             _queues = CreateConcurrentDictionary<QueueEntry>(options.StringComparer);
 
-            _jobs = CreateSortedDictionary<JobEntry<string>>(options.StringComparer);
+            _jobs = new SortedDictionary<TKey, JobEntry<TKey>>(keyComparer);
+
             _hashes = CreateSortedDictionary<HashEntry>(options.StringComparer);
             _lists = CreateSortedDictionary<ListEntry>(options.StringComparer);
             _sets = CreateSortedDictionary<SetEntry>(options.StringComparer);
             _counters = CreateSortedDictionary<CounterEntry>(options.StringComparer);
             _servers = CreateSortedDictionary<ServerEntry>(options.StringComparer);
 
+            ExpiringJobsIndex = new SortedSet<JobEntry<TKey>>(new ExpirableEntryComparer<TKey>(keyComparer));
+
             var expirableEntryComparer = new ExpirableEntryComparer<string>(options.StringComparer);
-            ExpiringJobsIndex = new SortedSet<JobEntry<string>>(expirableEntryComparer);
             ExpiringCountersIndex = new SortedSet<CounterEntry>(expirableEntryComparer);
             ExpiringHashesIndex = new SortedSet<HashEntry>(expirableEntryComparer);
             ExpiringListsIndex = new SortedSet<ListEntry>(expirableEntryComparer);
@@ -72,17 +75,17 @@ namespace Hangfire.InMemory
         public IReadOnlyDictionary<string, QueueEntry> Queues => _queues;
 #endif
 
-        public IDictionary<string, JobEntry<string>> Jobs => _jobs;
+        public IDictionary<TKey, JobEntry<TKey>> Jobs => _jobs;
         public IDictionary<string, HashEntry> Hashes => _hashes;
         public IDictionary<string, ListEntry> Lists => _lists;
         public IDictionary<string, SetEntry> Sets => _sets;
         public IDictionary<string, CounterEntry> Counters => _counters;
         public IDictionary<string, ServerEntry> Servers => _servers;
 
-        public IReadOnlyDictionary<string, SortedSet<JobEntry<string>>> JobStateIndex => _jobStateIndex;
+        public IReadOnlyDictionary<string, SortedSet<JobEntry<TKey>>> JobStateIndex => _jobStateIndex;
 
         // TODO: Hide these indexes from external access for safety reasons
-        public SortedSet<JobEntry<string>> ExpiringJobsIndex { get; }
+        public SortedSet<JobEntry<TKey>> ExpiringJobsIndex { get; }
         public SortedSet<CounterEntry> ExpiringCountersIndex { get; }
         public SortedSet<HashEntry> ExpiringHashesIndex { get; }
         public SortedSet<ListEntry> ExpiringListsIndex { get; }
@@ -98,17 +101,17 @@ namespace Hangfire.InMemory
             return entry;
         }
 
-        public void JobCreate(JobEntry<string> entry, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
+        public void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
         {
             _jobs.Add(entry.Key, entry);
 
-            if (EntryExpire<string, JobEntry<string>>(entry, ExpiringJobsIndex, entry.CreatedAt, expireIn, ignoreMaxExpirationTime))
+            if (EntryExpire<TKey, JobEntry<TKey>>(entry, ExpiringJobsIndex, entry.CreatedAt, expireIn, ignoreMaxExpirationTime))
             {
                 JobDelete(entry);
             }
         }
 
-        public void JobSetState(JobEntry<string> entry, StateEntry state)
+        public void JobSetState(JobEntry<TKey> entry, StateEntry state)
         {
             if (entry.State != null && _jobStateIndex.TryGetValue(entry.State.Name, out var indexEntry))
             {
@@ -120,21 +123,21 @@ namespace Hangfire.InMemory
 
             if (!_jobStateIndex.TryGetValue(state.Name, out indexEntry))
             {
-                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<JobEntry<string>>(_jobEntryComparer));
+                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<JobEntry<TKey>>(_jobEntryComparer));
             }
 
             indexEntry.Add(entry);
         }
 
-        public void JobExpire(JobEntry<string> entry, MonotonicTime? now, TimeSpan? expireIn)
+        public void JobExpire(JobEntry<TKey> entry, MonotonicTime? now, TimeSpan? expireIn)
         {
-            if (EntryExpire<string, JobEntry<string>>(entry, ExpiringJobsIndex, now, expireIn))
+            if (EntryExpire<TKey, JobEntry<TKey>>(entry, ExpiringJobsIndex, now, expireIn))
             {
                 JobDelete(entry);
             }
         }
 
-        public void JobDelete(JobEntry<string> entry)
+        public void JobDelete(JobEntry<TKey> entry)
         {
             EntryRemove(entry, _jobs, ExpiringJobsIndex);
 
@@ -252,15 +255,15 @@ namespace Hangfire.InMemory
 
         public void EvictExpiredEntries(MonotonicTime now)
         {
-            EvictFromIndex<string, JobEntry<string>>(now, ExpiringJobsIndex, JobDelete);
+            EvictFromIndex<TKey, JobEntry<TKey>>(now, ExpiringJobsIndex, JobDelete);
             EvictFromIndex<string, HashEntry>(now, ExpiringHashesIndex, HashDelete);
             EvictFromIndex<string, ListEntry>(now, ExpiringListsIndex, ListDelete);
             EvictFromIndex<string, SetEntry>(now, ExpiringSetsIndex, SetDelete);
             EvictFromIndex<string, CounterEntry>(now, ExpiringCountersIndex, CounterDelete);
         }
 
-        private static void EvictFromIndex<TKey, TEntry>(MonotonicTime now, SortedSet<TEntry> index, Action<TEntry> action)
-            where TEntry : IExpirableEntry<TKey>
+        private static void EvictFromIndex<TEntryKey, TEntry>(MonotonicTime now, SortedSet<TEntry> index, Action<TEntry> action)
+            where TEntry : IExpirableEntry<TEntryKey>
         {
             TEntry entry;
 
@@ -270,8 +273,8 @@ namespace Hangfire.InMemory
             }
         }
 
-        private static void EntryRemove<TKey, TEntry>(TEntry entry, IDictionary<TKey, TEntry> index, ISet<TEntry> expirationIndex)
-            where TEntry : IExpirableEntry<TKey>
+        private static void EntryRemove<TEntryKey, TEntry>(TEntry entry, IDictionary<TEntryKey, TEntry> index, ISet<TEntry> expirationIndex)
+            where TEntry : IExpirableEntry<TEntryKey>
         {
             index.Remove(entry.Key);
 
@@ -281,8 +284,8 @@ namespace Hangfire.InMemory
             }
         }
 
-        private bool EntryExpire<TKey, TEntry>(TEntry entry, ISet<TEntry> index, MonotonicTime? now, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
-            where TEntry : IExpirableEntry<TKey>
+        private bool EntryExpire<TEntryKey, TEntry>(TEntry entry, ISet<TEntry> index, MonotonicTime? now, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
+            where TEntry : IExpirableEntry<TEntryKey>
         {
             if (entry.ExpireAt.HasValue)
             {

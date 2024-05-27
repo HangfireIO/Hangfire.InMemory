@@ -27,8 +27,8 @@ namespace Hangfire.InMemory.Tests
     {
         private readonly InMemoryStorageOptions _options;
         private readonly MonotonicTime _now;
-        private readonly InMemoryState _state;
-        private readonly TestInMemoryDispatcher _dispatcher;
+        private readonly InMemoryState<string> _state;
+        private readonly TestInMemoryDispatcher<string> _dispatcher;
         private readonly Dictionary<string,string> _parameters;
         private readonly Job _job;
 
@@ -36,8 +36,8 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions();
             _now = MonotonicTime.GetCurrent();
-            _state = new InMemoryState(_options);
-            _dispatcher = new TestInMemoryDispatcher(() => _now, _state);
+            _state = new InMemoryState<string>(_options, _options.StringComparer);
+            _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression<ITestServices>(x => x.Empty());
         }
@@ -46,7 +46,7 @@ namespace Hangfire.InMemory.Tests
         public void Ctor_ThrowsAnException_WhenStateIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new TestInMemoryDispatcher(() => _now, null));
+                () => new TestInMemoryDispatcher<string>(() => _now, null));
             
             Assert.Equal("state", exception.ParamName);
         }
@@ -55,7 +55,7 @@ namespace Hangfire.InMemory.Tests
         public void Ctor_ThrowsAnException_WhenTimeResolverIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new TestInMemoryDispatcher(null, _state));
+                () => new TestInMemoryDispatcher<string>(null, _state));
             
             Assert.Equal("timeResolver", exception.ParamName);
         }

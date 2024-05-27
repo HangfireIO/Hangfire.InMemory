@@ -20,12 +20,13 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal abstract class InMemoryDispatcherBase
+    internal abstract class InMemoryDispatcherBase<TKey>
+        where TKey : IComparable<TKey>
     {
         private readonly Func<MonotonicTime> _timeResolver;
-        private readonly InMemoryState _state;
+        private readonly InMemoryState<TKey> _state;
 
-        protected InMemoryDispatcherBase(Func<MonotonicTime> timeResolver, InMemoryState state)
+        protected InMemoryDispatcherBase(Func<MonotonicTime> timeResolver, InMemoryState<TKey> state)
         {
             _timeResolver = timeResolver ?? throw new ArgumentNullException(nameof(timeResolver));
             _state = state ?? throw new ArgumentNullException(nameof(state));
@@ -108,30 +109,30 @@ namespace Hangfire.InMemory
             }
         }
 
-        public void QueryWriteAndWait(Action<InMemoryState> query)
+        public void QueryWriteAndWait(Action<InMemoryState<TKey>> query)
         {
-            bool Callback(InMemoryState state) { query(state); return true; }
+            bool Callback(InMemoryState<TKey> state) { query(state); return true; }
             QueryWriteAndWait(Callback);
         }
 
-        public T QueryWriteAndWait<T>(Func<InMemoryState, T> query)
+        public T QueryWriteAndWait<T>(Func<InMemoryState<TKey>, T> query)
         {
-            object Callback(InMemoryState state) => query(state);
+            object Callback(InMemoryState<TKey> state) => query(state);
             return (T)QueryWriteAndWait(Callback);
         }
 
-        protected virtual object QueryWriteAndWait(Func<InMemoryState, object> query)
+        protected virtual object QueryWriteAndWait(Func<InMemoryState<TKey>, object> query)
         {
             return query(_state);
         }
 
-        public T QueryReadAndWait<T>(Func<InMemoryState, T> query)
+        public T QueryReadAndWait<T>(Func<InMemoryState<TKey>, T> query)
         {
-            object Callback(InMemoryState state) => query(state);
+            object Callback(InMemoryState<TKey> state) => query(state);
             return (T)QueryReadAndWait(Callback);
         }
 
-        protected virtual object QueryReadAndWait(Func<InMemoryState, object> query)
+        protected virtual object QueryReadAndWait(Func<InMemoryState<TKey>, object> query)
         {
             return QueryWriteAndWait(query);
         }

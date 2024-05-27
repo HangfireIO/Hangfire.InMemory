@@ -15,27 +15,27 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Hangfire.Logging;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class InMemoryDispatcher : InMemoryDispatcherBase, IDisposable
+    internal sealed class InMemoryDispatcher<TKey> : InMemoryDispatcherBase<TKey>, IDisposable
+        where TKey : IComparable<TKey>
     {
         private const uint DefaultExpirationIntervalMs = 1000U;
         private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(15);
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
-        private readonly ConcurrentBag<InMemoryDispatcherCallback> _readQueries = new ConcurrentBag<InMemoryDispatcherCallback>();
-        private readonly ConcurrentBag<InMemoryDispatcherCallback> _queries = new ConcurrentBag<InMemoryDispatcherCallback>();
+        private readonly ConcurrentBag<InMemoryDispatcherCallback<TKey>> _readQueries = new ConcurrentBag<InMemoryDispatcherCallback<TKey>>();
+        private readonly ConcurrentBag<InMemoryDispatcherCallback<TKey>> _queries = new ConcurrentBag<InMemoryDispatcherCallback<TKey>>();
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
         private volatile bool _disposed;
 
         private PaddedInt64 _outstandingRequests;
 
-        public InMemoryDispatcher(Func<MonotonicTime> timeResolver, InMemoryState state) : base(timeResolver, state)
+        public InMemoryDispatcher(Func<MonotonicTime> timeResolver, InMemoryState<TKey> state) : base(timeResolver, state)
         {
             _thread = new Thread(DoWork)
             {
@@ -54,11 +54,11 @@ namespace Hangfire.InMemory
             _thread.Join();
         }
 
-        protected override object QueryWriteAndWait(Func<InMemoryState, object> query)
+        protected override object QueryWriteAndWait(Func<InMemoryState<TKey>, object> query)
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new InMemoryDispatcherCallback(query))
+            using (var callback = new InMemoryDispatcherCallback<TKey>(query))
             {
                 _queries.Add(callback);
 
@@ -84,11 +84,11 @@ namespace Hangfire.InMemory
             }
         }
 
-        protected override object QueryReadAndWait(Func<InMemoryState, object> query)
+        protected override object QueryReadAndWait(Func<InMemoryState<TKey>, object> query)
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new InMemoryDispatcherCallback(query))
+            using (var callback = new InMemoryDispatcherCallback<TKey>(query))
             {
                 _readQueries.Add(callback);
 
@@ -164,34 +164,7 @@ namespace Hangfire.InMemory
 
         private static void ThrowObjectDisposedException()
         {
-            throw new ObjectDisposedException(typeof(InMemoryDispatcher).FullName);
-        }
-
-        [StructLayout(LayoutKind.Explicit, Size = 2 * CacheLineSize)]
-        private struct PaddedInt64
-        {
-            private const int CacheLineSize = 128;
-
-            [FieldOffset(CacheLineSize)]
-            internal long Value;
-        }
-
-        private static class ExceptionHelper
-        {
-#if !NETSTANDARD1_3
-            private static readonly Type StackOverflowType = typeof(StackOverflowException);
-#endif
-            private static readonly Type OutOfMemoryType = typeof(OutOfMemoryException);
- 
-            public static bool IsCatchableExceptionType(Exception ex)
-            {
-                var type = ex.GetType();
-                return
-#if !NETSTANDARD1_3
-                    type != StackOverflowType &&
-#endif
-                    type != OutOfMemoryType;
-            }
+            throw new ObjectDisposedException(typeof(InMemoryDispatcher<TKey>).FullName);
         }
     }
 }

@@ -14,11 +14,39 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using System.Runtime.InteropServices;
 using Hangfire.Common;
 using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
+    [StructLayout(LayoutKind.Explicit, Size = 2 * CacheLineSize)]
+    internal struct PaddedInt64
+    {
+        private const int CacheLineSize = 128;
+
+        [FieldOffset(CacheLineSize)]
+        internal long Value;
+    }
+
+    internal static class ExceptionHelper
+    {
+#if !NETSTANDARD1_3
+        private static readonly Type StackOverflowType = typeof(StackOverflowException);
+#endif
+        private static readonly Type OutOfMemoryType = typeof(OutOfMemoryException);
+ 
+        public static bool IsCatchableExceptionType(Exception ex)
+        {
+            var type = ex.GetType();
+            return
+#if !NETSTANDARD1_3
+                type != StackOverflowType &&
+#endif
+                type != OutOfMemoryType;
+        }
+    }
+
     internal static class ExtensionMethods
     {
         public static Job TryGetJob(this InvocationData data, out JobLoadException exception)
