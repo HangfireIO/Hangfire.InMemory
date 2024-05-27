@@ -58,7 +58,7 @@ namespace Hangfire.InMemory
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new InMemoryDispatcherCallback<TKey>(query))
+            using (var callback = new InMemoryDispatcherCallback<TKey>(query, rethrowExceptions: true))
             {
                 _queries.Add(callback);
 
@@ -88,7 +88,7 @@ namespace Hangfire.InMemory
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new InMemoryDispatcherCallback<TKey>(query))
+            using (var callback = new InMemoryDispatcherCallback<TKey>(query, rethrowExceptions: false))
             {
                 _readQueries.Add(callback);
 
@@ -128,16 +128,7 @@ namespace Hangfire.InMemory
 
                         while (_readQueries.TryTake(out var next) || _queries.TryTake(out next))
                         {
-                            try
-                            {
-                                var result = base.QueryWriteAndWait(next.Command);
-                                next.SetResult(result);
-                            }
-                            catch (Exception ex) when (ExceptionHelper.IsCatchableExceptionType(ex))
-                            {
-                                next.SetException(ex);
-                                throw;
-                            }
+                            next.Execute(State);
 
                             if (Environment.TickCount - startTime >= DefaultExpirationIntervalMs)
                             {

@@ -22,29 +22,38 @@ namespace Hangfire.InMemory
         where TKey : IComparable<TKey>
     {
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
+        private readonly IInMemoryCommand<TKey> _command;
+        private readonly bool _rethrowExceptions;
         private volatile object _result;
 
-        public InMemoryDispatcherCallback(IInMemoryCommand<TKey> command)
+        public InMemoryDispatcherCallback(IInMemoryCommand<TKey> command, bool rethrowExceptions)
         {
-            Command = command ?? throw new ArgumentNullException(nameof(command));
+            _rethrowExceptions = rethrowExceptions;
+            _command = command ?? throw new ArgumentNullException(nameof(command));
         }
 
-        public IInMemoryCommand<TKey> Command { get; }
         public bool IsFaulted { get; private set; }
-
         public object Result => _result;
 
-        public void SetResult(object value)
+        public void Execute(InMemoryState<TKey> state)
         {
-            _result = value;
-            TrySetReady();
-        }
+            try
+            {
+                _result = _command.Execute(state);
+                IsFaulted = false;
+                TrySetReady();
+            }
+            catch (Exception ex) when (ExceptionHelper.IsCatchableExceptionType(ex))
+            {
+                _result = ex;
+                IsFaulted = true;
+                TrySetReady();
 
-        public void SetException(Exception value)
-        {
-            _result = value;
-            IsFaulted = true;
-            TrySetReady();
+                if (_rethrowExceptions)
+                {
+                    throw;
+                }
+            }
         }
 
         public bool Wait(TimeSpan timeout, CancellationToken token)

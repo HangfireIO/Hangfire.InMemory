@@ -32,6 +32,8 @@ namespace Hangfire.InMemory
             _state = state ?? throw new ArgumentNullException(nameof(state));
         }
 
+        protected InMemoryState<TKey> State => _state;
+
         public MonotonicTime GetMonotonicTime()
         {
             return _timeResolver();
