@@ -28,7 +28,7 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryConnection<TKey> : JobStorageConnection
         where TKey : IComparable<TKey>
     {
-        private readonly HashSet<IDisposable> _acquiredLocks = new HashSet<IDisposable>();
+        private readonly HashSet<LockDisposable> _acquiredLocks = new HashSet<LockDisposable>();
 
         public InMemoryConnection(
             [NotNull] InMemoryDispatcherBase<TKey> dispatcher,
