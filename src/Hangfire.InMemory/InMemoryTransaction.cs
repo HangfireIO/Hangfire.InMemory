@@ -91,7 +91,7 @@ namespace Hangfire.InMemory
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
             var key = Guid.NewGuid().ToString(); // TODO: Change with Long type
-            var entry = new JobEntry(
+            var entry = new JobEntry<string>(
                 key,
                 InvocationData.SerializeJob(job),
                 parameters,

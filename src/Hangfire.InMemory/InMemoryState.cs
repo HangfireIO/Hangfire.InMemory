@@ -23,16 +23,16 @@ namespace Hangfire.InMemory
 {
     internal sealed class InMemoryState
     {
-        private readonly JobStateCreatedAtComparer _jobEntryComparer;
+        private readonly JobStateCreatedAtComparer<string> _jobEntryComparer;
 
         // State index uses case-insensitive comparisons, despite the current settings. SQL Server
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
-        private readonly Dictionary<string, SortedSet<JobEntry>> _jobStateIndex = new Dictionary<string, SortedSet<JobEntry>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, SortedSet<JobEntry<string>>> _jobStateIndex = new Dictionary<string, SortedSet<JobEntry<string>>>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Dictionary<string, LockEntry<JobStorageConnection>> _locks;
         private readonly ConcurrentDictionary<string, QueueEntry> _queues;
 
-        private readonly SortedDictionary<string, JobEntry> _jobs;
+        private readonly SortedDictionary<string, JobEntry<string>> _jobs;
         private readonly SortedDictionary<string, HashEntry> _hashes;
         private readonly SortedDictionary<string, ListEntry> _lists;
         private readonly SortedDictionary<string, SetEntry> _sets;
@@ -43,12 +43,12 @@ namespace Hangfire.InMemory
         {
             Options = options;
 
-            _jobEntryComparer = new JobStateCreatedAtComparer(options.StringComparer);
+            _jobEntryComparer = new JobStateCreatedAtComparer<string>(options.StringComparer);
 
             _locks = CreateDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
             _queues = CreateConcurrentDictionary<QueueEntry>(options.StringComparer);
 
-            _jobs = CreateSortedDictionary<JobEntry>(options.StringComparer);
+            _jobs = CreateSortedDictionary<JobEntry<string>>(options.StringComparer);
             _hashes = CreateSortedDictionary<HashEntry>(options.StringComparer);
             _lists = CreateSortedDictionary<ListEntry>(options.StringComparer);
             _sets = CreateSortedDictionary<SetEntry>(options.StringComparer);
@@ -56,7 +56,7 @@ namespace Hangfire.InMemory
             _servers = CreateSortedDictionary<ServerEntry>(options.StringComparer);
 
             var expirableEntryComparer = new ExpirableEntryComparer<string>(options.StringComparer);
-            ExpiringJobsIndex = new SortedSet<JobEntry>(expirableEntryComparer);
+            ExpiringJobsIndex = new SortedSet<JobEntry<string>>(expirableEntryComparer);
             ExpiringCountersIndex = new SortedSet<CounterEntry>(expirableEntryComparer);
             ExpiringHashesIndex = new SortedSet<HashEntry>(expirableEntryComparer);
             ExpiringListsIndex = new SortedSet<ListEntry>(expirableEntryComparer);
@@ -72,17 +72,17 @@ namespace Hangfire.InMemory
         public IReadOnlyDictionary<string, QueueEntry> Queues => _queues;
 #endif
 
-        public IDictionary<string, JobEntry> Jobs => _jobs;
+        public IDictionary<string, JobEntry<string>> Jobs => _jobs;
         public IDictionary<string, HashEntry> Hashes => _hashes;
         public IDictionary<string, ListEntry> Lists => _lists;
         public IDictionary<string, SetEntry> Sets => _sets;
         public IDictionary<string, CounterEntry> Counters => _counters;
         public IDictionary<string, ServerEntry> Servers => _servers;
 
-        public IReadOnlyDictionary<string, SortedSet<JobEntry>> JobStateIndex => _jobStateIndex;
+        public IReadOnlyDictionary<string, SortedSet<JobEntry<string>>> JobStateIndex => _jobStateIndex;
 
         // TODO: Hide these indexes from external access for safety reasons
-        public SortedSet<JobEntry> ExpiringJobsIndex { get; }
+        public SortedSet<JobEntry<string>> ExpiringJobsIndex { get; }
         public SortedSet<CounterEntry> ExpiringCountersIndex { get; }
         public SortedSet<HashEntry> ExpiringHashesIndex { get; }
         public SortedSet<ListEntry> ExpiringListsIndex { get; }
@@ -98,17 +98,17 @@ namespace Hangfire.InMemory
             return entry;
         }
 
-        public void JobCreate(JobEntry entry, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
+        public void JobCreate(JobEntry<string> entry, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
         {
             _jobs.Add(entry.Key, entry);
 
-            if (EntryExpire<string, JobEntry>(entry, ExpiringJobsIndex, entry.CreatedAt, expireIn, ignoreMaxExpirationTime))
+            if (EntryExpire<string, JobEntry<string>>(entry, ExpiringJobsIndex, entry.CreatedAt, expireIn, ignoreMaxExpirationTime))
             {
                 JobDelete(entry);
             }
         }
 
-        public void JobSetState(JobEntry entry, StateEntry state)
+        public void JobSetState(JobEntry<string> entry, StateEntry state)
         {
             if (entry.State != null && _jobStateIndex.TryGetValue(entry.State.Name, out var indexEntry))
             {
@@ -120,21 +120,21 @@ namespace Hangfire.InMemory
 
             if (!_jobStateIndex.TryGetValue(state.Name, out indexEntry))
             {
-                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<JobEntry>(_jobEntryComparer));
+                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<JobEntry<string>>(_jobEntryComparer));
             }
 
             indexEntry.Add(entry);
         }
 
-        public void JobExpire(JobEntry entry, MonotonicTime? now, TimeSpan? expireIn)
+        public void JobExpire(JobEntry<string> entry, MonotonicTime? now, TimeSpan? expireIn)
         {
-            if (EntryExpire<string, JobEntry>(entry, ExpiringJobsIndex, now, expireIn))
+            if (EntryExpire<string, JobEntry<string>>(entry, ExpiringJobsIndex, now, expireIn))
             {
                 JobDelete(entry);
             }
         }
 
-        public void JobDelete(JobEntry entry)
+        public void JobDelete(JobEntry<string> entry)
         {
             EntryRemove(entry, _jobs, ExpiringJobsIndex);
 
@@ -252,7 +252,7 @@ namespace Hangfire.InMemory
 
         public void EvictExpiredEntries(MonotonicTime now)
         {
-            EvictFromIndex<string, JobEntry>(now, ExpiringJobsIndex, JobDelete);
+            EvictFromIndex<string, JobEntry<string>>(now, ExpiringJobsIndex, JobDelete);
             EvictFromIndex<string, HashEntry>(now, ExpiringHashesIndex, HashDelete);
             EvictFromIndex<string, ListEntry>(now, ExpiringListsIndex, ListDelete);
             EvictFromIndex<string, SetEntry>(now, ExpiringSetsIndex, SetDelete);

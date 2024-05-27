@@ -18,16 +18,17 @@ using System.Collections.Generic;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class JobStateCreatedAtComparer : IComparer<JobEntry>
+    internal sealed class JobStateCreatedAtComparer<T> : IComparer<JobEntry<T>>
+        where T : IComparable<T>
     {
-        private readonly StringComparer _stringComparer;
+        private readonly IComparer<T> _comparer;
 
-        public JobStateCreatedAtComparer(StringComparer stringComparer)
+        public JobStateCreatedAtComparer(IComparer<T> comparer)
         {
-            _stringComparer = stringComparer;
+            _comparer = comparer;
         }
 
-        public int Compare(JobEntry x, JobEntry y)
+        public int Compare(JobEntry<T> x, JobEntry<T> y)
         {
             if (ReferenceEquals(x, y)) return 0;
             if (y?.State == null) return 1;
@@ -39,7 +40,7 @@ namespace Hangfire.InMemory.Entities
             var createdAtComparison = x.CreatedAt.CompareTo(y.CreatedAt);
             if (createdAtComparison != 0) return createdAtComparison;
 
-            return _stringComparer.Compare(x.Key, y.Key);
+            return _comparer?.Compare(x.Key, y.Key) ?? x.Key.CompareTo(y.Key);
         }
     }
 }

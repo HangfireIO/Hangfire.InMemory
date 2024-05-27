@@ -1835,9 +1835,9 @@ namespace Hangfire.InMemory.Tests
             Assert.Empty(_state.ExpiringSetsIndex);
         }
 
-        private JobEntry CreateJobEntry(string jobId)
+        private JobEntry<string> CreateJobEntry(string jobId)
         {
-            return new JobEntry(jobId, InvocationData.SerializeJob(_job), _parameters, _now);
+            return new JobEntry<string>(jobId, InvocationData.SerializeJob(_job), _parameters, _now);
         }
 
         [Fact]

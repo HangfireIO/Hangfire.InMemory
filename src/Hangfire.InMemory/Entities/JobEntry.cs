@@ -19,14 +19,14 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class JobEntry : IExpirableEntry<string>
+    internal sealed class JobEntry<T> : IExpirableEntry<T>
     {
         private const int StateCountForRegularJob = 4; // (Scheduled) -> Enqueued -> Processing -> Succeeded
         private readonly List<StateEntry> _history = new(StateCountForRegularJob);
         private KeyValuePair<string, string>[] _parameters;
 
         public JobEntry(
-            string key,
+            T key,
             InvocationData data,
             IDictionary<string, string> parameters,
             MonotonicTime createdAt)
@@ -44,7 +44,7 @@ namespace Hangfire.InMemory.Entities
             }
         }
 
-        public string Key { get; }
+        public T Key { get; }
         public InvocationData InvocationData { get; internal set; }
 
         public StateEntry State { get; set; }
