@@ -31,7 +31,7 @@ namespace Hangfire.InMemory
         private readonly Dictionary<string, SortedSet<JobEntry<TKey>>> _jobStateIndex = new Dictionary<string, SortedSet<JobEntry<TKey>>>(StringComparer.OrdinalIgnoreCase);
 
         private readonly Dictionary<string, LockEntry<JobStorageConnection>> _locks;
-        private readonly ConcurrentDictionary<string, QueueEntry> _queues;
+        private readonly ConcurrentDictionary<string, QueueEntry<TKey>> _queues;
 
         private readonly SortedDictionary<TKey, JobEntry<TKey>> _jobs;
         private readonly SortedDictionary<string, HashEntry> _hashes;
@@ -47,7 +47,7 @@ namespace Hangfire.InMemory
             _jobEntryComparer = new JobStateCreatedAtComparer<TKey>(keyComparer);
 
             _locks = CreateDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
-            _queues = CreateConcurrentDictionary<QueueEntry>(options.StringComparer);
+            _queues = CreateConcurrentDictionary<QueueEntry<TKey>>(options.StringComparer);
 
             _jobs = new SortedDictionary<TKey, JobEntry<TKey>>(keyComparer);
 
@@ -70,9 +70,9 @@ namespace Hangfire.InMemory
 
         public IDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
 #if NET451
-        public ConcurrentDictionary<string, QueueEntry> Queues => _queues;
+        public ConcurrentDictionary<string, QueueEntry<TKey>> Queues => _queues;
 #else
-        public IReadOnlyDictionary<string, QueueEntry> Queues => _queues;
+        public IReadOnlyDictionary<string, QueueEntry<TKey>> Queues => _queues;
 #endif
 
         public IDictionary<TKey, JobEntry<TKey>> Jobs => _jobs;
@@ -91,11 +91,11 @@ namespace Hangfire.InMemory
         public SortedSet<ListEntry> ExpiringListsIndex { get; }
         public SortedSet<SetEntry> ExpiringSetsIndex { get; }
 
-        public QueueEntry QueueGetOrCreate(string name)
+        public QueueEntry<TKey> QueueGetOrCreate(string name)
         {
             if (!_queues.TryGetValue(name, out var entry))
             {
-                entry = _queues.GetOrAdd(name, _ => new QueueEntry());
+                entry = _queues.GetOrAdd(name, _ => new QueueEntry<TKey>());
             }
 
             return entry;

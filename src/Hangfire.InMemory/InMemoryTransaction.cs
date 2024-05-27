@@ -27,7 +27,7 @@ namespace Hangfire.InMemory
         where TKey : IComparable<TKey>
     {
         private readonly LinkedList<IInMemoryCommand<TKey>> _commands = new LinkedList<IInMemoryCommand<TKey>>();
-        private readonly HashSet<QueueEntry> _enqueued = new HashSet<QueueEntry>();
+        private readonly HashSet<QueueEntry<TKey>> _enqueued = new HashSet<QueueEntry<TKey>>();
         private readonly InMemoryConnection<TKey> _connection;
         private readonly List<IDisposable> _acquiredLocks = new List<IDisposable>();
 
@@ -256,16 +256,21 @@ namespace Hangfire.InMemory
             if (queue == null) throw new ArgumentNullException(nameof(queue));
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
-            AddCommand(new AddToQueueCommand(queue, jobId, _enqueued));
+            if (!_connection.KeyProvider.TryParse(jobId, out var key))
+            {
+                return;
+            }
+
+            AddCommand(new AddToQueueCommand(queue, key, _enqueued));
         }
 
-        private sealed class AddToQueueCommand(string queue, string jobId, HashSet<QueueEntry> enqueued)
+        private sealed class AddToQueueCommand(string queue, TKey key, HashSet<QueueEntry<TKey>> enqueued)
             : IInMemoryCommand<TKey>
         {
             public object Execute(InMemoryState<TKey> state)
             {
                 var entry = state.QueueGetOrCreate(queue);
-                entry.Queue.Enqueue(jobId);
+                entry.Queue.Enqueue(key);
 
                 enqueued.Add(entry);
                 return null;

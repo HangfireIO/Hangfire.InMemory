@@ -140,7 +140,7 @@ namespace Hangfire.InMemory
                             if (entry.Value.Queue.TryDequeue(out var jobId))
                             {
                                 entry.Value.SignalOneWaitNode();
-                                return new InMemoryFetchedJob<TKey>(Dispatcher, entry.Key, jobId);
+                                return new InMemoryFetchedJob<TKey>(this, entry.Key, KeyProvider.ToString(jobId));
                             }
                         }
 

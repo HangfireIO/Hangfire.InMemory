@@ -19,11 +19,12 @@ using System.Threading;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class QueueEntry
+    internal sealed class QueueEntry<TKey>
+        where TKey : IComparable<TKey>
     {
         private static readonly InMemoryQueueWaitNode Tombstone = new InMemoryQueueWaitNode(null);
 
-        public ConcurrentQueue<string> Queue { get; } = new ConcurrentQueue<string>();
+        public ConcurrentQueue<TKey> Queue { get; } = new ConcurrentQueue<TKey>();
         public InMemoryQueueWaitNode WaitHead { get; } = new InMemoryQueueWaitNode(null);
         
         public void AddWaitNode(InMemoryQueueWaitNode node)

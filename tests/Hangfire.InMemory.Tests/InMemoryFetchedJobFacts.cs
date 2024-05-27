@@ -24,6 +24,8 @@ namespace Hangfire.InMemory.Tests
     {
         private readonly InMemoryState<string> _state;
         private readonly InMemoryDispatcherBase<string> _dispatcher;
+        private readonly StringKeyProvider _keyProvider;
+        private readonly InMemoryConnection<string> _connection;
 
         public InMemoryFetchedJobFacts()
         {
@@ -31,22 +33,24 @@ namespace Hangfire.InMemory.Tests
             var options = new InMemoryStorageOptions();
             _state = new InMemoryState<string>(options, options.StringComparer);
             _dispatcher = new TestInMemoryDispatcher<string>(() => now, _state);
+            _keyProvider = new StringKeyProvider();
+            _connection = new InMemoryConnection<string>(_dispatcher, _keyProvider);
         }
 
         [Fact]
-        public void Ctor_ThrowsAnException_WhenDispatcherIsNull()
+        public void Ctor_ThrowsAnException_WhenConnectionIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
                 () => new InMemoryFetchedJob<string>(null, "default", "123"));
 
-            Assert.Equal("dispatcher", exception.ParamName);
+            Assert.Equal("connection", exception.ParamName);
         }
 
         [Fact]
         public void Ctor_ThrowsAnException_WhenQueueIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new InMemoryFetchedJob<string>(_dispatcher, null, "123"));
+                () => new InMemoryFetchedJob<string>(_connection, null, "123"));
 
             Assert.Equal("queueName", exception.ParamName);
         }
@@ -55,7 +59,7 @@ namespace Hangfire.InMemory.Tests
         public void Ctor_ThrowsAnException_WhenJobIdIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new InMemoryFetchedJob<string>(_dispatcher, "default", null));
+                () => new InMemoryFetchedJob<string>(_connection, "default", null));
 
             Assert.Equal("jobId", exception.ParamName);
         }
@@ -63,7 +67,7 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void Ctor_CorrectlySets_AllTheProperties()
         {
-            var fetched = new InMemoryFetchedJob<string>(_dispatcher, "critical", "12345");
+            var fetched = new InMemoryFetchedJob<string>(_connection, "critical", "12345");
 
             Assert.Equal("critical", fetched.QueueName);
             Assert.Equal("12345", fetched.JobId);
@@ -72,7 +76,7 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void Requeue_EnqueuesTheGivenJobId_ToTheGivenQueue()
         {
-            var fetched = new InMemoryFetchedJob<string>(_dispatcher, "critical", "12345");
+            var fetched = new InMemoryFetchedJob<string>(_connection, "critical", "12345");
 
             fetched.Requeue();
 
@@ -82,14 +86,14 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void RemoveFromQueue_DoesNotDoAnything()
         {
-            IFetchedJob fetched = new InMemoryFetchedJob<string>(_dispatcher, "critical", "12345");
+            IFetchedJob fetched = new InMemoryFetchedJob<string>(_connection, "critical", "12345");
             fetched.RemoveFromQueue();
         }
 
         [Fact]
         public void Dispose_DoesNotDoAnything()
         {
-            IFetchedJob fetched = new InMemoryFetchedJob<string>(_dispatcher, "critical", "12345");
+            IFetchedJob fetched = new InMemoryFetchedJob<string>(_connection, "critical", "12345");
             fetched.Dispose();
         }
     }

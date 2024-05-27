@@ -40,14 +40,14 @@ namespace Hangfire.InMemory
         // Unsafe methods expose entries directly for callers, without using a
         // dispatcher thread. Consumers should ensure each data structure is
         // safe for a possible concurrent access.
-        public KeyValuePair<string, QueueEntry>[] GetOrAddQueuesUnsafe(IReadOnlyCollection<string> queueNames)
+        public KeyValuePair<string, QueueEntry<TKey>>[] GetOrAddQueuesUnsafe(IReadOnlyCollection<string> queueNames)
         {
-            var entries = new KeyValuePair<string, QueueEntry>[queueNames.Count];
+            var entries = new KeyValuePair<string, QueueEntry<TKey>>[queueNames.Count];
             var index = 0;
 
             foreach (var queueName in queueNames)
             {
-                entries[index++] = new KeyValuePair<string, QueueEntry>(
+                entries[index++] = new KeyValuePair<string, QueueEntry<TKey>>(
                     queueName,
                     _state.QueueGetOrCreate(queueName));
             }

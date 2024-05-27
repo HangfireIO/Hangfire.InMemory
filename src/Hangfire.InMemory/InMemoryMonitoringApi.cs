@@ -53,11 +53,10 @@ namespace Hangfire.InMemory
                     {
                         if (index++ >= count) break;
 
-                        Entities.JobEntry<TKey> jobEntry = null;
                         Job job = null;
                         JobLoadException loadException = null;
 
-                        if (_keyProvider.TryParse(message, out var key) && state.Jobs.TryGetValue(key, out jobEntry))
+                        if (state.Jobs.TryGetValue(message, out var jobEntry))
                         {
                             job = jobEntry.InvocationData.TryGetJob(out loadException);
                         }
@@ -67,7 +66,7 @@ namespace Hangfire.InMemory
                             stateName,
                             StringComparison.OrdinalIgnoreCase);
 
-                        queueResult.Add(new KeyValuePair<string, EnqueuedJobDto>(message, new EnqueuedJobDto
+                        queueResult.Add(new KeyValuePair<string, EnqueuedJobDto>(_keyProvider.ToString(message), new EnqueuedJobDto
                         {
                             Job = job,
                             LoadException = loadException,
@@ -193,11 +192,10 @@ namespace Hangfire.InMemory
                         if (counter < from) { counter++; continue; }
                         if (counter >= from + perPage) break;
 
-                        Entities.JobEntry<TKey> jobEntry = null;
                         Job job = null;
                         JobLoadException loadException = null;
 
-                        if (_keyProvider.TryParse(message, out var key) && state.Jobs.TryGetValue(key, out jobEntry))
+                        if (state.Jobs.TryGetValue(message, out var jobEntry))
                         {
                             job = jobEntry.InvocationData.TryGetJob(out loadException);
                         }
@@ -207,7 +205,7 @@ namespace Hangfire.InMemory
                             stateName,
                             StringComparison.OrdinalIgnoreCase);
 
-                        result.Add(new KeyValuePair<string, EnqueuedJobDto>(message, new EnqueuedJobDto
+                        result.Add(new KeyValuePair<string, EnqueuedJobDto>(_keyProvider.ToString(message), new EnqueuedJobDto
                         {
                             Job = job,
                             InvocationData = jobEntry?.InvocationData,

@@ -22,14 +22,14 @@ namespace Hangfire.InMemory
     internal class InMemoryFetchedJob<TKey> : IFetchedJob
         where TKey : IComparable<TKey>
     {
-        private readonly InMemoryDispatcherBase<TKey> _dispatcher;
+        private readonly InMemoryConnection<TKey> _connection;
 
         public InMemoryFetchedJob(
-            [NotNull] InMemoryDispatcherBase<TKey> dispatcher,
+            [NotNull] InMemoryConnection<TKey> connection,
             [NotNull] string queueName,
             [NotNull] string jobId)
         {
-            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
 
             QueueName = queueName ?? throw new ArgumentNullException(nameof(queueName));
             JobId = jobId ?? throw new ArgumentNullException(nameof(jobId));
@@ -40,10 +40,15 @@ namespace Hangfire.InMemory
 
         public void Requeue()
         {
-            var entry = _dispatcher.QueryWriteAndWait(state =>
+            if (!_connection.KeyProvider.TryParse(JobId, out var key))
+            {
+                return;
+            }
+
+            var entry = _connection.Dispatcher.QueryWriteAndWait(state =>
             {
                 var value = state.QueueGetOrCreate(QueueName);
-                value.Queue.Enqueue(JobId);
+                value.Queue.Enqueue(key);
                 return value;
             });
 
