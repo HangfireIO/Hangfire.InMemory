@@ -25,6 +25,12 @@ namespace Hangfire.InMemory
         private int _maxStateHistoryLength = 10;
 
         /// <summary>
+        /// Gets or sets the underlying key type for background jobs that can be useful
+        /// to simulate different persistent storages.
+        /// </summary>
+        public InMemoryStorageIdType IdType { get; set; } = InMemoryStorageIdType.Guid;
+
+        /// <summary>
         /// Gets or sets the maximum expiration time for all the entries. When set, this
         /// value overrides any expiration time set in the other places of Hangfire. The
         /// main rationale for this is to control the amount of consumed RAM, since we are

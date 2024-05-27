@@ -1,5 +1,6 @@
 using System;
 using Hangfire;
+using Hangfire.InMemory;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +15,10 @@ namespace ConsoleSample
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseIgnoredAssemblyVersionTypeResolver()
-                .UseInMemoryStorage());
+                .UseInMemoryStorage(new InMemoryStorageOptions
+                {
+                    IdType = InMemoryStorageIdType.UInt64
+                }));
 
             services.AddHangfireServer(options => options.Queues = new[] { "critical", "default" });
 

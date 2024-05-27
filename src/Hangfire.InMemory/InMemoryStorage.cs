@@ -15,6 +15,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Threading;
 using Hangfire.Annotations;
 using Hangfire.Storage;
 
@@ -24,9 +26,12 @@ namespace Hangfire.InMemory
     /// A class that represents an in-memory job storage that stores all data
     /// related to background processing in a process' memory.
     /// </summary>
-    public sealed class InMemoryStorage : JobStorage, IKeyProvider<Guid>, IDisposable
+    public sealed class InMemoryStorage : JobStorage, IKeyProvider<Guid>, IKeyProvider<ulong>, IDisposable
     {
-        private readonly InMemoryDispatcher<Guid> _dispatcher;
+        private readonly InMemoryDispatcher<Guid> _guidDispatcher;
+        private readonly InMemoryDispatcher<ulong> _longDispatcher;
+
+        private PaddedInt64 _nextId;
 
         // These options don't relate to the defined storage comparison options
         private readonly Dictionary<string, bool> _features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
@@ -63,13 +68,29 @@ namespace Hangfire.InMemory
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
 
-            _dispatcher = new InMemoryDispatcher<Guid>(MonotonicTime.GetCurrent, new InMemoryState<Guid>(Options, null));
+            switch (options.IdType)
+            {
+                case InMemoryStorageIdType.Guid:
+                    _guidDispatcher = new InMemoryDispatcher<Guid>(
+                        MonotonicTime.GetCurrent,
+                        new InMemoryState<Guid>(Options, null));
+                    break;
+                case InMemoryStorageIdType.UInt64:
+                    _longDispatcher = new InMemoryDispatcher<ulong>(
+                        MonotonicTime.GetCurrent,
+                        new InMemoryState<ulong>(Options, null));
+                    break;
+                default:
+                    throw new NotSupportedException(
+                        $"The given 'Options.IdType' value is not supported: {options.IdType:G}");
+            }
         }
 
         /// <inheritdoc />
         public void Dispose()
         {
-            _dispatcher.Dispose();
+            _guidDispatcher?.Dispose();
+            _longDispatcher?.Dispose();
         }
 
         /// <summary>
@@ -95,13 +116,33 @@ namespace Hangfire.InMemory
         /// <inheritdoc />
         public override IMonitoringApi GetMonitoringApi()
         {
-            return new InMemoryMonitoringApi<Guid>(_dispatcher, this);
+            if (_guidDispatcher != null)
+            {
+                return new InMemoryMonitoringApi<Guid>(_guidDispatcher, this);
+            }
+
+            if (_longDispatcher != null)
+            {
+                return new InMemoryMonitoringApi<ulong>(_longDispatcher, this);
+            }
+
+            return null;
         }
 
         /// <inheritdoc />
         public override IStorageConnection GetConnection()
         {
-            return new InMemoryConnection<Guid>(_dispatcher, this);
+            if (_guidDispatcher != null)
+            {
+                return new InMemoryConnection<Guid>(_guidDispatcher, this);
+            }
+
+            if (_longDispatcher != null)
+            {
+                return new InMemoryConnection<ulong>(_longDispatcher, this);
+            }
+
+            return null;
         }
 
         /// <inheritdoc />
@@ -123,6 +164,21 @@ namespace Hangfire.InMemory
         string IKeyProvider<Guid>.ToString(Guid key)
         {
             return key.ToString("D");
+        }
+
+        ulong IKeyProvider<ulong>.GetUniqueKey()
+        {
+            return (ulong)Interlocked.Increment(ref _nextId.Value);
+        }
+
+        bool IKeyProvider<ulong>.TryParse(string input, out ulong key)
+        {
+            return ulong.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, out key);
+        }
+
+        string IKeyProvider<ulong>.ToString(ulong key)
+        {
+            return key.ToString(CultureInfo.InvariantCulture);
         }
     }
 }
