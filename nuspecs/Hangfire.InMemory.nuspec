@@ -11,10 +11,16 @@
     <license type="file">LICENSE.md</license>
     <icon>icon.png</icon>
     <readme>README.md</readme>
-    <description>In-memory job storage for Hangfire with transactional implementation.</description>
+    <description>In-memory job storage for Hangfire with an efficient implementation.</description>
     <copyright>Copyright © 2020-2024 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
+
+0.10.0
+• Added – Support long-based job identifiers through the `InMemoryOptions.IdType` property.
+• Changed – Significantly improve query dispatching pipeline in terms of speed and allocations.
+• Changed – More compact representation of jobs and its parameters.
+• Changed – Optimise the `GetFirstByLowestScoreFromSet` query when the number of items is huge.
 
 0.9.0
 • Added – Implement the disposable pattern for the `InMemoryStorage` class.
