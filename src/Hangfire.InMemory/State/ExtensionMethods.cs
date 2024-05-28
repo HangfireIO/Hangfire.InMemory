@@ -18,7 +18,7 @@ using System.Runtime.InteropServices;
 using Hangfire.Common;
 using Hangfire.Storage;
 
-namespace Hangfire.InMemory
+namespace Hangfire.InMemory.State
 {
     [StructLayout(LayoutKind.Explicit, Size = 2 * CacheLineSize)]
     internal struct PaddedInt64

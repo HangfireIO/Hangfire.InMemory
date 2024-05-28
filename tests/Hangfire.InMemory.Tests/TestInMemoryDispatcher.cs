@@ -1,11 +1,12 @@
 ﻿using System;
+using Hangfire.InMemory.State;
 
 namespace Hangfire.InMemory.Tests
 {
-    internal class TestInMemoryDispatcher<TKey> : InMemoryDispatcherBase<TKey>
+    internal class TestInMemoryDispatcher<TKey> : DispatcherBase<TKey>
         where TKey : IComparable<TKey>
     {
-        public TestInMemoryDispatcher(Func<MonotonicTime> timeResolver, InMemoryState<TKey> state) : base(timeResolver, state)
+        public TestInMemoryDispatcher(Func<MonotonicTime> timeResolver, MemoryState<TKey> state) : base(timeResolver, state)
         {
         }
 

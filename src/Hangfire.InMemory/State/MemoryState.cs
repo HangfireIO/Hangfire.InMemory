@@ -19,9 +19,9 @@ using System.Collections.Generic;
 using Hangfire.InMemory.Entities;
 using Hangfire.Storage;
 
-namespace Hangfire.InMemory
+namespace Hangfire.InMemory.State
 {
-    internal sealed class InMemoryState<TKey>
+    internal sealed class MemoryState<TKey>
         where TKey : IComparable<TKey>
     {
         private readonly JobStateCreatedAtComparer<TKey> _jobEntryComparer;
@@ -40,7 +40,7 @@ namespace Hangfire.InMemory
         private readonly SortedDictionary<string, CounterEntry> _counters;
         private readonly SortedDictionary<string, ServerEntry> _servers;
 
-        public InMemoryState(InMemoryStorageOptions options, IComparer<TKey> keyComparer)
+        public MemoryState(InMemoryStorageOptions options, IComparer<TKey> keyComparer)
         {
             Options = options;
 

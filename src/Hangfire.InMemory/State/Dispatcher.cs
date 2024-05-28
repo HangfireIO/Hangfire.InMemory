@@ -18,29 +18,29 @@ using System.Collections.Concurrent;
 using System.Threading;
 using Hangfire.Logging;
 
-namespace Hangfire.InMemory
+namespace Hangfire.InMemory.State
 {
-    internal sealed class InMemoryDispatcher<TKey> : InMemoryDispatcherBase<TKey>, IDisposable
+    internal sealed class Dispatcher<TKey> : DispatcherBase<TKey>, IDisposable
         where TKey : IComparable<TKey>
     {
         private const uint DefaultExpirationIntervalMs = 1000U;
         private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(15);
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
-        private readonly ConcurrentBag<InMemoryDispatcherCallback<TKey>> _readQueries = new ConcurrentBag<InMemoryDispatcherCallback<TKey>>();
-        private readonly ConcurrentBag<InMemoryDispatcherCallback<TKey>> _queries = new ConcurrentBag<InMemoryDispatcherCallback<TKey>>();
+        private readonly ConcurrentBag<DispatcherCallback<TKey>> _readQueries = new ConcurrentBag<DispatcherCallback<TKey>>();
+        private readonly ConcurrentBag<DispatcherCallback<TKey>> _queries = new ConcurrentBag<DispatcherCallback<TKey>>();
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
         private volatile bool _disposed;
 
         private PaddedInt64 _outstandingRequests;
 
-        public InMemoryDispatcher(Func<MonotonicTime> timeResolver, InMemoryState<TKey> state) : base(timeResolver, state)
+        public Dispatcher(string threadName, Func<MonotonicTime> timeResolver, MemoryState<TKey> state) : base(timeResolver, state)
         {
             _thread = new Thread(DoWork)
             {
                 IsBackground = true,
-                Name = "Hangfire:InMemoryDispatcher"
+                Name = threadName
             };
             _thread.Start();
         }
@@ -54,11 +54,11 @@ namespace Hangfire.InMemory
             _thread.Join();
         }
 
-        public override object QueryWriteAndWait(IInMemoryCommand<TKey, object> query)
+        public override object QueryWriteAndWait(ICommand<TKey, object> query)
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new InMemoryDispatcherCallback<TKey>(query, rethrowExceptions: true))
+            using (var callback = new DispatcherCallback<TKey>(query, rethrowExceptions: true))
             {
                 _queries.Add(callback);
 
@@ -84,11 +84,11 @@ namespace Hangfire.InMemory
             }
         }
 
-        public override object QueryReadAndWait(IInMemoryCommand<TKey, object> query)
+        public override object QueryReadAndWait(ICommand<TKey, object> query)
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new InMemoryDispatcherCallback<TKey>(query, rethrowExceptions: false))
+            using (var callback = new DispatcherCallback<TKey>(query, rethrowExceptions: false))
             {
                 _readQueries.Add(callback);
 
@@ -155,7 +155,7 @@ namespace Hangfire.InMemory
 
         private static void ThrowObjectDisposedException()
         {
-            throw new ObjectDisposedException(typeof(InMemoryDispatcher<TKey>).FullName);
+            throw new ObjectDisposedException(typeof(Dispatcher<TKey>).FullName);
         }
     }
 }

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Hangfire.Common;
+using Hangfire.InMemory.State;
 using Hangfire.Server;
 using Hangfire.States;
 using Hangfire.Storage;
@@ -29,7 +30,7 @@ namespace Hangfire.InMemory.Tests
     public class InMemoryConnectionFacts
     {
         private readonly InMemoryStorageOptions _options;
-        private readonly InMemoryState<string> _state;
+        private readonly MemoryState<string> _state;
         private readonly TestInMemoryDispatcher<string> _dispatcher;
         private readonly IKeyProvider<string> _keyProvider;
         private readonly Dictionary<string, string> _parameters;
@@ -40,7 +41,7 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions();
             _now = MonotonicTime.GetCurrent();
-            _state = new InMemoryState<string>(_options, _options.StringComparer);
+            _state = new MemoryState<string>(_options, _options.StringComparer);
             _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
             _keyProvider = new StringKeyProvider();
             _parameters = new Dictionary<string, string>();

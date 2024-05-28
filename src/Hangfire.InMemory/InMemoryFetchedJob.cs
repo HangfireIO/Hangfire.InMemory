@@ -16,6 +16,7 @@
 using System;
 using Hangfire.Annotations;
 using Hangfire.InMemory.Entities;
+using Hangfire.InMemory.State;
 using Hangfire.Storage;
 
 namespace Hangfire.InMemory
@@ -47,7 +48,7 @@ namespace Hangfire.InMemory
             }
 
             var entry = _connection.Dispatcher.QueryWriteAndWait(
-                new InMemoryCommands.QueueEnqueue<TKey>(QueueName, key, null));
+                new Commands.QueueEnqueue<TKey>(QueueName, key, null));
 
             entry.SignalOneWaitNode();
         }

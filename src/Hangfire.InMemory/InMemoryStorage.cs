@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using Hangfire.Annotations;
+using Hangfire.InMemory.State;
 using Hangfire.Storage;
 
 namespace Hangfire.InMemory
@@ -28,8 +29,8 @@ namespace Hangfire.InMemory
     /// </summary>
     public sealed class InMemoryStorage : JobStorage, IKeyProvider<Guid>, IKeyProvider<ulong>, IDisposable
     {
-        private readonly InMemoryDispatcher<Guid> _guidDispatcher;
-        private readonly InMemoryDispatcher<ulong> _longDispatcher;
+        private readonly Dispatcher<Guid> _guidDispatcher;
+        private readonly Dispatcher<ulong> _longDispatcher;
 
         private PaddedInt64 _nextId;
 
@@ -71,14 +72,16 @@ namespace Hangfire.InMemory
             switch (options.IdType)
             {
                 case InMemoryStorageIdType.Guid:
-                    _guidDispatcher = new InMemoryDispatcher<Guid>(
+                    _guidDispatcher = new Dispatcher<Guid>(
+                        "Hangfire:InMemoryDispatcher",
                         MonotonicTime.GetCurrent,
-                        new InMemoryState<Guid>(Options, null));
+                        new MemoryState<Guid>(Options, null));
                     break;
                 case InMemoryStorageIdType.UInt64:
-                    _longDispatcher = new InMemoryDispatcher<ulong>(
+                    _longDispatcher = new Dispatcher<ulong>(
+                        "Hangfire:InMemoryDispatcher",
                         MonotonicTime.GetCurrent,
-                        new InMemoryState<ulong>(Options, null));
+                        new MemoryState<ulong>(Options, null));
                     break;
                 default:
                     throw new NotSupportedException(

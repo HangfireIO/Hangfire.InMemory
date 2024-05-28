@@ -15,16 +15,16 @@
 
 using System.Threading;
 
-namespace Hangfire.InMemory
+namespace Hangfire.InMemory.Entities
 {
-    internal sealed class InMemoryQueueWaitNode
+    internal sealed class QueueWaitNode
     {
-        public InMemoryQueueWaitNode(AutoResetEvent value)
+        public QueueWaitNode(AutoResetEvent value)
         {
             Value = value;
         }
 
         public readonly AutoResetEvent Value;
-        public InMemoryQueueWaitNode Next;
+        public QueueWaitNode Next;
     }
 }

@@ -17,7 +17,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 
-namespace Hangfire.InMemory
+namespace Hangfire.InMemory.State
 {
     [DebuggerDisplay("{DebuggerToString()}")]
     internal readonly struct MonotonicTime : IEquatable<MonotonicTime>, IComparable, IComparable<MonotonicTime>

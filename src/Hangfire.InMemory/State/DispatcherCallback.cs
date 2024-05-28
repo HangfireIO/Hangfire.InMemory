@@ -16,17 +16,17 @@
 using System;
 using System.Threading;
 
-namespace Hangfire.InMemory
+namespace Hangfire.InMemory.State
 {
-    internal sealed class InMemoryDispatcherCallback<TKey> : IDisposable
+    internal sealed class DispatcherCallback<TKey> : IDisposable
         where TKey : IComparable<TKey>
     {
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
-        private readonly IInMemoryCommand<TKey, object> _command;
+        private readonly ICommand<TKey, object> _command;
         private readonly bool _rethrowExceptions;
         private volatile object _result;
 
-        public InMemoryDispatcherCallback(IInMemoryCommand<TKey, object> command, bool rethrowExceptions)
+        public DispatcherCallback(ICommand<TKey, object> command, bool rethrowExceptions)
         {
             _rethrowExceptions = rethrowExceptions;
             _command = command ?? throw new ArgumentNullException(nameof(command));
@@ -35,7 +35,7 @@ namespace Hangfire.InMemory
         public bool IsFaulted { get; private set; }
         public object Result => _result;
 
-        public void Execute(InMemoryState<TKey> state)
+        public void Execute(MemoryState<TKey> state)
         {
             try
             {

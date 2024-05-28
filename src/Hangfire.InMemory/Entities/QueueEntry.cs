@@ -22,12 +22,12 @@ namespace Hangfire.InMemory.Entities
     internal sealed class QueueEntry<TKey>
         where TKey : IComparable<TKey>
     {
-        private static readonly InMemoryQueueWaitNode Tombstone = new InMemoryQueueWaitNode(null);
+        private static readonly QueueWaitNode Tombstone = new QueueWaitNode(null);
 
         public ConcurrentQueue<TKey> Queue { get; } = new ConcurrentQueue<TKey>();
-        public InMemoryQueueWaitNode WaitHead { get; } = new InMemoryQueueWaitNode(null);
+        public QueueWaitNode WaitHead { get; } = new QueueWaitNode(null);
         
-        public void AddWaitNode(InMemoryQueueWaitNode node)
+        public void AddWaitNode(QueueWaitNode node)
         {
             if (node == null) throw new ArgumentNullException(nameof(node));
 

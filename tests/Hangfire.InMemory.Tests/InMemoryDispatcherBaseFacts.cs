@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Hangfire.Common;
 using Hangfire.InMemory.Entities;
+using Hangfire.InMemory.State;
 using Hangfire.Storage;
 using Xunit;
 
@@ -27,7 +28,7 @@ namespace Hangfire.InMemory.Tests
     {
         private readonly InMemoryStorageOptions _options;
         private readonly MonotonicTime _now;
-        private readonly InMemoryState<string> _state;
+        private readonly MemoryState<string> _state;
         private readonly TestInMemoryDispatcher<string> _dispatcher;
         private readonly Dictionary<string,string> _parameters;
         private readonly Job _job;
@@ -36,7 +37,7 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions();
             _now = MonotonicTime.GetCurrent();
-            _state = new InMemoryState<string>(_options, _options.StringComparer);
+            _state = new MemoryState<string>(_options, _options.StringComparer);
             _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression<ITestServices>(x => x.Empty());

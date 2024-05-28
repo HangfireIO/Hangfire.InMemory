@@ -19,6 +19,7 @@ using System.Globalization;
 using System.Linq;
 using Hangfire.Annotations;
 using Hangfire.Common;
+using Hangfire.InMemory.State;
 using Hangfire.States;
 using Hangfire.Storage;
 using Hangfire.Storage.Monitoring;
@@ -28,10 +29,10 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryMonitoringApi<TKey> : JobStorageMonitor
         where TKey : IComparable<TKey>
     {
-        private readonly InMemoryDispatcherBase<TKey> _dispatcher;
+        private readonly DispatcherBase<TKey> _dispatcher;
         private readonly IKeyProvider<TKey> _keyProvider;
 
-        public InMemoryMonitoringApi([NotNull] InMemoryDispatcherBase<TKey> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
+        public InMemoryMonitoringApi([NotNull] DispatcherBase<TKey> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _keyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));
@@ -579,7 +580,7 @@ namespace Hangfire.InMemory
             return QueryMonitoringValueAndWait(state => GetCountByStateName(stateName, state));
         }
 
-        private static int GetCountByStateName(string stateName, InMemoryState<TKey> state)
+        private static int GetCountByStateName(string stateName, MemoryState<TKey> state)
         {
             if (state.JobStateIndex.TryGetValue(stateName, out var index))
             {
@@ -589,7 +590,7 @@ namespace Hangfire.InMemory
             return 0;
         }
 
-        private static Dictionary<DateTime, long> GetHourlyTimelineStats(InMemoryState<TKey> state, MonotonicTime now, string type)
+        private static Dictionary<DateTime, long> GetHourlyTimelineStats(MemoryState<TKey> state, MonotonicTime now, string type)
         {
             var endDate = now.ToUtcDateTime();
             var dates = new List<DateTime>();
@@ -611,7 +612,7 @@ namespace Hangfire.InMemory
             return result;
         }
 
-        private static Dictionary<DateTime, long> GetTimelineStats(InMemoryState<TKey> state, MonotonicTime now, string type)
+        private static Dictionary<DateTime, long> GetTimelineStats(MemoryState<TKey> state, MonotonicTime now, string type)
         {
             var endDate = now.ToUtcDateTime().Date;
             var startDate = endDate.AddDays(-7);
@@ -636,31 +637,31 @@ namespace Hangfire.InMemory
             return result;
         }
 
-        private T QueryMonitoringAndWait<T>(Func<InMemoryState<TKey>, T> callback)
+        private T QueryMonitoringAndWait<T>(Func<MemoryState<TKey>, T> callback)
             where T : class
         {
             return _dispatcher.QueryReadAndWait(new MonitoringQuery<T>(callback));
         }
 
-        private T QueryMonitoringValueAndWait<T>(Func<InMemoryState<TKey>, T> callback)
+        private T QueryMonitoringValueAndWait<T>(Func<MemoryState<TKey>, T> callback)
             where T : struct
         {
             return _dispatcher.QueryReadAndWait(new MonitoringValueQuery<T>(callback));
         }
 
-        private sealed class MonitoringQuery<T>(Func<InMemoryState<TKey>, T> callback) : InMemoryCommand<TKey, T>
+        private sealed class MonitoringQuery<T>(Func<MemoryState<TKey>, T> callback) : Command<TKey, T>
             where T : class
         {
-            protected override T Execute(InMemoryState<TKey> state)
+            protected override T Execute(MemoryState<TKey> state)
             {
                 return callback(state);
             }
         }
 
-        private sealed class MonitoringValueQuery<T>(Func<InMemoryState<TKey>, T> callback) : InMemoryValueCommand<TKey, T>
+        private sealed class MonitoringValueQuery<T>(Func<MemoryState<TKey>, T> callback) : ValueCommand<TKey, T>
             where T : struct
         {
-            protected override T Execute(InMemoryState<TKey> state)
+            protected override T Execute(MemoryState<TKey> state)
             {
                 return callback(state);
             }

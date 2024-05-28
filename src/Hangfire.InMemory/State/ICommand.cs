@@ -15,40 +15,40 @@
 
 using System;
 
-namespace Hangfire.InMemory
+namespace Hangfire.InMemory.State
 {
-    internal interface IInMemoryCommand<TKey, out T>
+    internal interface ICommand<TKey, out T>
         where TKey : IComparable<TKey>
         where T : class
     {
-        T Execute(InMemoryState<TKey> state);
+        T Execute(MemoryState<TKey> state);
     }
 
-    internal interface IInMemoryCommand<TKey> : IInMemoryCommand<TKey, object>
+    internal interface ICommand<TKey> : ICommand<TKey, object>
         where TKey : IComparable<TKey>
     {
     }
 
-    internal abstract class InMemoryCommand<TKey, T> : IInMemoryCommand<TKey, T>
+    internal abstract class Command<TKey, T> : ICommand<TKey, T>
         where TKey : IComparable<TKey>
         where T : class
     {
-        protected abstract T Execute(InMemoryState<TKey> state);
+        protected abstract T Execute(MemoryState<TKey> state);
         
-        T IInMemoryCommand<TKey, T>.Execute(InMemoryState<TKey> state)
+        T ICommand<TKey, T>.Execute(MemoryState<TKey> state)
         {
             return Execute(state);
         }
     }
     
-    internal abstract class InMemoryValueCommand<TKey, T> : IInMemoryCommand<TKey, InMemoryValueCommand<TKey, T>>
+    internal abstract class ValueCommand<TKey, T> : ICommand<TKey, ValueCommand<TKey, T>>
         where TKey : IComparable<TKey>
     {
         public T Result { get; private set; }
 
-        protected abstract T Execute(InMemoryState<TKey> state);
+        protected abstract T Execute(MemoryState<TKey> state);
 
-        InMemoryValueCommand<TKey, T> IInMemoryCommand<TKey, InMemoryValueCommand<TKey, T>>.Execute(InMemoryState<TKey> state)
+        ValueCommand<TKey, T> ICommand<TKey, ValueCommand<TKey, T>>.Execute(MemoryState<TKey> state)
         {
             Result = Execute(state);
             return this;

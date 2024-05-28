@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using Hangfire.InMemory.State;
 using Hangfire.Storage;
 
 namespace Hangfire.InMemory.Entities

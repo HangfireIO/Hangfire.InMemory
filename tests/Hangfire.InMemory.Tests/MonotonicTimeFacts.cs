@@ -15,6 +15,7 @@
 
 using System;
 using System.Threading;
+using Hangfire.InMemory.State;
 using Xunit;
 
 namespace Hangfire.InMemory.Tests

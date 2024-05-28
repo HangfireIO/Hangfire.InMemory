@@ -16,6 +16,7 @@
 using System;
 using System.Linq;
 using Hangfire.InMemory.Entities;
+using Hangfire.InMemory.State;
 using Xunit;
 
 namespace Hangfire.InMemory.Tests.Entities

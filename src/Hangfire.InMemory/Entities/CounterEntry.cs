@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU Lesser General Public 
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
+using Hangfire.InMemory.State;
+
 namespace Hangfire.InMemory.Entities
 {
     internal sealed class CounterEntry : IExpirableEntry<string>

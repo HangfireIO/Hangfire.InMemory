@@ -18,14 +18,14 @@ using System.Collections.Generic;
 using System.Linq;
 using Hangfire.Storage;
 
-namespace Hangfire.InMemory
+namespace Hangfire.InMemory.State
 {
-    internal static class InMemoryQueries
+    internal static class Queries
     {
-        public sealed class JobGetData<TKey>(TKey key) : InMemoryCommand<TKey, JobGetData<TKey>.Data>
+        public sealed class JobGetData<TKey>(TKey key) : Command<TKey, JobGetData<TKey>.Data>
             where TKey : IComparable<TKey>
         {
-            protected override Data Execute(InMemoryState<TKey> state)
+            protected override Data Execute(MemoryState<TKey> state)
             {
                 if (!state.Jobs.TryGetValue(key, out var entry))
                 {
@@ -52,10 +52,10 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class JobGetState<TKey>(TKey key) : InMemoryCommand<TKey, JobGetState<TKey>.Data>
+        public sealed class JobGetState<TKey>(TKey key) : Command<TKey, JobGetState<TKey>.Data>
             where TKey : IComparable<TKey>
         {
-            protected override Data Execute(InMemoryState<TKey> state)
+            protected override Data Execute(MemoryState<TKey> state)
             {
                 if (!state.Jobs.TryGetValue(key, out var jobEntry) || jobEntry.State == null)
                 {
@@ -80,10 +80,10 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class JobGetParameter<TKey>(TKey key, string name) : InMemoryCommand<TKey, string>
+        public sealed class JobGetParameter<TKey>(TKey key, string name) : Command<TKey, string>
             where TKey : IComparable<TKey>
         {
-            protected override string Execute(InMemoryState<TKey> state)
+            protected override string Execute(MemoryState<TKey> state)
             {
                 return state.Jobs.TryGetValue(key, out var entry)
                     ? entry.GetParameter(name, state.Options.StringComparer)
@@ -91,10 +91,10 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class SortedSetGetAll<TKey>(string key) : InMemoryCommand<TKey, HashSet<string>>
+        public sealed class SortedSetGetAll<TKey>(string key) : Command<TKey, HashSet<string>>
             where TKey : IComparable<TKey>
         {
-            protected override HashSet<string> Execute(InMemoryState<TKey> state)
+            protected override HashSet<string> Execute(MemoryState<TKey> state)
             {
                 var result = new HashSet<string>(state.Options.StringComparer);
 
@@ -111,10 +111,10 @@ namespace Hangfire.InMemory
         }
 
         public sealed class SortedSetFirstByLowestScore<TKey>(string key, double fromScore, double toScore) 
-            : InMemoryCommand<TKey, string>
+            : Command<TKey, string>
             where TKey : IComparable<TKey>
         {
-            protected override string Execute(InMemoryState<TKey> state)
+            protected override string Execute(MemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -126,10 +126,10 @@ namespace Hangfire.InMemory
         }
 
         public sealed class SortedSetFirstByLowestScoreMultiple<TKey>(string key, double fromScore, double toScore, int count) 
-            : InMemoryCommand<TKey, List<string>>
+            : Command<TKey, List<string>>
             where TKey : IComparable<TKey>
         {
-            protected override List<string> Execute(InMemoryState<TKey> state)
+            protected override List<string> Execute(MemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -140,10 +140,10 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class SortedSetRange<TKey>(string key, int startingFrom, int endingAt) : IInMemoryCommand<TKey, List<string>>
+        public sealed class SortedSetRange<TKey>(string key, int startingFrom, int endingAt) : ICommand<TKey, List<string>>
             where TKey : IComparable<TKey>
         {
-            public List<string> Execute(InMemoryState<TKey> state)
+            public List<string> Execute(MemoryState<TKey> state)
             {
                 var result = new List<string>();
 
@@ -166,28 +166,28 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class SortedSetContains<TKey>(string key, string value) : InMemoryValueCommand<TKey, bool>
+        public sealed class SortedSetContains<TKey>(string key, string value) : ValueCommand<TKey, bool>
             where TKey : IComparable<TKey>
         {
-            protected override bool Execute(InMemoryState<TKey> state)
+            protected override bool Execute(MemoryState<TKey> state)
             {
                 return state.Sets.TryGetValue(key, out var set) && set.Contains(value);
             }
         }
 
-        public sealed class SortedSetCount<TKey>(string key) : InMemoryValueCommand<TKey, int>
+        public sealed class SortedSetCount<TKey>(string key) : ValueCommand<TKey, int>
             where TKey : IComparable<TKey>
         {
-            protected override int Execute(InMemoryState<TKey> state)
+            protected override int Execute(MemoryState<TKey> state)
             {
                 return state.Sets.TryGetValue(key, out var set) ? set.Count : 0;
             }
         }
 
-        public sealed class SortedSetCountMultiple<TKey>(IEnumerable<string> keys, int limit) : InMemoryValueCommand<TKey, int>
+        public sealed class SortedSetCountMultiple<TKey>(IEnumerable<string> keys, int limit) : ValueCommand<TKey, int>
             where TKey : IComparable<TKey>
         {
-            protected override int Execute(InMemoryState<TKey> state)
+            protected override int Execute(MemoryState<TKey> state)
             {
                 var count = 0;
 
@@ -201,10 +201,10 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class SortedSetTimeToLive<TKey>(string key) : InMemoryValueCommand<TKey, MonotonicTime?>
+        public sealed class SortedSetTimeToLive<TKey>(string key) : ValueCommand<TKey, MonotonicTime?>
             where TKey : IComparable<TKey>
         {
-            protected override MonotonicTime? Execute(InMemoryState<TKey> state)
+            protected override MonotonicTime? Execute(MemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var set) && set.ExpireAt.HasValue)
                 {
@@ -215,10 +215,10 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class HashGetAll<TKey>(string key) : IInMemoryCommand<TKey, Dictionary<string, string>>
+        public sealed class HashGetAll<TKey>(string key) : ICommand<TKey, Dictionary<string, string>>
             where TKey : IComparable<TKey>
         {
-            public Dictionary<string, string> Execute(InMemoryState<TKey> state)
+            public Dictionary<string, string> Execute(MemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var hash))
                 {
@@ -229,10 +229,10 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class HashGet<TKey>(string key, string name) : IInMemoryCommand<TKey, string>
+        public sealed class HashGet<TKey>(string key, string name) : ICommand<TKey, string>
             where TKey : IComparable<TKey>
         {
-            public string Execute(InMemoryState<TKey> state)
+            public string Execute(MemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.Value.TryGetValue(name, out var result))
                 {
@@ -243,19 +243,19 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class HashFieldCount<TKey>(string key) : InMemoryValueCommand<TKey, int>
+        public sealed class HashFieldCount<TKey>(string key) : ValueCommand<TKey, int>
             where TKey : IComparable<TKey>
         {
-            protected override int Execute(InMemoryState<TKey> state)
+            protected override int Execute(MemoryState<TKey> state)
             {
                 return state.Hashes.TryGetValue(key, out var hash) ? hash.Value.Count : 0;
             }
         }
 
-        public sealed class HashTimeToLive<TKey>(string key) : InMemoryValueCommand<TKey, MonotonicTime?>
+        public sealed class HashTimeToLive<TKey>(string key) : ValueCommand<TKey, MonotonicTime?>
             where TKey : IComparable<TKey>
         {
-            protected override MonotonicTime? Execute(InMemoryState<TKey> state)
+            protected override MonotonicTime? Execute(MemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.ExpireAt.HasValue)
                 {
@@ -266,10 +266,10 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class ListGetAll<TKey>(string key) : IInMemoryCommand<TKey, List<string>>
+        public sealed class ListGetAll<TKey>(string key) : ICommand<TKey, List<string>>
             where TKey : IComparable<TKey>
         {
-            public List<string> Execute(InMemoryState<TKey> state)
+            public List<string> Execute(MemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var list))
                 {
@@ -280,10 +280,10 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class ListRange<TKey>(string key, int startingFrom, int endingAt) : IInMemoryCommand<TKey, List<string>>
+        public sealed class ListRange<TKey>(string key, int startingFrom, int endingAt) : ICommand<TKey, List<string>>
             where TKey : IComparable<TKey>
         {
-            public List<string> Execute(InMemoryState<TKey> state)
+            public List<string> Execute(MemoryState<TKey> state)
             {
                 var result = new List<string>();
 
@@ -303,19 +303,19 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class ListCount<TKey>(string key) : InMemoryValueCommand<TKey, int>
+        public sealed class ListCount<TKey>(string key) : ValueCommand<TKey, int>
             where TKey : IComparable<TKey>
         {
-            protected override int Execute(InMemoryState<TKey> state)
+            protected override int Execute(MemoryState<TKey> state)
             {
                 return state.Lists.TryGetValue(key, out var list) ? list.Count : 0;
             }
         }
 
-        public sealed class ListTimeToLive<TKey>(string key) : InMemoryValueCommand<TKey, MonotonicTime?>
+        public sealed class ListTimeToLive<TKey>(string key) : ValueCommand<TKey, MonotonicTime?>
             where TKey : IComparable<TKey>
         {
-            protected override MonotonicTime? Execute(InMemoryState<TKey> state)
+            protected override MonotonicTime? Execute(MemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var list) && list.ExpireAt.HasValue)
                 {
@@ -326,10 +326,10 @@ namespace Hangfire.InMemory
             }
         }
 
-        public sealed class CounterGet<TKey>(string key) : InMemoryValueCommand<TKey, long>
+        public sealed class CounterGet<TKey>(string key) : ValueCommand<TKey, long>
             where TKey : IComparable<TKey>
         {
-            protected override long Execute(InMemoryState<TKey> state)
+            protected override long Execute(MemoryState<TKey> state)
             {
                 return state.Counters.TryGetValue(key, out var counter) ? counter.Value : 0;
             }

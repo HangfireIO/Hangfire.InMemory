@@ -18,21 +18,21 @@ using System.Collections.Generic;
 using Hangfire.InMemory.Entities;
 using Hangfire.Storage;
 
-namespace Hangfire.InMemory
+namespace Hangfire.InMemory.State
 {
-    internal abstract class InMemoryDispatcherBase<TKey>
+    internal abstract class DispatcherBase<TKey>
         where TKey : IComparable<TKey>
     {
         private readonly Func<MonotonicTime> _timeResolver;
-        private readonly InMemoryState<TKey> _state;
+        private readonly MemoryState<TKey> _state;
 
-        protected InMemoryDispatcherBase(Func<MonotonicTime> timeResolver, InMemoryState<TKey> state)
+        protected DispatcherBase(Func<MonotonicTime> timeResolver, MemoryState<TKey> state)
         {
             _timeResolver = timeResolver ?? throw new ArgumentNullException(nameof(timeResolver));
             _state = state ?? throw new ArgumentNullException(nameof(state));
         }
 
-        protected InMemoryState<TKey> State => _state;
+        protected MemoryState<TKey> State => _state;
 
         public MonotonicTime GetMonotonicTime()
         {
@@ -111,35 +111,35 @@ namespace Hangfire.InMemory
             }
         }
 
-        public T QueryWriteAndWait<T>(IInMemoryCommand<TKey, InMemoryValueCommand<TKey, T>> query)
+        public T QueryWriteAndWait<T>(ICommand<TKey, ValueCommand<TKey, T>> query)
             where T : struct
         {
-            return QueryWriteAndWait<InMemoryValueCommand<TKey, T>>(query)?.Result ?? default;
+            return QueryWriteAndWait<ValueCommand<TKey, T>>(query)?.Result ?? default;
         }
 
-        public T QueryWriteAndWait<T>(IInMemoryCommand<TKey, T> query)
+        public T QueryWriteAndWait<T>(ICommand<TKey, T> query)
             where T : class
         {
-            return (T)QueryWriteAndWait(query as IInMemoryCommand<TKey, object>);
+            return (T)QueryWriteAndWait(query as ICommand<TKey, object>);
         }
 
-        public virtual object QueryWriteAndWait(IInMemoryCommand<TKey, object> query)
+        public virtual object QueryWriteAndWait(ICommand<TKey, object> query)
         {
             return query.Execute(_state);
         }
         
-        public T QueryReadAndWait<T>(IInMemoryCommand<TKey, InMemoryValueCommand<TKey, T>> query)
+        public T QueryReadAndWait<T>(ICommand<TKey, ValueCommand<TKey, T>> query)
         {
-            return QueryReadAndWait<InMemoryValueCommand<TKey, T>>(query).Result ?? default;
+            return QueryReadAndWait<ValueCommand<TKey, T>>(query).Result ?? default;
         }
 
-        public T QueryReadAndWait<T>(IInMemoryCommand<TKey, T> query)
+        public T QueryReadAndWait<T>(ICommand<TKey, T> query)
             where T : class
         {
-            return (T)QueryReadAndWait(query as IInMemoryCommand<TKey, object>);
+            return (T)QueryReadAndWait(query as ICommand<TKey, object>);
         }
 
-        public virtual object QueryReadAndWait(IInMemoryCommand<TKey, object> query)
+        public virtual object QueryReadAndWait(ICommand<TKey, object> query)
         {
             return QueryWriteAndWait(query);
         }
