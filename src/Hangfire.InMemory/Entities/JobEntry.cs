@@ -22,8 +22,7 @@ namespace Hangfire.InMemory.Entities
 {
     internal sealed class JobEntry<T> : IExpirableEntry<T>
     {
-        private const int StateCountForRegularJob = 4; // (Scheduled) -> Enqueued -> Processing -> Succeeded
-        private readonly List<StateEntry> _history = new(StateCountForRegularJob);
+        private readonly List<StateEntry> _history = new();
         private KeyValuePair<string, string>[] _parameters;
 
         public JobEntry(
