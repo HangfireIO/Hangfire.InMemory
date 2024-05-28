@@ -37,6 +37,8 @@ namespace Hangfire.InMemory.State
 
         public Dispatcher(string threadName, Func<MonotonicTime> timeResolver, MemoryState<TKey> state) : base(timeResolver, state)
         {
+            if (threadName == null) throw new ArgumentNullException(nameof(threadName));
+
             _thread = new Thread(DoWork)
             {
                 IsBackground = true,
