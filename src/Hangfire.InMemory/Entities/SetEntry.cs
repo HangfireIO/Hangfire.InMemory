@@ -62,7 +62,10 @@ namespace Hangfire.InMemory.Entities
                 new SortedSetItem(null, from),
                 new SortedSetItem(null, to));
 
-            var result = new List<string>(view.Count);
+            // Don't query view.Count here as it leads to VersionCheck(updateCount: true) call,
+            // which is very expensive when there are a huge number of entries.
+            var result = new List<string>();
+
             foreach (var entry in view)
             {
                 if (count-- == 0) break;
