@@ -15,7 +15,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Hangfire.InMemory.Entities;
 using Hangfire.Storage;
 
@@ -112,10 +111,10 @@ namespace Hangfire.InMemory
             }
         }
 
-        public T QueryWriteAndWait<T>(IInMemoryCommand<TKey, StrongBox<T>> query)
+        public T QueryWriteAndWait<T>(IInMemoryCommand<TKey, InMemoryValueCommand<TKey, T>> query)
             where T : struct
         {
-            return QueryWriteAndWait<StrongBox<T>>(query)?.Value ?? default;
+            return QueryWriteAndWait<InMemoryValueCommand<TKey, T>>(query)?.Result ?? default;
         }
 
         public T QueryWriteAndWait<T>(IInMemoryCommand<TKey, T> query)
@@ -129,9 +128,9 @@ namespace Hangfire.InMemory
             return query.Execute(_state);
         }
         
-        public T QueryReadAndWait<T>(IInMemoryCommand<TKey, StrongBox<T>> query)
+        public T QueryReadAndWait<T>(IInMemoryCommand<TKey, InMemoryValueCommand<TKey, T>> query)
         {
-            return QueryReadAndWait<StrongBox<T>>(query).Value ?? default;
+            return QueryReadAndWait<InMemoryValueCommand<TKey, T>>(query).Result ?? default;
         }
 
         public T QueryReadAndWait<T>(IInMemoryCommand<TKey, T> query)

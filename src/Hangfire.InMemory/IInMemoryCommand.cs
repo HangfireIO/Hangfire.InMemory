@@ -14,7 +14,6 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
-using System.Runtime.CompilerServices;
 
 namespace Hangfire.InMemory
 {
@@ -42,14 +41,17 @@ namespace Hangfire.InMemory
         }
     }
     
-    internal abstract class InMemoryValueCommand<TKey, T> : IInMemoryCommand<TKey, StrongBox<T>>
+    internal abstract class InMemoryValueCommand<TKey, T> : IInMemoryCommand<TKey, InMemoryValueCommand<TKey, T>>
         where TKey : IComparable<TKey>
     {
+        public T Result { get; private set; }
+
         protected abstract T Execute(InMemoryState<TKey> state);
 
-        StrongBox<T> IInMemoryCommand<TKey, StrongBox<T>>.Execute(InMemoryState<TKey> state)
+        InMemoryValueCommand<TKey, T> IInMemoryCommand<TKey, InMemoryValueCommand<TKey, T>>.Execute(InMemoryState<TKey> state)
         {
-            return new StrongBox<T>(Execute(state));
+            Result = Execute(state);
+            return this;
         }
     }
 }
