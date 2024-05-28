@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Hangfire.InMemory.Entities;
 using Hangfire.Storage;
 
@@ -111,22 +112,35 @@ namespace Hangfire.InMemory
             }
         }
 
-        public T QueryWriteAndWait<T>(IInMemoryCommand<TKey> query)
+        public T QueryWriteAndWait<T>(IInMemoryCommand<TKey, StrongBox<T>> query)
+            where T : struct
         {
-            return (T)QueryWriteAndWait(query as IInMemoryCommand<TKey>);
+            return QueryWriteAndWait<StrongBox<T>>(query)?.Value ?? default;
         }
 
-        public virtual object QueryWriteAndWait(IInMemoryCommand<TKey> query)
+        public T QueryWriteAndWait<T>(IInMemoryCommand<TKey, T> query)
+            where T : class
+        {
+            return (T)QueryWriteAndWait(query as IInMemoryCommand<TKey, object>);
+        }
+
+        public virtual object QueryWriteAndWait(IInMemoryCommand<TKey, object> query)
         {
             return query.Execute(_state);
         }
-
-        public T QueryReadAndWait<T>(IInMemoryCommand<TKey> query)
+        
+        public T QueryReadAndWait<T>(IInMemoryCommand<TKey, StrongBox<T>> query)
         {
-            return (T)QueryReadAndWait(query as IInMemoryCommand<TKey>);
+            return QueryReadAndWait<StrongBox<T>>(query).Value ?? default;
         }
 
-        public virtual object QueryReadAndWait(IInMemoryCommand<TKey> query)
+        public T QueryReadAndWait<T>(IInMemoryCommand<TKey, T> query)
+            where T : class
+        {
+            return (T)QueryReadAndWait(query as IInMemoryCommand<TKey, object>);
+        }
+
+        public virtual object QueryReadAndWait(IInMemoryCommand<TKey, object> query)
         {
             return QueryWriteAndWait(query);
         }

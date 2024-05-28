@@ -189,12 +189,12 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            return Dispatcher.QueryReadAndWait<string>(new GetJobParameterQuery(key, name));
+            return Dispatcher.QueryReadAndWait(new GetJobParameterQuery(key, name));
         }
 
-        private sealed class GetJobParameterQuery(TKey key, string name) : IInMemoryCommand<TKey>
+        private sealed class GetJobParameterQuery(TKey key, string name) : InMemoryCommand<TKey, string>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override string Execute(InMemoryState<TKey> state)
             {
                 if (state.Jobs.TryGetValue(key, out var entry))
                 {
@@ -214,7 +214,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            var data = Dispatcher.QueryWriteAndWait<GetJobDataQuery.Data>(new GetJobDataQuery(key));
+            var data = Dispatcher.QueryWriteAndWait(new GetJobDataQuery(key));
             if (data == null) return null;
 
             return new JobData
@@ -228,9 +228,9 @@ namespace Hangfire.InMemory
             };
         }
 
-        private sealed class GetJobDataQuery(TKey key) : IInMemoryCommand<TKey>
+        private sealed class GetJobDataQuery(TKey key) : InMemoryCommand<TKey, GetJobDataQuery.Data>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override Data Execute(InMemoryState<TKey> state)
             {
                 if (!state.Jobs.TryGetValue(key, out var entry))
                 {
@@ -266,7 +266,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            var data = Dispatcher.QueryWriteAndWait<GetStateDataQuery.Data>(new GetStateDataQuery(key));
+            var data = Dispatcher.QueryWriteAndWait(new GetStateDataQuery(key));
             if (data == null) return null;
 
             return new StateData
@@ -277,9 +277,9 @@ namespace Hangfire.InMemory
             };
         }
 
-        private sealed class GetStateDataQuery(TKey key) : IInMemoryCommand<TKey>
+        private sealed class GetStateDataQuery(TKey key) : InMemoryCommand<TKey, GetStateDataQuery.Data>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override Data Execute(InMemoryState<TKey> state)
             {
                 if (!state.Jobs.TryGetValue(key, out var jobEntry) || jobEntry.State == null)
                 {
@@ -349,7 +349,7 @@ namespace Hangfire.InMemory
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
             var now = Dispatcher.GetMonotonicTime();
-            var result = Dispatcher.QueryWriteAndWait<bool>(new ServerHeartbeatCommand(serverId, now));
+            var result = Dispatcher.QueryWriteAndWait(new ServerHeartbeatCommand(serverId, now));
 
             if (!result)
             {
@@ -357,9 +357,9 @@ namespace Hangfire.InMemory
             }
         }
 
-        private sealed class ServerHeartbeatCommand(string serverId, MonotonicTime now) : IInMemoryCommand<TKey>
+        private sealed class ServerHeartbeatCommand(string serverId, MonotonicTime now) : InMemoryValueCommand<TKey, bool>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override bool Execute(InMemoryState<TKey> state)
             {
                 if (state.Servers.TryGetValue(serverId, out var server))
                 {
@@ -379,12 +379,12 @@ namespace Hangfire.InMemory
             }
 
             var now = Dispatcher.GetMonotonicTime();
-            return Dispatcher.QueryWriteAndWait<int>(new RemoveInactiveServersCommand(timeout, now));
+            return Dispatcher.QueryWriteAndWait(new RemoveInactiveServersCommand(timeout, now));
         }
 
-        private sealed class RemoveInactiveServersCommand(TimeSpan timeout, MonotonicTime now) : IInMemoryCommand<TKey>
+        private sealed class RemoveInactiveServersCommand(TimeSpan timeout, MonotonicTime now) : InMemoryValueCommand<TKey, int>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override int Execute(InMemoryState<TKey> state)
             {
                 var serversToRemove = new List<string>();
 
@@ -415,12 +415,12 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait<HashSet<string>>(new GetAllItemsFromSetQuery(key));
+            return Dispatcher.QueryReadAndWait(new GetAllItemsFromSetQuery(key));
         }
 
-        private sealed class GetAllItemsFromSetQuery(string key) : IInMemoryCommand<TKey>
+        private sealed class GetAllItemsFromSetQuery(string key) : InMemoryCommand<TKey, HashSet<string>>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override HashSet<string> Execute(InMemoryState<TKey> state)
             {
                 var result = new HashSet<string>(state.Options.StringComparer);
 
@@ -441,12 +441,13 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be greater or equal to the `fromScore` value.", nameof(toScore));
 
-            return Dispatcher.QueryReadAndWait<string>(new GetFirstByLowestScoreFromSetSingleQuery(key, fromScore, toScore));
+            return Dispatcher.QueryReadAndWait(new GetFirstByLowestScoreFromSetSingleQuery(key, fromScore, toScore));
         }
 
-        private sealed class GetFirstByLowestScoreFromSetSingleQuery(string key, double fromScore, double toScore) : IInMemoryCommand<TKey>
+        private sealed class GetFirstByLowestScoreFromSetSingleQuery(string key, double fromScore, double toScore)
+            : InMemoryCommand<TKey, string>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override string Execute(InMemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -463,12 +464,13 @@ namespace Hangfire.InMemory
             if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be greater or equal to the `fromScore` value.", nameof(toScore));
             if (count <= 0) throw new ArgumentException("The value must be a positive number", nameof(count));
 
-            return Dispatcher.QueryReadAndWait<List<string>>(new GetFirstByLowestScoreFromSetMultipleQuery(key, fromScore, toScore, count));
+            return Dispatcher.QueryReadAndWait(new GetFirstByLowestScoreFromSetMultipleQuery(key, fromScore, toScore, count));
         }
 
-        private sealed class GetFirstByLowestScoreFromSetMultipleQuery(string key, double fromScore, double toScore, int count) : IInMemoryCommand<TKey>
+        private sealed class GetFirstByLowestScoreFromSetMultipleQuery(string key, double fromScore, double toScore, int count) 
+            : InMemoryCommand<TKey, List<string>>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override List<string> Execute(InMemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -484,12 +486,12 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            return Dispatcher.QueryReadAndWait<bool>(new GetSetContainsQuery(key, value));
+            return Dispatcher.QueryReadAndWait(new GetSetContainsQuery(key, value));
         }
 
-        private sealed class GetSetContainsQuery(string key, string value) : IInMemoryCommand<TKey>
+        private sealed class GetSetContainsQuery(string key, string value) : InMemoryValueCommand<TKey, bool>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override bool Execute(InMemoryState<TKey> state)
             {
                 return state.Sets.TryGetValue(key, out var set) && set.Contains(value);
             }
@@ -499,12 +501,12 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait<int>(new GetSetCountQuery(key));
+            return Dispatcher.QueryReadAndWait(new GetSetCountQuery(key));
         }
 
-        private sealed class GetSetCountQuery(string key) : IInMemoryCommand<TKey>
+        private sealed class GetSetCountQuery(string key) : InMemoryValueCommand<TKey, int>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override int Execute(InMemoryState<TKey> state)
             {
                 return state.Sets.TryGetValue(key, out var set) ? set.Count : 0;
             }
@@ -515,12 +517,12 @@ namespace Hangfire.InMemory
             if (keys == null) throw new ArgumentNullException(nameof(keys));
             if (limit < 0) throw new ArgumentOutOfRangeException(nameof(limit), "Value must be greater or equal to 0.");
 
-            return Dispatcher.QueryReadAndWait<int>(new GetMultipleSetCountQuery(keys, limit));
+            return Dispatcher.QueryReadAndWait(new GetMultipleSetCountQuery(keys, limit));
         }
 
-        private sealed class GetMultipleSetCountQuery(IEnumerable<string> keys, int limit) : IInMemoryCommand<TKey>
+        private sealed class GetMultipleSetCountQuery(IEnumerable<string> keys, int limit) : InMemoryValueCommand<TKey, int>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override int Execute(InMemoryState<TKey> state)
             {
                 var count = 0;
 
@@ -538,12 +540,12 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait<int>(new GetListCountQuery(key));
+            return Dispatcher.QueryReadAndWait(new GetListCountQuery(key));
         }
 
-        private sealed class GetListCountQuery(string key) : IInMemoryCommand<TKey>
+        private sealed class GetListCountQuery(string key) : InMemoryValueCommand<TKey, int>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override int Execute(InMemoryState<TKey> state)
             {
                 return state.Lists.TryGetValue(key, out var list) ? list.Count : 0;
             }
@@ -553,12 +555,12 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait<long>(new GetCounterValueQuery(key));
+            return Dispatcher.QueryReadAndWait(new GetCounterValueQuery(key));
         }
 
-        private sealed class GetCounterValueQuery(string key) : IInMemoryCommand<TKey>
+        private sealed class GetCounterValueQuery(string key) : InMemoryValueCommand<TKey, long>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override long Execute(InMemoryState<TKey> state)
             {
                 return state.Counters.TryGetValue(key, out var counter) ? counter.Value : 0;
             }
@@ -568,12 +570,12 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait<int>(new GetHashFieldCountQuery(key));
+            return Dispatcher.QueryReadAndWait(new GetHashFieldCountQuery(key));
         }
 
-        private sealed class GetHashFieldCountQuery(string key) : IInMemoryCommand<TKey>
+        private sealed class GetHashFieldCountQuery(string key) : InMemoryValueCommand<TKey, int>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override int Execute(InMemoryState<TKey> state)
             {
                 return state.Hashes.TryGetValue(key, out var hash) ? hash.Value.Count : 0;
             }
@@ -583,7 +585,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryReadAndWait<MonotonicTime?>(new GetHashTimeToLiveQuery(key));
+            var expireAt = Dispatcher.QueryReadAndWait(new GetHashTimeToLiveQuery(key));
 
             if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
 
@@ -592,9 +594,9 @@ namespace Hangfire.InMemory
             return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
         }
 
-        private sealed class GetHashTimeToLiveQuery(string key) : IInMemoryCommand<TKey>
+        private sealed class GetHashTimeToLiveQuery(string key) : InMemoryValueCommand<TKey, MonotonicTime?>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override MonotonicTime? Execute(InMemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.ExpireAt.HasValue)
                 {
@@ -609,7 +611,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryReadAndWait<MonotonicTime?>(new GetListTimeToLiveQuery(key));
+            var expireAt = Dispatcher.QueryReadAndWait(new GetListTimeToLiveQuery(key));
 
             if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
 
@@ -618,9 +620,9 @@ namespace Hangfire.InMemory
             return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
         }
 
-        private sealed class GetListTimeToLiveQuery(string key) : IInMemoryCommand<TKey>
+        private sealed class GetListTimeToLiveQuery(string key) : InMemoryValueCommand<TKey, MonotonicTime?>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override MonotonicTime? Execute(InMemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var list) && list.ExpireAt.HasValue)
                 {
@@ -635,7 +637,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryReadAndWait<MonotonicTime?>(new GetSetTimeToLiveQuery(key));
+            var expireAt = Dispatcher.QueryReadAndWait(new GetSetTimeToLiveQuery(key));
             
             if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
 
@@ -644,9 +646,9 @@ namespace Hangfire.InMemory
             return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
         }
 
-        private sealed class GetSetTimeToLiveQuery(string key) : IInMemoryCommand<TKey>
+        private sealed class GetSetTimeToLiveQuery(string key) : InMemoryValueCommand<TKey, MonotonicTime?>
         {
-            public object Execute(InMemoryState<TKey> state)
+            protected override MonotonicTime? Execute(InMemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var set) && set.ExpireAt.HasValue)
                 {
@@ -669,12 +671,12 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait<Dictionary<string, string>>(new GetAllEntriesFromHashQuery(key));
+            return Dispatcher.QueryReadAndWait(new GetAllEntriesFromHashQuery(key));
         }
 
-        private sealed class GetAllEntriesFromHashQuery(string key) : IInMemoryCommand<TKey>
+        private sealed class GetAllEntriesFromHashQuery(string key) : IInMemoryCommand<TKey, Dictionary<string, string>>
         {
-            public object Execute(InMemoryState<TKey> state)
+            public Dictionary<string, string> Execute(InMemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var hash))
                 {
@@ -690,12 +692,12 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            return Dispatcher.QueryReadAndWait<string>(new GetValueFromHashQuery(key, name));
+            return Dispatcher.QueryReadAndWait(new GetValueFromHashQuery(key, name));
         }
 
-        private sealed class GetValueFromHashQuery(string key, string name) : IInMemoryCommand<TKey>
+        private sealed class GetValueFromHashQuery(string key, string name) : IInMemoryCommand<TKey, string>
         {
-            public object Execute(InMemoryState<TKey> state)
+            public string Execute(InMemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.Value.TryGetValue(name, out var result))
                 {
@@ -710,12 +712,12 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait<List<string>>(new GetAllItemsFromListQuery(key));
+            return Dispatcher.QueryReadAndWait(new GetAllItemsFromListQuery(key));
         }
 
-        private sealed class GetAllItemsFromListQuery(string key) : IInMemoryCommand<TKey>
+        private sealed class GetAllItemsFromListQuery(string key) : IInMemoryCommand<TKey, List<string>>
         {
-            public object Execute(InMemoryState<TKey> state)
+            public List<string> Execute(InMemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var list))
                 {
@@ -732,12 +734,12 @@ namespace Hangfire.InMemory
             if (startingFrom < 0) throw new ArgumentException("The value must be greater than or equal to zero.", nameof(startingFrom));
             if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater than the `{nameof(startingFrom)}` value.", nameof(endingAt));
 
-            return Dispatcher.QueryReadAndWait<List<string>>(new GetRangeFromListQuery(key, startingFrom, endingAt));
+            return Dispatcher.QueryReadAndWait(new GetRangeFromListQuery(key, startingFrom, endingAt));
         }
 
-        private sealed class GetRangeFromListQuery(string key, int startingFrom, int endingAt) : IInMemoryCommand<TKey>
+        private sealed class GetRangeFromListQuery(string key, int startingFrom, int endingAt) : IInMemoryCommand<TKey, List<string>>
         {
-            public object Execute(InMemoryState<TKey> state)
+            public List<string> Execute(InMemoryState<TKey> state)
             {
                 var result = new List<string>();
 
@@ -763,12 +765,12 @@ namespace Hangfire.InMemory
             if (startingFrom < 0) throw new ArgumentException("The value must be greater than or equal to zero.", nameof(startingFrom));
             if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater or equal to the `{nameof(startingFrom)}` value.", nameof(endingAt));
 
-            return Dispatcher.QueryReadAndWait<List<string>>(new GetRangeFromSetQuery(key, startingFrom, endingAt));
+            return Dispatcher.QueryReadAndWait(new GetRangeFromSetQuery(key, startingFrom, endingAt));
         }
 
-        private sealed class GetRangeFromSetQuery(string key, int startingFrom, int endingAt) : IInMemoryCommand<TKey>
+        private sealed class GetRangeFromSetQuery(string key, int startingFrom, int endingAt) : IInMemoryCommand<TKey, List<string>>
         {
-            public object Execute(InMemoryState<TKey> state)
+            public List<string> Execute(InMemoryState<TKey> state)
             {
                 var result = new List<string>();
 

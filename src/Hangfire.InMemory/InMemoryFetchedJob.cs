@@ -46,7 +46,7 @@ namespace Hangfire.InMemory
                 return;
             }
 
-            var entry = _connection.Dispatcher.QueryWriteAndWait<QueueEntry<TKey>>(
+            var entry = _connection.Dispatcher.QueryWriteAndWait(
                 new InMemoryTransaction<TKey>.AddToQueueCommand(QueueName, key, null));
 
             entry.SignalOneWaitNode();

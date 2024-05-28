@@ -26,7 +26,7 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction, IInMemoryCommand<TKey>
         where TKey : IComparable<TKey>
     {
-        private readonly LinkedList<IInMemoryCommand<TKey>> _commands = new LinkedList<IInMemoryCommand<TKey>>();
+        private readonly LinkedList<IInMemoryCommand<TKey, object>> _commands = new LinkedList<IInMemoryCommand<TKey, object>>();
         private readonly HashSet<QueueEntry<TKey>> _enqueued = new HashSet<QueueEntry<TKey>>();
         private readonly InMemoryConnection<TKey> _connection;
         private readonly List<IDisposable> _acquiredLocks = new List<IDisposable>();
@@ -250,9 +250,9 @@ namespace Hangfire.InMemory
         }
 
         internal sealed class AddToQueueCommand(string queue, TKey key, HashSet<QueueEntry<TKey>> enqueued)
-            : IInMemoryCommand<TKey>
+            : IInMemoryCommand<TKey, QueueEntry<TKey>>
         {
-            public object Execute(InMemoryState<TKey> state)
+            public QueueEntry<TKey> Execute(InMemoryState<TKey> state)
             {
                 var entry = state.QueueGetOrCreate(queue);
                 entry.Queue.Enqueue(key);
@@ -568,12 +568,12 @@ namespace Hangfire.InMemory
             AddCommand(new ExpireSetCommand(key, expireIn: null, now: null));
         }
 
-        private void AddCommand(IInMemoryCommand<TKey> action)
+        private void AddCommand(IInMemoryCommand<TKey, object> action)
         {
             _commands.AddLast(action);
         }
 
-        object IInMemoryCommand<TKey>.Execute(InMemoryState<TKey> state)
+        object IInMemoryCommand<TKey, object>.Execute(InMemoryState<TKey> state)
         {
             try
             {

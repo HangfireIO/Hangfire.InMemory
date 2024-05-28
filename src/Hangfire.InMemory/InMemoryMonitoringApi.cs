@@ -502,7 +502,7 @@ namespace Hangfire.InMemory
         {
             if (queueName == null) throw new ArgumentNullException(nameof(queueName));
 
-            return QueryMonitoringAndWait(state => state.Queues.TryGetValue(queueName, out var queue) 
+            return QueryMonitoringValueAndWait(state => state.Queues.TryGetValue(queueName, out var queue) 
                 ? queue.Queue.Count
                 : 0);
         }
@@ -576,7 +576,7 @@ namespace Hangfire.InMemory
 
         private long GetCountByStateName(string stateName)
         {
-            return QueryMonitoringAndWait(state => GetCountByStateName(stateName, state));
+            return QueryMonitoringValueAndWait(state => GetCountByStateName(stateName, state));
         }
 
         private static int GetCountByStateName(string stateName, InMemoryState<TKey> state)
@@ -637,13 +637,30 @@ namespace Hangfire.InMemory
         }
 
         private T QueryMonitoringAndWait<T>(Func<InMemoryState<TKey>, T> callback)
+            where T : class
         {
-            return _dispatcher.QueryReadAndWait<T>(new MonitoringQuery<T>(callback));
+            return _dispatcher.QueryReadAndWait(new MonitoringQuery<T>(callback));
         }
 
-        private sealed class MonitoringQuery<T>(Func<InMemoryState<TKey>, T> callback) : IInMemoryCommand<TKey>
+        private T QueryMonitoringValueAndWait<T>(Func<InMemoryState<TKey>, T> callback)
+            where T : struct
         {
-            public object Execute(InMemoryState<TKey> state)
+            return _dispatcher.QueryReadAndWait(new MonitoringValueQuery<T>(callback));
+        }
+
+        private sealed class MonitoringQuery<T>(Func<InMemoryState<TKey>, T> callback) : InMemoryCommand<TKey, T>
+            where T : class
+        {
+            protected override T Execute(InMemoryState<TKey> state)
+            {
+                return callback(state);
+            }
+        }
+
+        private sealed class MonitoringValueQuery<T>(Func<InMemoryState<TKey>, T> callback) : InMemoryValueCommand<TKey, T>
+            where T : struct
+        {
+            protected override T Execute(InMemoryState<TKey> state)
             {
                 return callback(state);
             }

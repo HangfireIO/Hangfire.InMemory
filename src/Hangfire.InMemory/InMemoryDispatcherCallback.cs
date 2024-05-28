@@ -22,11 +22,11 @@ namespace Hangfire.InMemory
         where TKey : IComparable<TKey>
     {
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
-        private readonly IInMemoryCommand<TKey> _command;
+        private readonly IInMemoryCommand<TKey, object> _command;
         private readonly bool _rethrowExceptions;
         private volatile object _result;
 
-        public InMemoryDispatcherCallback(IInMemoryCommand<TKey> command, bool rethrowExceptions)
+        public InMemoryDispatcherCallback(IInMemoryCommand<TKey, object> command, bool rethrowExceptions)
         {
             _rethrowExceptions = rethrowExceptions;
             _command = command ?? throw new ArgumentNullException(nameof(command));
