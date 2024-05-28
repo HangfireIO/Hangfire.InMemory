@@ -30,9 +30,7 @@ namespace Hangfire.InMemory
     {
         private readonly HashSet<LockDisposable> _acquiredLocks = new HashSet<LockDisposable>();
 
-        public InMemoryConnection(
-            [NotNull] InMemoryDispatcherBase<TKey> dispatcher,
-            [NotNull] IKeyProvider<TKey> keyProvider)
+        public InMemoryConnection([NotNull] InMemoryDispatcherBase<TKey> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
         {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             KeyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));
@@ -99,7 +97,7 @@ namespace Hangfire.InMemory
                 parameters,
                 Dispatcher.GetMonotonicTime());
 
-            Dispatcher.QueryWriteAndWait(new InMemoryTransaction<TKey>.CreateJobCommand(jobEntry, expireIn));
+            Dispatcher.QueryWriteAndWait(new InMemoryCommands.JobCreate<TKey>(jobEntry, expireIn));
             return KeyProvider.ToString(jobEntry.Key);
         }
 
@@ -163,10 +161,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        public override void SetJobParameter(
-            [NotNull] string id,
-            [NotNull] string name,
-            [CanBeNull] string value)
+        public override void SetJobParameter([NotNull] string id, [NotNull] string name, [CanBeNull] string value)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
@@ -176,7 +171,7 @@ namespace Hangfire.InMemory
                 return;
             }
 
-            Dispatcher.QueryWriteAndWait(new InMemoryTransaction<TKey>.SetJobParameterCommand(key, name, value));
+            Dispatcher.QueryWriteAndWait(new InMemoryCommands.JobSetParameter<TKey>(key, name, value));
         }
 
         public override string GetJobParameter([NotNull] string id, [NotNull] string name)
@@ -189,20 +184,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            return Dispatcher.QueryReadAndWait(new GetJobParameterQuery(key, name));
-        }
-
-        private sealed class GetJobParameterQuery(TKey key, string name) : InMemoryCommand<TKey, string>
-        {
-            protected override string Execute(InMemoryState<TKey> state)
-            {
-                if (state.Jobs.TryGetValue(key, out var entry))
-                {
-                    return entry.GetParameter(name, state.Options.StringComparer);
-                }
-
-                return null;
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.JobGetParameter<TKey>(key, name));
         }
 
         public override JobData GetJobData([NotNull] string jobId)
@@ -214,7 +196,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            var data = Dispatcher.QueryWriteAndWait(new GetJobDataQuery(key));
+            var data = Dispatcher.QueryWriteAndWait(new InMemoryQueries.JobGetData<TKey>(key));
             if (data == null) return null;
 
             return new JobData
@@ -228,35 +210,6 @@ namespace Hangfire.InMemory
             };
         }
 
-        private sealed class GetJobDataQuery(TKey key) : InMemoryCommand<TKey, GetJobDataQuery.Data>
-        {
-            protected override Data Execute(InMemoryState<TKey> state)
-            {
-                if (!state.Jobs.TryGetValue(key, out var entry))
-                {
-                    return null;
-                }
-
-                return new Data
-                {
-                    InvocationData = entry.InvocationData,
-                    State = entry.State?.Name,
-                    CreatedAt = entry.CreatedAt,
-                    Parameters = entry.GetParameters(),
-                    StringComparer = state.Options.StringComparer
-                };
-            }
-
-            internal sealed class Data
-            {
-                public InvocationData InvocationData { get; set; }
-                public string State { get; set; }
-                public MonotonicTime CreatedAt { get; set; }
-                public KeyValuePair<string, string>[] Parameters { get; set; }
-                public StringComparer StringComparer { get; set; }
-            }
-        }
-
         public override StateData GetStateData([NotNull] string jobId)
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
@@ -266,7 +219,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            var data = Dispatcher.QueryWriteAndWait(new GetStateDataQuery(key));
+            var data = Dispatcher.QueryWriteAndWait(new InMemoryQueries.JobGetState<TKey>(key));
             if (data == null) return null;
 
             return new StateData
@@ -277,71 +230,20 @@ namespace Hangfire.InMemory
             };
         }
 
-        private sealed class GetStateDataQuery(TKey key) : InMemoryCommand<TKey, GetStateDataQuery.Data>
-        {
-            protected override Data Execute(InMemoryState<TKey> state)
-            {
-                if (!state.Jobs.TryGetValue(key, out var jobEntry) || jobEntry.State == null)
-                {
-                    return null;
-                }
-
-                return new Data
-                {
-                    Name = jobEntry.State.Name,
-                    Reason = jobEntry.State.Reason,
-                    StateData = jobEntry.State.Data,
-                    StringComparer = state.Options.StringComparer
-                };
-            }
-            
-            internal sealed class Data
-            {
-                public string Name { get; set; }
-                public string Reason { get; set; }
-                public KeyValuePair<string, string>[] StateData { get; set; }
-                public StringComparer StringComparer { get; set; }
-            }
-        }
-
         public override void AnnounceServer([NotNull] string serverId, [NotNull] ServerContext context)
         {
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
             if (context == null) throw new ArgumentNullException(nameof(context));
 
             var now = Dispatcher.GetMonotonicTime();
-            Dispatcher.QueryWriteAndWait(new AnnounceServerCommand(serverId, context, now));
-        }
-
-        private sealed class AnnounceServerCommand(string serverId, ServerContext context, MonotonicTime now) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (!state.Servers.ContainsKey(serverId))
-                {
-                    state.ServerAdd(serverId, new ServerEntry(
-                        new ServerContext { Queues = context.Queues?.ToArray(), WorkerCount = context.WorkerCount },
-                        now));
-                }
-
-                return null;
-            }
+            Dispatcher.QueryWriteAndWait(new InMemoryCommands.ServerAnnounce<TKey>(serverId, context, now));
         }
 
         public override void RemoveServer([NotNull] string serverId)
         {
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
-            Dispatcher.QueryWriteAndWait(new RemoveServerCommand(serverId));
-        }
-
-        private sealed class RemoveServerCommand(string serverId) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                state.ServerRemove(serverId);
-                return null;
-            }
+            Dispatcher.QueryWriteAndWait(new InMemoryCommands.ServerDelete<TKey>(serverId));
         }
 
         public override void Heartbeat([NotNull] string serverId)
@@ -349,25 +251,11 @@ namespace Hangfire.InMemory
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
             var now = Dispatcher.GetMonotonicTime();
-            var result = Dispatcher.QueryWriteAndWait(new ServerHeartbeatCommand(serverId, now));
+            var result = Dispatcher.QueryWriteAndWait(new InMemoryCommands.ServerHeartbeat<TKey>(serverId, now));
 
             if (!result)
             {
                 throw new BackgroundServerGoneException();
-            }
-        }
-
-        private sealed class ServerHeartbeatCommand(string serverId, MonotonicTime now) : InMemoryValueCommand<TKey, bool>
-        {
-            protected override bool Execute(InMemoryState<TKey> state)
-            {
-                if (state.Servers.TryGetValue(serverId, out var server))
-                {
-                    server.HeartbeatAt = now;
-                    return true;
-                }
-
-                return false;
             }
         }
 
@@ -379,31 +267,7 @@ namespace Hangfire.InMemory
             }
 
             var now = Dispatcher.GetMonotonicTime();
-            return Dispatcher.QueryWriteAndWait(new RemoveInactiveServersCommand(timeout, now));
-        }
-
-        private sealed class RemoveInactiveServersCommand(TimeSpan timeout, MonotonicTime now) : InMemoryValueCommand<TKey, int>
-        {
-            protected override int Execute(InMemoryState<TKey> state)
-            {
-                var serversToRemove = new List<string>();
-
-                foreach (var server in state.Servers)
-                {
-                    if (now > server.Value.HeartbeatAt.Add(timeout))
-                    {
-                        // Adding for removal first, to avoid breaking the iterator
-                        serversToRemove.Add(server.Key);
-                    }
-                }
-
-                foreach (var serverId in serversToRemove)
-                {
-                    state.ServerRemove(serverId);
-                }
-
-                return serversToRemove.Count;
-            }
+            return Dispatcher.QueryWriteAndWait(new InMemoryCommands.ServerDeleteInactive<TKey>(timeout, now));
         }
 
         public override DateTime GetUtcDateTime()
@@ -415,25 +279,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new GetAllItemsFromSetQuery(key));
-        }
-
-        private sealed class GetAllItemsFromSetQuery(string key) : InMemoryCommand<TKey, HashSet<string>>
-        {
-            protected override HashSet<string> Execute(InMemoryState<TKey> state)
-            {
-                var result = new HashSet<string>(state.Options.StringComparer);
-
-                if (state.Sets.TryGetValue(key, out var set))
-                {
-                    foreach (var entry in set)
-                    {
-                        result.Add(entry.Value);
-                    }
-                }
-
-                return result;
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.SortedSetGetAll<TKey>(key));
         }
 
         public override string GetFirstByLowestScoreFromSet([NotNull] string key, double fromScore, double toScore)
@@ -441,21 +287,10 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be greater or equal to the `fromScore` value.", nameof(toScore));
 
-            return Dispatcher.QueryReadAndWait(new GetFirstByLowestScoreFromSetSingleQuery(key, fromScore, toScore));
-        }
-
-        private sealed class GetFirstByLowestScoreFromSetSingleQuery(string key, double fromScore, double toScore)
-            : InMemoryCommand<TKey, string>
-        {
-            protected override string Execute(InMemoryState<TKey> state)
-            {
-                if (state.Sets.TryGetValue(key, out var set))
-                {
-                    return set.GetFirstBetween(fromScore, toScore);
-                }
-
-                return null;
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.SortedSetFirstByLowestScore<TKey>(
+                key,
+                fromScore,
+                toScore));
         }
 
         public override List<string> GetFirstByLowestScoreFromSet([NotNull] string key, double fromScore, double toScore, int count)
@@ -464,21 +299,11 @@ namespace Hangfire.InMemory
             if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be greater or equal to the `fromScore` value.", nameof(toScore));
             if (count <= 0) throw new ArgumentException("The value must be a positive number", nameof(count));
 
-            return Dispatcher.QueryReadAndWait(new GetFirstByLowestScoreFromSetMultipleQuery(key, fromScore, toScore, count));
-        }
-
-        private sealed class GetFirstByLowestScoreFromSetMultipleQuery(string key, double fromScore, double toScore, int count) 
-            : InMemoryCommand<TKey, List<string>>
-        {
-            protected override List<string> Execute(InMemoryState<TKey> state)
-            {
-                if (state.Sets.TryGetValue(key, out var set))
-                {
-                    return set.GetViewBetween(fromScore, toScore, count);
-                }
-
-                return new List<string>();
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.SortedSetFirstByLowestScoreMultiple<TKey>(
+                key,
+                fromScore,
+                toScore,
+                count));
         }
 
         public override bool GetSetContains([NotNull] string key, [NotNull] string value)
@@ -486,30 +311,14 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            return Dispatcher.QueryReadAndWait(new GetSetContainsQuery(key, value));
-        }
-
-        private sealed class GetSetContainsQuery(string key, string value) : InMemoryValueCommand<TKey, bool>
-        {
-            protected override bool Execute(InMemoryState<TKey> state)
-            {
-                return state.Sets.TryGetValue(key, out var set) && set.Contains(value);
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.SortedSetContains<TKey>(key, value));
         }
 
         public override long GetSetCount([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new GetSetCountQuery(key));
-        }
-
-        private sealed class GetSetCountQuery(string key) : InMemoryValueCommand<TKey, int>
-        {
-            protected override int Execute(InMemoryState<TKey> state)
-            {
-                return state.Sets.TryGetValue(key, out var set) ? set.Count : 0;
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.SortedSetCount<TKey>(key));
         }
 
         public override long GetSetCount([NotNull] IEnumerable<string> keys, int limit)
@@ -517,101 +326,50 @@ namespace Hangfire.InMemory
             if (keys == null) throw new ArgumentNullException(nameof(keys));
             if (limit < 0) throw new ArgumentOutOfRangeException(nameof(limit), "Value must be greater or equal to 0.");
 
-            return Dispatcher.QueryReadAndWait(new GetMultipleSetCountQuery(keys, limit));
-        }
-
-        private sealed class GetMultipleSetCountQuery(IEnumerable<string> keys, int limit) : InMemoryValueCommand<TKey, int>
-        {
-            protected override int Execute(InMemoryState<TKey> state)
-            {
-                var count = 0;
-
-                foreach (var key in keys)
-                {
-                    if (count >= limit) break;
-                    count += state.Sets.TryGetValue(key, out var set) ? set.Count : 0;
-                }
-
-                return Math.Min(count, limit);
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.SortedSetCountMultiple<TKey>(
+                keys,
+                limit));
         }
 
         public override long GetListCount([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new GetListCountQuery(key));
-        }
-
-        private sealed class GetListCountQuery(string key) : InMemoryValueCommand<TKey, int>
-        {
-            protected override int Execute(InMemoryState<TKey> state)
-            {
-                return state.Lists.TryGetValue(key, out var list) ? list.Count : 0;
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.ListCount<TKey>(key));
         }
 
         public override long GetCounter([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new GetCounterValueQuery(key));
-        }
-
-        private sealed class GetCounterValueQuery(string key) : InMemoryValueCommand<TKey, long>
-        {
-            protected override long Execute(InMemoryState<TKey> state)
-            {
-                return state.Counters.TryGetValue(key, out var counter) ? counter.Value : 0;
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.CounterGet<TKey>(key));
         }
 
         public override long GetHashCount([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new GetHashFieldCountQuery(key));
-        }
-
-        private sealed class GetHashFieldCountQuery(string key) : InMemoryValueCommand<TKey, int>
-        {
-            protected override int Execute(InMemoryState<TKey> state)
-            {
-                return state.Hashes.TryGetValue(key, out var hash) ? hash.Value.Count : 0;
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.HashFieldCount<TKey>(key));
         }
 
         public override TimeSpan GetHashTtl([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryReadAndWait(new GetHashTimeToLiveQuery(key));
+            var expireAt = Dispatcher.QueryReadAndWait(new InMemoryQueries.HashTimeToLive<TKey>(key));
 
             if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
 
             var now = Dispatcher.GetMonotonicTime();
             var expireIn = expireAt.Value - now;
             return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
-        }
-
-        private sealed class GetHashTimeToLiveQuery(string key) : InMemoryValueCommand<TKey, MonotonicTime?>
-        {
-            protected override MonotonicTime? Execute(InMemoryState<TKey> state)
-            {
-                if (state.Hashes.TryGetValue(key, out var hash) && hash.ExpireAt.HasValue)
-                {
-                    return hash.ExpireAt;
-                }
-
-                return null;
-            }
         }
 
         public override TimeSpan GetListTtl([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryReadAndWait(new GetListTimeToLiveQuery(key));
+            var expireAt = Dispatcher.QueryReadAndWait(new InMemoryQueries.ListTimeToLive<TKey>(key));
 
             if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
 
@@ -620,24 +378,11 @@ namespace Hangfire.InMemory
             return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
         }
 
-        private sealed class GetListTimeToLiveQuery(string key) : InMemoryValueCommand<TKey, MonotonicTime?>
-        {
-            protected override MonotonicTime? Execute(InMemoryState<TKey> state)
-            {
-                if (state.Lists.TryGetValue(key, out var list) && list.ExpireAt.HasValue)
-                {
-                    return list.ExpireAt;
-                }
-
-                return null;
-            }
-        }
-
         public override TimeSpan GetSetTtl([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryReadAndWait(new GetSetTimeToLiveQuery(key));
+            var expireAt = Dispatcher.QueryReadAndWait(new InMemoryQueries.SortedSetTimeToLive<TKey>(key));
             
             if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
 
@@ -646,45 +391,19 @@ namespace Hangfire.InMemory
             return expireIn >= TimeSpan.Zero ? expireIn : TimeSpan.Zero;
         }
 
-        private sealed class GetSetTimeToLiveQuery(string key) : InMemoryValueCommand<TKey, MonotonicTime?>
-        {
-            protected override MonotonicTime? Execute(InMemoryState<TKey> state)
-            {
-                if (state.Sets.TryGetValue(key, out var set) && set.ExpireAt.HasValue)
-                {
-                    return set.ExpireAt;
-                }
-
-                return null;
-            }
-        }
-
         public override void SetRangeInHash([NotNull] string key, [NotNull] IEnumerable<KeyValuePair<string, string>> keyValuePairs)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (keyValuePairs == null) throw new ArgumentNullException(nameof(keyValuePairs));
 
-            Dispatcher.QueryWriteAndWait(new InMemoryTransaction<TKey>.SetRangeInHashCommand(key, keyValuePairs));
+            Dispatcher.QueryWriteAndWait(new InMemoryCommands.HashSetRange<TKey>(key, keyValuePairs));
         }
 
         public override Dictionary<string, string> GetAllEntriesFromHash([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new GetAllEntriesFromHashQuery(key));
-        }
-
-        private sealed class GetAllEntriesFromHashQuery(string key) : IInMemoryCommand<TKey, Dictionary<string, string>>
-        {
-            public Dictionary<string, string> Execute(InMemoryState<TKey> state)
-            {
-                if (state.Hashes.TryGetValue(key, out var hash))
-                {
-                    return hash.Value.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer);
-                }
-
-                return null;
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.HashGetAll<TKey>(key));
         }
 
         public override string GetValueFromHash([NotNull] string key, [NotNull] string name)
@@ -692,40 +411,14 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            return Dispatcher.QueryReadAndWait(new GetValueFromHashQuery(key, name));
-        }
-
-        private sealed class GetValueFromHashQuery(string key, string name) : IInMemoryCommand<TKey, string>
-        {
-            public string Execute(InMemoryState<TKey> state)
-            {
-                if (state.Hashes.TryGetValue(key, out var hash) && hash.Value.TryGetValue(name, out var result))
-                {
-                    return result;
-                }
-
-                return null;
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.HashGet<TKey>(key, name));
         }
 
         public override List<string> GetAllItemsFromList([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new GetAllItemsFromListQuery(key));
-        }
-
-        private sealed class GetAllItemsFromListQuery(string key) : IInMemoryCommand<TKey, List<string>>
-        {
-            public List<string> Execute(InMemoryState<TKey> state)
-            {
-                if (state.Lists.TryGetValue(key, out var list))
-                {
-                    return new List<string>(list);
-                }
-
-                return new List<string>();
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.ListGetAll<TKey>(key));
         }
 
         public override List<string> GetRangeFromList([NotNull] string key, int startingFrom, int endingAt)
@@ -734,29 +427,7 @@ namespace Hangfire.InMemory
             if (startingFrom < 0) throw new ArgumentException("The value must be greater than or equal to zero.", nameof(startingFrom));
             if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater than the `{nameof(startingFrom)}` value.", nameof(endingAt));
 
-            return Dispatcher.QueryReadAndWait(new GetRangeFromListQuery(key, startingFrom, endingAt));
-        }
-
-        private sealed class GetRangeFromListQuery(string key, int startingFrom, int endingAt) : IInMemoryCommand<TKey, List<string>>
-        {
-            public List<string> Execute(InMemoryState<TKey> state)
-            {
-                var result = new List<string>();
-
-                if (state.Lists.TryGetValue(key, out var list))
-                {
-                    var count = endingAt - startingFrom + 1;
-                    foreach (var item in list)
-                    {
-                        if (startingFrom-- > 0) continue;
-                        if (count-- == 0) break;
-
-                        result.Add(item);
-                    }
-                }
-
-                return result;
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.ListRange<TKey>(key, startingFrom, endingAt));
         }
 
         public override List<string> GetRangeFromSet([NotNull] string key, int startingFrom, int endingAt)
@@ -765,32 +436,7 @@ namespace Hangfire.InMemory
             if (startingFrom < 0) throw new ArgumentException("The value must be greater than or equal to zero.", nameof(startingFrom));
             if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater or equal to the `{nameof(startingFrom)}` value.", nameof(endingAt));
 
-            return Dispatcher.QueryReadAndWait(new GetRangeFromSetQuery(key, startingFrom, endingAt));
-        }
-
-        private sealed class GetRangeFromSetQuery(string key, int startingFrom, int endingAt) : IInMemoryCommand<TKey, List<string>>
-        {
-            public List<string> Execute(InMemoryState<TKey> state)
-            {
-                var result = new List<string>();
-
-                if (state.Sets.TryGetValue(key, out var set))
-                {
-                    var counter = 0;
-
-                    foreach (var entry in set)
-                    {
-                        if (counter < startingFrom) { counter++; continue; }
-                        if (counter > endingAt) break;
-
-                        result.Add(entry.Value);
-
-                        counter++;
-                    }
-                }
-
-                return result;
-            }
+            return Dispatcher.QueryReadAndWait(new InMemoryQueries.SortedSetRange<TKey>(key, startingFrom, endingAt));
         }
 
         private sealed class LockDisposable : IDisposable

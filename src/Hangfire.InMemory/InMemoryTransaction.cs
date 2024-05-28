@@ -68,23 +68,8 @@ namespace Hangfire.InMemory
                 parameters,
                 _connection.Dispatcher.GetMonotonicTime());
 
-            AddCommand(new CreateJobCommand(entry, expireIn));
+            AddCommand(new InMemoryCommands.JobCreate<TKey>(entry, expireIn));
             return _connection.KeyProvider.ToString(entry.Key);
-        }
-
-        internal sealed class CreateJobCommand(JobEntry<TKey> entry, TimeSpan expireIn) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                // Background job is not yet initialized after calling this method, and
-                // transaction is expected a few moments later that will initialize this
-                // job. To prevent early, non-expected eviction when max expiration time
-                // limit is low or close to zero, that can lead to exceptions, we just
-                // ignoring this limit in very rare occasions when background job is not
-                // initialized for reasons I can't even realize with an in-memory storage.
-                state.JobCreate(entry, expireIn, ignoreMaxExpirationTime: true);
-                return null;
-            }
         }
 
         public override void SetJobParameter(
@@ -100,19 +85,7 @@ namespace Hangfire.InMemory
                 return;
             }
 
-            AddCommand(new SetJobParameterCommand(key, name, value));
-        }
-
-        internal sealed class SetJobParameterCommand(TKey key, string name, string value) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Jobs.TryGetValue(key, out var jobEntry))
-                {
-                    jobEntry.SetParameter(name, value, state.Options.StringComparer);
-                }
-                return null;
-            }
+            AddCommand(new InMemoryCommands.JobSetParameter<TKey>(key, name, value));
         }
 
         public override void ExpireJob([NotNull] string jobId, TimeSpan expireIn)
@@ -125,20 +98,7 @@ namespace Hangfire.InMemory
             }
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new ExpireJobCommand(key, expireIn, now));
-        }
-
-        private sealed class ExpireJobCommand(TKey key, TimeSpan expireIn, MonotonicTime now) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Jobs.TryGetValue(key, out var job))
-                {
-                    state.JobExpire(job, now, expireIn);
-                }
-
-                return null;
-            }
+            AddCommand(new InMemoryCommands.JobExpire<TKey>(key, expireIn, now));
         }
 
         public override void PersistJob([NotNull] string jobId)
@@ -150,20 +110,7 @@ namespace Hangfire.InMemory
                 return;
             }
 
-            AddCommand(new PersistJobCommand(key));
-        }
-
-        private sealed class PersistJobCommand(TKey key) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Jobs.TryGetValue(key, out var job))
-                {
-                    state.JobExpire(job, now: null, expireIn: null);
-                }
-
-                return null;
-            }
+            AddCommand(new InMemoryCommands.JobExpire<TKey>(key, expireIn: null, now: null));
         }
 
         public override void SetJobState([NotNull] string jobId, [NotNull] IState state)
@@ -185,21 +132,7 @@ namespace Hangfire.InMemory
                 state.SerializeData(),
                 _connection.Dispatcher.GetMonotonicTime());
 
-            AddCommand(new SetJobStateCommand(key, entry));
-        }
-
-        private sealed class SetJobStateCommand(TKey key, StateEntry entry) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Jobs.TryGetValue(key, out var job))
-                {
-                    job.AddHistoryEntry(entry, state.Options.MaxStateHistoryLength);
-                    state.JobSetState(job, entry);
-                }
-
-                return null;
-            }
+            AddCommand(new InMemoryCommands.JobAddState<TKey>(key, entry, setAsCurrent: true));
         }
 
         public override void AddJobState([NotNull] string jobId, [NotNull] IState state)
@@ -220,20 +153,7 @@ namespace Hangfire.InMemory
                 state.SerializeData(),
                 _connection.Dispatcher.GetMonotonicTime());
 
-            AddCommand(new AddJobStateCommand(key, entry));
-        }
-
-        private sealed class AddJobStateCommand(TKey key, StateEntry entry) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Jobs.TryGetValue(key, out var job))
-                {
-                    job.AddHistoryEntry(entry, state.Options.MaxStateHistoryLength);
-                }
-
-                return null;
-            }
+            AddCommand(new InMemoryCommands.JobAddState<TKey>(key, entry, setAsCurrent: false));
         }
 
         public override void AddToQueue([NotNull] string queue, [NotNull] string jobId)
@@ -246,20 +166,7 @@ namespace Hangfire.InMemory
                 return;
             }
 
-            AddCommand(new AddToQueueCommand(queue, key, _enqueued));
-        }
-
-        internal sealed class AddToQueueCommand(string queue, TKey key, HashSet<QueueEntry<TKey>> enqueued)
-            : IInMemoryCommand<TKey, QueueEntry<TKey>>
-        {
-            public QueueEntry<TKey> Execute(InMemoryState<TKey> state)
-            {
-                var entry = state.QueueGetOrCreate(queue);
-                entry.Queue.Enqueue(key);
-
-                enqueued?.Add(entry);
-                return entry;
-            }
+            AddCommand(new InMemoryCommands.QueueEnqueue<TKey>(queue, key, _enqueued));
         }
 
         public override void RemoveFromQueue([NotNull] IFetchedJob fetchedJob)
@@ -270,7 +177,7 @@ namespace Hangfire.InMemory
         public override void IncrementCounter([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
-            AddCommand(new CounterIncrementCommand(key, value: 1, expireIn: null, now: null));
+            AddCommand(new InMemoryCommands.CounterIncrement<TKey>(key, value: 1, expireIn: null, now: null));
         }
 
         public override void IncrementCounter([NotNull] string key, TimeSpan expireIn)
@@ -278,13 +185,13 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new CounterIncrementCommand(key, value: 1, expireIn, now));
+            AddCommand(new InMemoryCommands.CounterIncrement<TKey>(key, value: 1, expireIn, now));
         }
 
         public override void DecrementCounter([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
-            AddCommand(new CounterIncrementCommand(key, value: -1, expireIn: null, now: null));
+            AddCommand(new InMemoryCommands.CounterIncrement<TKey>(key, value: -1, expireIn: null, now: null));
         }
 
         public override void DecrementCounter([NotNull] string key, TimeSpan expireIn)
@@ -292,7 +199,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new CounterIncrementCommand(key, value: -1, expireIn, now));
+            AddCommand(new InMemoryCommands.CounterIncrement<TKey>(key, value: -1, expireIn, now));
         }
 
         public override void AddToSet([NotNull] string key, [NotNull] string value)
@@ -305,16 +212,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            AddCommand(new AddToSetCommand(key, value, score));
-        }
-
-        private sealed class AddToSetCommand(string key, string value, double score) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                state.SetGetOrAdd(key).Add(value, score);
-                return null;
-            }
+            AddCommand(new InMemoryCommands.SortedSetAdd<TKey>(key, value, score));
         }
 
         public override void RemoveFromSet([NotNull] string key, [NotNull] string value)
@@ -322,21 +220,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            AddCommand(new RemoveFromSetCommand(key, value));
-        }
-
-        private sealed class RemoveFromSetCommand(string key, string value) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Sets.TryGetValue(key, out var set))
-                {
-                    set.Remove(value);
-                    if (set.Count == 0) state.SetDelete(set);
-                }
-
-                return null;
-            }
+            AddCommand(new InMemoryCommands.SortedSetRemove<TKey>(key, value));
         }
 
         public override void InsertToList([NotNull] string key, [NotNull] string value)
@@ -344,16 +228,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            AddCommand(new InsertToListCommand(key, value));
-        }
-
-        private sealed class InsertToListCommand(string key, string value) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                state.ListGetOrAdd(key).Add(value);
-                return null;
-            }
+            AddCommand(new InMemoryCommands.ListInsert<TKey>(key, value));
         }
 
         public override void RemoveFromList([NotNull] string key, [NotNull] string value)
@@ -361,45 +236,14 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            AddCommand(new RemoveFromListCommand(key, value));
-        }
-
-        private sealed class RemoveFromListCommand(string key, string value) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                var list = state.ListGetOrAdd(key);
-                if (list.RemoveAll(value, state.Options.StringComparer) == 0)
-                {
-                    state.ListDelete(list);
-                }
-
-                return null;
-            }
+            AddCommand(new InMemoryCommands.ListRemoveAll<TKey>(key, value));
         }
 
         public override void TrimList([NotNull] string key, int keepStartingFrom, int keepEndingAt)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new TrimListCommand(key, keepStartingFrom, keepEndingAt));
-        }
-
-        private sealed class TrimListCommand(string key, int keepStartingFrom, int keepEndingAt)
-            : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Lists.TryGetValue(key, out var list))
-                {
-                    if (list.Trim(keepStartingFrom, keepEndingAt) == 0)
-                    {
-                        state.ListDelete(list);
-                    }
-                }
-
-                return null;
-            }
+            AddCommand(new InMemoryCommands.ListTrim<TKey>(key, keepStartingFrom, keepEndingAt));
         }
 
         public override void SetRangeInHash([NotNull] string key, [NotNull] IEnumerable<KeyValuePair<string, string>> keyValuePairs)
@@ -407,44 +251,14 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (keyValuePairs == null) throw new ArgumentNullException(nameof(keyValuePairs));
 
-            AddCommand(new SetRangeInHashCommand(key, keyValuePairs));
-        }
-
-        internal sealed class SetRangeInHashCommand(string key, IEnumerable<KeyValuePair<string, string>> items)
-            : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                var hash = state.HashGetOrAdd(key);
-
-                foreach (var item in items)
-                {
-                    hash.Value[item.Key] = item.Value;
-                }
-
-                if (hash.Value.Count == 0)
-                {
-                    state.HashDelete(hash);
-                }
-
-                return null;
-            }
+            AddCommand(new InMemoryCommands.HashSetRange<TKey>(key, keyValuePairs));
         }
 
         public override void RemoveHash([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new RemoveHashCommand(key));
-        }
-
-        private sealed class RemoveHashCommand(string key) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Hashes.TryGetValue(key, out var hash)) state.HashDelete(hash);
-                return null;
-            }
+            AddCommand(new InMemoryCommands.HashRemove<TKey>(key));
         }
 
         public override void AddRangeToSet([NotNull] string key, [NotNull] IList<string> items)
@@ -459,38 +273,14 @@ namespace Hangfire.InMemory
 
             if (items.Count == 0) return;
 
-            AddCommand(new AddRangeToSetCommand(key, items));
-        }
-
-        private sealed class AddRangeToSetCommand(string key, IEnumerable<string> items) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                var set = state.SetGetOrAdd(key);
-
-                foreach (var value in items)
-                {
-                    set.Add(value, 0.0D);
-                }
-
-                return null;
-            }
+            AddCommand(new InMemoryCommands.SortedSetAddRange<TKey>(key, items));
         }
 
         public override void RemoveSet([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new RemoveSetCommand(key));
-        }
-
-        private sealed class RemoveSetCommand(string key) : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Sets.TryGetValue(key, out var set)) state.SetDelete(set);
-                return null;
-            }
+            AddCommand(new InMemoryCommands.SortedSetDelete<TKey>(key));
         }
 
         public override void ExpireHash([NotNull] string key, TimeSpan expireIn)
@@ -498,17 +288,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new ExpireHashCommand(key, expireIn, now));
-        }
-
-        private sealed class ExpireHashCommand(string key, TimeSpan? expireIn, MonotonicTime? now)
-            : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Hashes.TryGetValue(key, out var hash)) state.HashExpire(hash, now, expireIn);
-                return null;
-            }
+            AddCommand(new InMemoryCommands.HashExpire<TKey>(key, expireIn, now));
         }
 
         public override void ExpireList([NotNull] string key, TimeSpan expireIn)
@@ -516,17 +296,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new ExpireListCommand(key, expireIn, now));
-        }
-
-        private sealed class ExpireListCommand(string key, TimeSpan? expireIn, MonotonicTime? now)
-            : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Lists.TryGetValue(key, out var list)) state.ListExpire(list, now, expireIn);
-                return null;
-            }
+            AddCommand(new InMemoryCommands.ListExpire<TKey>(key, expireIn, now));
         }
 
         public override void ExpireSet([NotNull] string key, TimeSpan expireIn)
@@ -534,38 +304,28 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new ExpireSetCommand(key, expireIn, now));
-        }
-
-        private sealed class ExpireSetCommand(string key, TimeSpan? expireIn, MonotonicTime? now)
-            : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                if (state.Sets.TryGetValue(key, out var set)) state.SetExpire(set, now, expireIn);
-                return null;
-            }
+            AddCommand(new InMemoryCommands.SortedSetExpire<TKey>(key, expireIn, now));
         }
 
         public override void PersistHash([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new ExpireHashCommand(key, expireIn: null, now: null));
+            AddCommand(new InMemoryCommands.HashExpire<TKey>(key, expireIn: null, now: null));
         }
 
         public override void PersistList([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new ExpireListCommand(key, expireIn: null, now: null));
+            AddCommand(new InMemoryCommands.ListExpire<TKey>(key, expireIn: null, now: null));
         }
 
         public override void PersistSet([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new ExpireSetCommand(key, expireIn: null, now: null));
+            AddCommand(new InMemoryCommands.SortedSetExpire<TKey>(key, expireIn: null, now: null));
         }
 
         private void AddCommand(IInMemoryCommand<TKey, object> action)
@@ -596,30 +356,6 @@ namespace Hangfire.InMemory
             }
 
             return null;
-        }
-
-        private sealed class CounterIncrementCommand(string key, long value, TimeSpan? expireIn, MonotonicTime? now)
-            : IInMemoryCommand<TKey>
-        {
-            public object Execute(InMemoryState<TKey> state)
-            {
-                var counter = state.CounterGetOrAdd(key);
-                counter.Value += value;
-
-                if (counter.Value != 0)
-                {
-                    if (expireIn.HasValue)
-                    {
-                        state.CounterExpire(counter, now, expireIn);
-                    }
-                }
-                else
-                {
-                    state.CounterDelete(counter);
-                }
-
-                return null;
-            }
         }
     }
 }
