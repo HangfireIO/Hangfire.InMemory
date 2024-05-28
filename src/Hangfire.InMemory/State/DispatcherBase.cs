@@ -123,7 +123,7 @@ namespace Hangfire.InMemory.State
             return (T)QueryWriteAndWait(query as ICommand<TKey, object>);
         }
 
-        public virtual object QueryWriteAndWait(ICommand<TKey, object> query)
+        protected virtual object QueryWriteAndWait(ICommand<TKey, object> query)
         {
             return query.Execute(_state);
         }
@@ -139,7 +139,7 @@ namespace Hangfire.InMemory.State
             return (T)QueryReadAndWait(query as ICommand<TKey, object>);
         }
 
-        public virtual object QueryReadAndWait(ICommand<TKey, object> query)
+        protected virtual object QueryReadAndWait(ICommand<TKey, object> query)
         {
             return QueryWriteAndWait(query);
         }

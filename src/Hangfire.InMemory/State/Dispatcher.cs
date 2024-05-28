@@ -54,7 +54,7 @@ namespace Hangfire.InMemory.State
             _thread.Join();
         }
 
-        public override object QueryWriteAndWait(ICommand<TKey, object> query)
+        protected override object QueryWriteAndWait(ICommand<TKey, object> query)
         {
             if (_disposed) ThrowObjectDisposedException();
 
@@ -84,7 +84,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public override object QueryReadAndWait(ICommand<TKey, object> query)
+        protected override object QueryReadAndWait(ICommand<TKey, object> query)
         {
             if (_disposed) ThrowObjectDisposedException();
 
