@@ -27,7 +27,7 @@ namespace Hangfire.InMemory.State
         private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(15);
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
-        private readonly ConcurrentBag<DispatcherCallback<TKey>> _readQueries = new ConcurrentBag<DispatcherCallback<TKey>>();
+        private readonly ConcurrentQueue<DispatcherCallback<TKey>> _readQueries = new ConcurrentQueue<DispatcherCallback<TKey>>();
         private readonly ConcurrentBag<DispatcherCallback<TKey>> _queries = new ConcurrentBag<DispatcherCallback<TKey>>();
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
@@ -92,7 +92,7 @@ namespace Hangfire.InMemory.State
 
             using (var callback = new DispatcherCallback<TKey>(query, rethrowExceptions: false))
             {
-                _readQueries.Add(callback);
+                _readQueries.Enqueue(callback);
 
                 if (Volatile.Read(ref _outstandingRequests.Value) == 0)
                 {
@@ -128,7 +128,7 @@ namespace Hangfire.InMemory.State
 
                         var startTime = Environment.TickCount;
 
-                        while (_readQueries.TryTake(out var next) || _queries.TryTake(out next))
+                        while (_readQueries.TryDequeue(out var next) || _queries.TryTake(out next))
                         {
                             next.Execute(State);
 
