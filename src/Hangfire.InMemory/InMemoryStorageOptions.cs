@@ -14,6 +14,7 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using System.Threading;
 
 namespace Hangfire.InMemory
 {
@@ -67,5 +68,10 @@ namespace Hangfire.InMemory
         /// </summary>
         [Obsolete("Doesn't affect anything now, serialization is always enabled. Will be removed in 1.0.0.")]
         public bool DisableJobSerialization { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum time to wait for a command completion.
+        /// </summary>
+        public TimeSpan CommandTimeout { get; set; } = System.Diagnostics.Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(15);
     }
 }

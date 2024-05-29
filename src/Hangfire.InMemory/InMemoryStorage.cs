@@ -74,12 +74,14 @@ namespace Hangfire.InMemory
                 case InMemoryStorageIdType.Guid:
                     _guidDispatcher = new Dispatcher<Guid>(
                         "Hangfire:InMemoryDispatcher",
+                        Options.CommandTimeout,
                         MonotonicTime.GetCurrent,
                         new MemoryState<Guid>(Options, null));
                     break;
                 case InMemoryStorageIdType.UInt64:
                     _longDispatcher = new Dispatcher<ulong>(
                         "Hangfire:InMemoryDispatcher",
+                        Options.CommandTimeout,
                         MonotonicTime.GetCurrent,
                         new MemoryState<ulong>(Options, null));
                     break;

@@ -24,21 +24,22 @@ namespace Hangfire.InMemory.State
         where TKey : IComparable<TKey>
     {
         private const uint DefaultExpirationIntervalMs = 1000U;
-        private static readonly TimeSpan DefaultQueryTimeout = TimeSpan.FromSeconds(15);
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
         private readonly ConcurrentQueue<DispatcherCallback<TKey>> _readQueries = new ConcurrentQueue<DispatcherCallback<TKey>>();
         private readonly ConcurrentBag<DispatcherCallback<TKey>> _queries = new ConcurrentBag<DispatcherCallback<TKey>>();
+        private readonly TimeSpan _commandTimeout;
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
         private volatile bool _disposed;
 
         private PaddedInt64 _outstandingRequests;
 
-        public Dispatcher(string threadName, Func<MonotonicTime> timeResolver, MemoryState<TKey> state) : base(timeResolver, state)
+        public Dispatcher(string threadName, TimeSpan commandTimeout, Func<MonotonicTime> timeResolver, MemoryState<TKey> state) : base(timeResolver, state)
         {
             if (threadName == null) throw new ArgumentNullException(nameof(threadName));
-
+            
+            _commandTimeout = commandTimeout;
             _thread = new Thread(DoWork)
             {
                 IsBackground = true,
@@ -72,7 +73,7 @@ namespace Hangfire.InMemory.State
                     }
                 }
 
-                if (!callback.Wait(DefaultQueryTimeout, CancellationToken.None))
+                if (!callback.Wait(_commandTimeout, CancellationToken.None))
                 {
                     throw new TimeoutException();
                 }
@@ -102,7 +103,7 @@ namespace Hangfire.InMemory.State
                     }
                 }
 
-                if (!callback.Wait(DefaultQueryTimeout, CancellationToken.None))
+                if (!callback.Wait(_commandTimeout, CancellationToken.None))
                 {
                     throw new TimeoutException();
                 }
