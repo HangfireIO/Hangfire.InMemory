@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Hangfire.InMemory.Entities;
 using Hangfire.Storage;
 
@@ -57,57 +58,87 @@ namespace Hangfire.InMemory.State
             return entries;
         }
 
-        public bool TryAcquireLockEntry(JobStorageConnection owner, string resource, out LockEntry<JobStorageConnection> entry)
+        public bool TryAcquireLockEntry(JobStorageConnection owner, string resource, TimeSpan timeout, out LockEntry<JobStorageConnection> entry)
         {
             var acquired = false;
+            var spinWait = new SpinWait();
+            var started = Environment.TickCount;
 
-            lock (_state.Locks)
+            entry = null;
+
+            do
             {
-                if (!_state.Locks.TryGetValue(resource, out entry))
+                // It is possible to get a lock that has already been finalized, since there's a time gap
+                // between finalization and removal from the collection to avoid additional synchronization.
+                // So we'll just wait for a few moments and retry once again, since finalized locks should
+                // be removed soon.
+                entry = _state.Locks.GetOrAdd(resource, _ => new LockEntry<JobStorageConnection>(owner));
+                entry.TryAcquire(owner, ref acquired, out var finalized);
+
+                if (!finalized)
                 {
-                    _state.Locks.Add(resource, entry = new LockEntry<JobStorageConnection>(owner));
-                    acquired = true;
+                    break;
                 }
-                else
-                {
-                    entry.TryAcquire(owner, ref acquired);
-                }
-            }
+
+                spinWait.SpinOnce();
+            } while (Environment.TickCount - started < timeout.TotalMilliseconds);
 
             return acquired;
         }
 
         public void CancelLockEntry(string resource, LockEntry<JobStorageConnection> entry)
         {
-            lock (_state.Locks)
+            if (_state.Locks.TryGetValue(resource, out var current))
             {
-                if (!_state.Locks.TryGetValue(resource, out var current) || !ReferenceEquals(current, entry))
-                {
-                    throw new InvalidOperationException("Precondition failed when decrementing a lock");
-                }
+                if (!ReferenceEquals(current, entry)) throw new InvalidOperationException("Does not contain a correct lock entry");
 
-                entry.Cancel();
+                entry.Cancel(out var finalized);
 
-                if (entry.Finalized)
+                if (finalized)
                 {
-                    _state.Locks.Remove(resource);
+                    // Our lock entry has finalized, we should remove the entry to clean up things.
+                    if (!_state.Locks.TryRemove(resource, out var removed))
+                    {
+                        throw new InvalidOperationException("Wasn't able to remove a lock entry");
+                    }
+
+                    if (!ReferenceEquals(entry, removed))
+                    {
+                        throw new InvalidOperationException("Removed entry isn't the same as the requested one");
+                    }
                 }
+            }
+            else
+            {
+                throw new InvalidOperationException("Does not contain a lock");
             }
         }
 
         public void ReleaseLockEntry(JobStorageConnection owner, string resource, LockEntry<JobStorageConnection> entry)
         {
-            lock (_state.Locks)
+            if (_state.Locks.TryGetValue(resource, out var current))
             {
-                if (!_state.Locks.TryGetValue(resource, out var current)) throw new InvalidOperationException("Does not contain a lock");
                 if (!ReferenceEquals(current, entry)) throw new InvalidOperationException("Does not contain a correct lock entry");
-                
-                entry.Release(owner);
 
-                if (entry.Finalized)
+                entry.Release(owner, out var finalized);
+
+                if (finalized)
                 {
-                    _state.Locks.Remove(resource);
+                    // Our lock entry has finalized, we should remove the entry to clean up things.
+                    if (!_state.Locks.TryRemove(resource, out var removed))
+                    {
+                        throw new InvalidOperationException("Wasn't able to remove a lock entry");
+                    }
+
+                    if (!ReferenceEquals(entry, removed))
+                    {
+                        throw new InvalidOperationException("Removed entry isn't the same as the requested one");
+                    }
                 }
+            }
+            else
+            {
+                throw new InvalidOperationException("Does not contain a lock");
             }
         }
 

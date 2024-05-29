@@ -30,17 +30,21 @@ namespace Hangfire.InMemory.Entities
         {
             _owner = owner ?? throw new ArgumentNullException(nameof(owner));
             _referenceCount = 1;
-            _level = 1;
+            _level = 0;
             _finalized = false;
         }
 
-        public bool Finalized => _finalized;
-
-        public void TryAcquire(T owner, ref bool acquired)
+        public void TryAcquire(T owner, ref bool acquired, out bool finalized)
         {
+            finalized = false;
+
             lock (_syncRoot)
             {
-                if (_finalized) ThrowFinalizedException();
+                if (_finalized)
+                {
+                    finalized = true;
+                    return;
+                }
 
                 if (ReferenceEquals(_owner, owner))
                 {
@@ -81,7 +85,7 @@ namespace Hangfire.InMemory.Entities
             return true;
         }
 
-        public void Cancel()
+        public void Cancel(out bool finalized)
         {
             lock (_syncRoot)
             {
@@ -93,10 +97,12 @@ namespace Hangfire.InMemory.Entities
                 {
                     _finalized = true;
                 }
+
+                finalized = _finalized;
             }
         }
 
-        public void Release(T owner)
+        public void Release(T owner, out bool finalized)
         {
             lock (_syncRoot)
             {
@@ -120,6 +126,8 @@ namespace Hangfire.InMemory.Entities
                         Monitor.Pulse(_syncRoot);
                     }
                 }
+
+                finalized = _finalized;
             }
         }
 

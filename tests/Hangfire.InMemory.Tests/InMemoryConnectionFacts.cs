@@ -2316,6 +2316,17 @@ namespace Hangfire.InMemory.Tests
             }
         }
 
+        [Fact]
+        public void AcquireDistributedLock_CanBeGranted_WithZeroTimeout()
+        {
+            UseConnection(connection =>
+            {
+                using (connection.AcquireDistributedLock("resource", TimeSpan.Zero))
+                {
+                }
+            });
+        }
+
         private void UseConnection(Action<InMemoryConnection<string>> action)
         {
             using (var connection = CreateConnection())

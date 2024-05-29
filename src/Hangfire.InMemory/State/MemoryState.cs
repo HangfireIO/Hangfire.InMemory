@@ -30,7 +30,7 @@ namespace Hangfire.InMemory.State
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
         private readonly Dictionary<string, SortedSet<JobEntry<TKey>>> _jobStateIndex = new Dictionary<string, SortedSet<JobEntry<TKey>>>(StringComparer.OrdinalIgnoreCase);
 
-        private readonly Dictionary<string, LockEntry<JobStorageConnection>> _locks;
+        private readonly ConcurrentDictionary<string, LockEntry<JobStorageConnection>> _locks;
         private readonly ConcurrentDictionary<string, QueueEntry<TKey>> _queues;
 
         private readonly SortedDictionary<TKey, JobEntry<TKey>> _jobs;
@@ -46,7 +46,7 @@ namespace Hangfire.InMemory.State
 
             _jobEntryComparer = new JobStateCreatedAtComparer<TKey>(keyComparer);
 
-            _locks = CreateDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
+            _locks = CreateConcurrentDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
             _queues = CreateConcurrentDictionary<QueueEntry<TKey>>(options.StringComparer);
 
             _jobs = new SortedDictionary<TKey, JobEntry<TKey>>(keyComparer);
@@ -68,12 +68,8 @@ namespace Hangfire.InMemory.State
 
         public InMemoryStorageOptions Options { get; }
 
-        public IDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
-#if NET451
+        public ConcurrentDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
         public ConcurrentDictionary<string, QueueEntry<TKey>> Queues => _queues;
-#else
-        public IReadOnlyDictionary<string, QueueEntry<TKey>> Queues => _queues;
-#endif
 
         public IDictionary<TKey, JobEntry<TKey>> Jobs => _jobs;
         public IDictionary<string, HashEntry> Hashes => _hashes;

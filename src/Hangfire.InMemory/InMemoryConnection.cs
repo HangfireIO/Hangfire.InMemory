@@ -62,9 +62,14 @@ namespace Hangfire.InMemory
         {
             if (resource == null) throw new ArgumentNullException(nameof(resource));
 
-            if (Dispatcher.TryAcquireLockEntry(this, resource, out var entry))
+            if (Dispatcher.TryAcquireLockEntry(this, resource, timeout, out var entry))
             {
                 return new LockDisposable(this, resource, entry);
+            }
+
+            if (entry == null)
+            {
+                throw new DistributedLockTimeoutException(resource);
             }
 
             try
