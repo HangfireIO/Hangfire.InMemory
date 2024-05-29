@@ -197,7 +197,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            var data = Dispatcher.QueryWriteAndWait(new Queries.JobGetData<TKey>(key));
+            var data = Dispatcher.QueryReadAndWait(new Queries.JobGetData<TKey>(key));
             if (data == null) return null;
 
             return new JobData
@@ -220,7 +220,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            var data = Dispatcher.QueryWriteAndWait(new Queries.JobGetState<TKey>(key));
+            var data = Dispatcher.QueryReadAndWait(new Queries.JobGetState<TKey>(key));
             if (data == null) return null;
 
             return new StateData
