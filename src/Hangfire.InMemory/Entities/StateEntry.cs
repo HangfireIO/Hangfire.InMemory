@@ -21,23 +21,12 @@ namespace Hangfire.InMemory.Entities
 {
     internal sealed class StateEntry
     {
-        public StateEntry(string name, string reason, IDictionary<string, string> data, MonotonicTime createdAt)
+        public StateEntry(string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime createdAt)
         {
             Name = name;
             Reason = reason;
+            Data = data;
             CreatedAt = createdAt;
-
-            if (data != null)
-            {
-                Data = new KeyValuePair<string, string>[data.Count];
-
-                var index = 0;
-
-                foreach (var item in data)
-                {
-                    Data[index++] = item;
-                }
-            }
         }
 
         public string Name { get; }

@@ -97,14 +97,12 @@ namespace Hangfire.InMemory
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            var jobEntry = new JobEntry<TKey>(
-                KeyProvider.GetUniqueKey(),
-                InvocationData.SerializeJob(job),
-                parameters,
-                Dispatcher.GetMonotonicTime());
+            var key = KeyProvider.GetUniqueKey();
+            var data = InvocationData.SerializeJob(job);
+            var now = Dispatcher.GetMonotonicTime();
 
-            Dispatcher.QueryWriteAndWait(new Commands.JobCreate<TKey>(jobEntry, expireIn));
-            return KeyProvider.ToString(jobEntry.Key);
+            Dispatcher.QueryWriteAndWait(new Commands.JobCreate<TKey>(key, data, parameters.ToArray(), now, expireIn));
+            return KeyProvider.ToString(key);
         }
 
         public override IFetchedJob FetchNextJob([NotNull] string[] queues, CancellationToken cancellationToken)

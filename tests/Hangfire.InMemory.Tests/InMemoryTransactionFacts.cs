@@ -1842,7 +1842,7 @@ namespace Hangfire.InMemory.Tests
 
         private JobEntry<string> CreateJobEntry(string jobId)
         {
-            return new JobEntry<string>(jobId, InvocationData.SerializeJob(_job), _parameters, _now);
+            return new JobEntry<string>(jobId, InvocationData.SerializeJob(_job), _parameters.ToArray(), _now);
         }
 
         [Fact]

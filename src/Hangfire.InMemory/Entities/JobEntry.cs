@@ -28,20 +28,14 @@ namespace Hangfire.InMemory.Entities
         public JobEntry(
             T key,
             InvocationData data,
-            IDictionary<string, string> parameters,
+            KeyValuePair<string, string>[] parameters,
             MonotonicTime createdAt)
         {
             Key = key;
             InvocationData = data;
             CreatedAt = createdAt;
 
-            _parameters = new KeyValuePair<string, string>[parameters.Count];
-
-            var index = 0;
-            foreach (var parameter in parameters)
-            {
-                _parameters[index++] = parameter;
-            }
+            _parameters = parameters;
         }
 
         public T Key { get; }

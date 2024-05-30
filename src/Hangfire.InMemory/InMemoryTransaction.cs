@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Hangfire.Annotations;
 using Hangfire.Common;
 using Hangfire.InMemory.Entities;
@@ -63,14 +64,12 @@ namespace Hangfire.InMemory
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            var entry = new JobEntry<TKey>(
-                _connection.KeyProvider.GetUniqueKey(),
-                InvocationData.SerializeJob(job),
-                parameters,
-                _connection.Dispatcher.GetMonotonicTime());
+            var key = _connection.KeyProvider.GetUniqueKey();
+            var data = InvocationData.SerializeJob(job);
+            var now = _connection.Dispatcher.GetMonotonicTime();
 
-            AddCommand(new Commands.JobCreate<TKey>(entry, expireIn));
-            return _connection.KeyProvider.ToString(entry.Key);
+            AddCommand(new Commands.JobCreate<TKey>(key, data, parameters.ToArray(), now, expireIn));
+            return _connection.KeyProvider.ToString(key);
         }
 
         public override void SetJobParameter(
@@ -127,13 +126,12 @@ namespace Hangfire.InMemory
 
             // IState can be implemented by user, and potentially can throw exceptions.
             // Getting data here, out of the dispatcher thread, to avoid killing it.
-            var entry = new StateEntry(
-                state.Name,
-                state.Reason,
-                state.SerializeData(),
-                _connection.Dispatcher.GetMonotonicTime());
+            var name = state.Name;
+            var reason = state.Reason;
+            var data = state.SerializeData()?.ToArray();
+            var now = _connection.Dispatcher.GetMonotonicTime();
 
-            AddCommand(new Commands.JobAddState<TKey>(key, entry, setAsCurrent: true));
+            AddCommand(new Commands.JobAddState<TKey>(key, name, reason, data, now, setAsCurrent: true));
         }
 
         public override void AddJobState([NotNull] string jobId, [NotNull] IState state)
@@ -148,13 +146,12 @@ namespace Hangfire.InMemory
 
             // IState can be implemented by user, and potentially can throw exceptions.
             // Getting data here, out of the dispatcher thread, to avoid killing it.
-            var entry = new StateEntry(
-                state.Name,
-                state.Reason,
-                state.SerializeData(),
-                _connection.Dispatcher.GetMonotonicTime());
+            var name = state.Name;
+            var reason = state.Reason;
+            var data = state.SerializeData()?.ToArray();
+            var now = _connection.Dispatcher.GetMonotonicTime();
 
-            AddCommand(new Commands.JobAddState<TKey>(key, entry, setAsCurrent: false));
+            AddCommand(new Commands.JobAddState<TKey>(key, name, reason, data, now, setAsCurrent: false));
         }
 
         public override void AddToQueue([NotNull] string queue, [NotNull] string jobId)

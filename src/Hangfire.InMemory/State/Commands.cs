@@ -18,16 +18,19 @@ using System.Collections.Generic;
 using System.Linq;
 using Hangfire.InMemory.Entities;
 using Hangfire.Server;
+using Hangfire.Storage;
 
 namespace Hangfire.InMemory.State
 {
     internal static class Commands
     {
-        public sealed class JobCreate<TKey>(JobEntry<TKey> entry, TimeSpan expireIn) : ICommand<TKey>
+        public sealed class JobCreate<TKey>(TKey key, InvocationData data, KeyValuePair<string, string>[] parameters, MonotonicTime now, TimeSpan expireIn) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
             {
+                var entry = new JobEntry<TKey>(key, data, parameters, now);
+
                 // Background job is not yet initialized after calling this method, and
                 // transaction is expected a few moments later that will initialize this
                 // job. To prevent early, non-expected eviction when max expiration time
@@ -66,11 +69,13 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobAddState<TKey>(TKey key, StateEntry entry, bool setAsCurrent) : ICommand<TKey>
+        public sealed class JobAddState<TKey>(TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, bool setAsCurrent) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
             {
+                var entry = new StateEntry(name, reason, data, now);
+
                 if (state.Jobs.TryGetValue(key, out var job))
                 {
                     job.AddHistoryEntry(entry, state.Options.MaxStateHistoryLength);
