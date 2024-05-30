@@ -337,6 +337,17 @@ namespace Hangfire.InMemory
         {
             try
             {
+                // TODO: Theoretically it's possible that depending on the actual dispatcher implementation,
+                // the call to the QueryWriteAndWait in the Commit method will end a timeout exception,
+                // and its connection instance will be able to asynchronously release the locks while
+                // transaction itself is running.
+                // This is not something that's possible in the current implementation, since transactions
+                // are always running in isolation. But it might happen, when queries are running in
+                // parallel.
+                // In this case, we should freeze the locks before executing a transaction and failing it
+                // before running commands if any owner is changed. Any attempt to release such a frozen
+                // lock should fail itself, but be recorded to allow cleaning it (and removing from the
+                // lock collection) when un-freeze method is called to avoid having abandoned locks.
                 foreach (var command in _commands)
                 {
                     command.Execute(state);
