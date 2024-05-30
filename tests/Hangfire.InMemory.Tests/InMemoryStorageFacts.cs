@@ -24,7 +24,7 @@ namespace Hangfire.InMemory.Tests
         public void LinearizableRead_Property_ReturnsTrue()
         {
             // Arrange
-            var storage = CreateStorage();
+            using var storage = CreateStorage();
 
             // Act & Assert
             Assert.True(storage.LinearizableReads);
@@ -34,7 +34,7 @@ namespace Hangfire.InMemory.Tests
         public void HasFeature_ThrowsArgumentNullException_WhenFeatureIdIsNull()
         {
             // Arrange
-            var storage = CreateStorage();
+            using var storage = CreateStorage();
 
             // Act
             var exception = Assert.Throws<ArgumentNullException>(
@@ -48,7 +48,7 @@ namespace Hangfire.InMemory.Tests
         public void HasFeature_ReturnsTrue_ForTheFollowingFeatures()
         {
             // Arrange
-            var storage = CreateStorage();
+            using var storage = CreateStorage();
 
             // Act & Assert
             Assert.True(storage.HasFeature("Storage.ExtendedApi"));
@@ -70,7 +70,7 @@ namespace Hangfire.InMemory.Tests
         public void GetConnection_ReturnsUsableInstance()
         {
             // Arrange
-            var storage = CreateStorage();
+            using var storage = CreateStorage();
 
             // Act
             using var connection = storage.GetConnection();
@@ -83,7 +83,7 @@ namespace Hangfire.InMemory.Tests
         public void GetMonitoringApi_ReturnsUsableInstance()
         {
             // Arrange
-            var storage = CreateStorage();
+            using var storage = CreateStorage();
 
             // Act
             var monitoringApi = storage.GetMonitoringApi();
@@ -96,7 +96,7 @@ namespace Hangfire.InMemory.Tests
         public void ToString_ReturnsUsefulString()
         {
             // Arrange
-            var storage = CreateStorage();
+            using var storage = CreateStorage();
 
             // Act
             var result = storage.ToString();
