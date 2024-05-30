@@ -29,8 +29,8 @@ namespace Hangfire.InMemory
     /// </summary>
     public sealed class InMemoryStorage : JobStorage, IKeyProvider<Guid>, IKeyProvider<ulong>, IDisposable
     {
-        private readonly Dispatcher<Guid> _guidDispatcher;
-        private readonly Dispatcher<ulong> _longDispatcher;
+        private readonly Dispatcher<Guid>? _guidDispatcher;
+        private readonly Dispatcher<ulong>? _longDispatcher;
 
         private PaddedInt64 _nextId;
 
@@ -131,7 +131,7 @@ namespace Hangfire.InMemory
                 return new InMemoryMonitoringApi<ulong>(_longDispatcher, this);
             }
 
-            return null;
+            throw new InvalidOperationException("Can not determine the dispatcher.");
         }
 
         /// <inheritdoc />
@@ -147,7 +147,7 @@ namespace Hangfire.InMemory
                 return new InMemoryConnection<ulong>(Options, _longDispatcher, this);
             }
 
-            return null;
+            throw new InvalidOperationException("Can not determine the dispatcher.");
         }
 
         /// <inheritdoc />

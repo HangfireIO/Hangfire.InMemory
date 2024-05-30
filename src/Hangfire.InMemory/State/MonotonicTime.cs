@@ -49,7 +49,7 @@ namespace Hangfire.InMemory.State
             return DateTime.UtcNow.Add(this - GetCurrent());
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is MonotonicTime other && Equals(other);
         }
@@ -59,7 +59,7 @@ namespace Hangfire.InMemory.State
             return _timestamp.GetHashCode();
         }
 
-        public int CompareTo(object other)
+        public int CompareTo(object? other)
         {
             if (other == null) return 1;
             if (other is not MonotonicTime time)

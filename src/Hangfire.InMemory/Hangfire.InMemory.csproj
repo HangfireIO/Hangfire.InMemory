@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net451;netstandard2.0</TargetFrameworks>
     <LangVersion>Latest</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='net451'">

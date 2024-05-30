@@ -21,6 +21,7 @@ namespace Hangfire.InMemory.State
     internal sealed class DispatcherCallback<TKey> : IDisposable
         where TKey : IComparable<TKey>
     {
+        private static readonly object NullObject = new object();
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
         private readonly ICommand<TKey, object> _command;
         private readonly bool _rethrowExceptions;
@@ -30,6 +31,7 @@ namespace Hangfire.InMemory.State
         {
             _rethrowExceptions = rethrowExceptions;
             _command = command ?? throw new ArgumentNullException(nameof(command));
+            _result = NullObject;
         }
 
         public bool IsFaulted { get; private set; }

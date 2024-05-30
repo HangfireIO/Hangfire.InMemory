@@ -21,9 +21,9 @@ namespace Hangfire.InMemory.Entities
     internal sealed class JobStateCreatedAtComparer<T> : IComparer<JobEntry<T>>
         where T : IComparable<T>
     {
-        private readonly IComparer<T> _comparer;
+        private readonly IComparer<T>? _comparer;
 
-        public JobStateCreatedAtComparer(IComparer<T> comparer)
+        public JobStateCreatedAtComparer(IComparer<T>? comparer)
         {
             _comparer = comparer;
         }

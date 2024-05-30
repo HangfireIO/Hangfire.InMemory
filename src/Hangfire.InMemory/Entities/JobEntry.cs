@@ -41,12 +41,12 @@ namespace Hangfire.InMemory.Entities
         public T Key { get; }
         public InvocationData InvocationData { get; internal set; }
 
-        public StateEntry State { get; set; }
+        public StateEntry? State { get; set; }
         public IEnumerable<StateEntry> History => _history;
         public MonotonicTime CreatedAt { get; }
         public MonotonicTime? ExpireAt { get; set; }
 
-        public string GetParameter(string name, StringComparer comparer)
+        public string? GetParameter(string name, StringComparer comparer)
         {
             foreach (var parameter in _parameters)
             {

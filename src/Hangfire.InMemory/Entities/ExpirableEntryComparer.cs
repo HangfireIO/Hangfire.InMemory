@@ -21,9 +21,9 @@ namespace Hangfire.InMemory.Entities
     internal sealed class ExpirableEntryComparer<T> : IComparer<IExpirableEntry<T>>
         where T : IComparable<T>
     {
-        private readonly IComparer<T> _comparer;
+        private readonly IComparer<T>? _comparer;
 
-        public ExpirableEntryComparer(IComparer<T> comparer)
+        public ExpirableEntryComparer(IComparer<T>? comparer)
         {
             _comparer = comparer;
         }

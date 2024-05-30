@@ -73,6 +73,11 @@ namespace Hangfire.InMemory.Entities
 
                 try
                 {
+                    if (node.Value == null)
+                    {
+                        throw new InvalidOperationException("Trying to signal on a Tombstone object.");
+                    }
+
                     node.Value.Set();
                     return;
                 }

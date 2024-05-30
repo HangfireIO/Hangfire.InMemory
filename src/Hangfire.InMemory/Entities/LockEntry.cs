@@ -21,7 +21,7 @@ namespace Hangfire.InMemory.Entities
     internal sealed class LockEntry<T> where T : class
     {
         private readonly object _syncRoot = new object();
-        private T _owner;
+        private T? _owner;
         private int _referenceCount;
         private int _level;
         private bool _finalized;

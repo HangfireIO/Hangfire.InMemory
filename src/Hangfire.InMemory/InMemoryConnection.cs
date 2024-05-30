@@ -66,6 +66,12 @@ namespace Hangfire.InMemory
 
             if (Dispatcher.TryAcquireLockEntry(this, resource, timeout, out var entry))
             {
+                if (entry == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Got null lock entry while trying to acquire resource '{resource}'");
+                }
+
                 return new LockDisposable(this, resource, entry);
             }
 
@@ -155,7 +161,7 @@ namespace Hangfire.InMemory
                     }
 
                     cancellationToken.ThrowIfCancellationRequested();
-                    return null;
+                    throw new OperationCanceledException(cancellationToken);
                 }
                 finally
                 {
@@ -180,7 +186,7 @@ namespace Hangfire.InMemory
             Dispatcher.QueryWriteAndWait(new Commands.JobSetParameter<TKey>(key, name, value));
         }
 
-        public override string GetJobParameter([NotNull] string id, [NotNull] string name)
+        public override string? GetJobParameter([NotNull] string id, [NotNull] string name)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
@@ -193,7 +199,7 @@ namespace Hangfire.InMemory
             return Dispatcher.QueryReadAndWait(new Queries.JobGetParameter<TKey>(key, name));
         }
 
-        public override JobData GetJobData([NotNull] string jobId)
+        public override JobData? GetJobData([NotNull] string jobId)
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
@@ -216,7 +222,7 @@ namespace Hangfire.InMemory
             };
         }
 
-        public override StateData GetStateData([NotNull] string jobId)
+        public override StateData? GetStateData([NotNull] string jobId)
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
@@ -288,7 +294,7 @@ namespace Hangfire.InMemory
             return Dispatcher.QueryReadAndWait(new Queries.SortedSetGetAll<TKey>(key));
         }
 
-        public override string GetFirstByLowestScoreFromSet([NotNull] string key, double fromScore, double toScore)
+        public override string? GetFirstByLowestScoreFromSet([NotNull] string key, double fromScore, double toScore)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be greater or equal to the `fromScore` value.", nameof(toScore));
@@ -405,14 +411,14 @@ namespace Hangfire.InMemory
             Dispatcher.QueryWriteAndWait(new Commands.HashSetRange<TKey>(key, keyValuePairs));
         }
 
-        public override Dictionary<string, string> GetAllEntriesFromHash([NotNull] string key)
+        public override Dictionary<string, string>? GetAllEntriesFromHash([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             return Dispatcher.QueryReadAndWait(new Queries.HashGetAll<TKey>(key));
         }
 
-        public override string GetValueFromHash([NotNull] string key, [NotNull] string name)
+        public override string? GetValueFromHash([NotNull] string key, [NotNull] string name)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (name == null) throw new ArgumentNullException(nameof(name));

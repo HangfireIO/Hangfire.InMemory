@@ -33,7 +33,7 @@ namespace Hangfire.InMemory.Entities
             return Value == other.Value && Score.Equals(other.Score);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is SortedSetItem other && Equals(other);
         }

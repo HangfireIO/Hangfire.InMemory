@@ -22,68 +22,69 @@ namespace Hangfire.InMemory.State
 {
     internal static class Queries
     {
-        public sealed class JobGetData<TKey>(TKey key) : Command<TKey, JobGetData<TKey>.Data>
+        public sealed class JobGetData<TKey>(TKey key) : Command<TKey, JobGetData<TKey>.Data?>
             where TKey : IComparable<TKey>
         {
-            protected override Data Execute(MemoryState<TKey> state)
+            protected override Data? Execute(MemoryState<TKey> state)
             {
                 if (!state.Jobs.TryGetValue(key, out var entry))
                 {
                     return null;
                 }
 
-                return new Data
-                {
-                    InvocationData = entry.InvocationData,
-                    State = entry.State?.Name,
-                    CreatedAt = entry.CreatedAt,
-                    Parameters = entry.GetParameters(),
-                    StringComparer = state.StringComparer
-                };
+                return new Data(
+                    entry.InvocationData,
+                    entry.State?.Name,
+                    entry.CreatedAt,
+                    entry.GetParameters(),
+                    state.StringComparer);
             }
 
-            public sealed class Data
+            public sealed class Data(
+                InvocationData invocationData,
+                string? state,
+                MonotonicTime createdAt,
+                KeyValuePair<string, string>[] parameters,
+                StringComparer stringComparer)
             {
-                public InvocationData InvocationData { get; set; }
-                public string State { get; set; }
-                public MonotonicTime CreatedAt { get; set; }
-                public KeyValuePair<string, string>[] Parameters { get; set; }
-                public StringComparer StringComparer { get; set; }
+                public InvocationData InvocationData { get; } = invocationData;
+                public string? State { get; } = state;
+                public MonotonicTime CreatedAt { get; } = createdAt;
+                public KeyValuePair<string, string>[] Parameters { get; } = parameters;
+                public StringComparer StringComparer { get; } = stringComparer;
             }
         }
 
-        public sealed class JobGetState<TKey>(TKey key) : Command<TKey, JobGetState<TKey>.Data>
+        public sealed class JobGetState<TKey>(TKey key) : Command<TKey, JobGetState<TKey>.Data?>
             where TKey : IComparable<TKey>
         {
-            protected override Data Execute(MemoryState<TKey> state)
+            protected override Data? Execute(MemoryState<TKey> state)
             {
                 if (!state.Jobs.TryGetValue(key, out var jobEntry) || jobEntry.State == null)
                 {
                     return null;
                 }
 
-                return new Data
-                {
-                    Name = jobEntry.State.Name,
-                    Reason = jobEntry.State.Reason,
-                    StateData = jobEntry.State.Data,
-                    StringComparer = state.StringComparer
-                };
+                return new Data(jobEntry.State.Name, jobEntry.State.Reason, jobEntry.State.Data, state.StringComparer);
             }
             
-            public sealed class Data
+            public sealed class Data(
+                string name,
+                string reason,
+                KeyValuePair<string, string>[] stateData,
+                StringComparer stringComparer)
             {
-                public string Name { get; set; }
-                public string Reason { get; set; }
-                public KeyValuePair<string, string>[] StateData { get; set; }
-                public StringComparer StringComparer { get; set; }
+                public string Name { get; } = name;
+                public string Reason { get; } = reason;
+                public KeyValuePair<string, string>[] StateData { get; } = stateData;
+                public StringComparer StringComparer { get; } = stringComparer;
             }
         }
 
-        public sealed class JobGetParameter<TKey>(TKey key, string name) : Command<TKey, string>
+        public sealed class JobGetParameter<TKey>(TKey key, string name) : Command<TKey, string?>
             where TKey : IComparable<TKey>
         {
-            protected override string Execute(MemoryState<TKey> state)
+            protected override string? Execute(MemoryState<TKey> state)
             {
                 return state.Jobs.TryGetValue(key, out var entry)
                     ? entry.GetParameter(name, state.StringComparer)
@@ -111,10 +112,10 @@ namespace Hangfire.InMemory.State
         }
 
         public sealed class SortedSetFirstByLowestScore<TKey>(string key, double fromScore, double toScore) 
-            : Command<TKey, string>
+            : Command<TKey, string?>
             where TKey : IComparable<TKey>
         {
-            protected override string Execute(MemoryState<TKey> state)
+            protected override string? Execute(MemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -215,10 +216,10 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashGetAll<TKey>(string key) : ICommand<TKey, Dictionary<string, string>>
+        public sealed class HashGetAll<TKey>(string key) : ICommand<TKey, Dictionary<string, string>?>
             where TKey : IComparable<TKey>
         {
-            public Dictionary<string, string> Execute(MemoryState<TKey> state)
+            public Dictionary<string, string>? Execute(MemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var hash))
                 {
@@ -229,10 +230,10 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashGet<TKey>(string key, string name) : ICommand<TKey, string>
+        public sealed class HashGet<TKey>(string key, string name) : ICommand<TKey, string?>
             where TKey : IComparable<TKey>
         {
-            public string Execute(MemoryState<TKey> state)
+            public string? Execute(MemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.Value.TryGetValue(name, out var result))
                 {

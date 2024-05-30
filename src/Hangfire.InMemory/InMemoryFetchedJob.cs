@@ -15,7 +15,6 @@
 
 using System;
 using Hangfire.Annotations;
-using Hangfire.InMemory.Entities;
 using Hangfire.InMemory.State;
 using Hangfire.Storage;
 

@@ -32,8 +32,8 @@ namespace Hangfire.InMemory.Entities
             // TODO: Add unit tests for all the comparers in project
             var scoreComparison = x.Score.CompareTo(y.Score);
             if (scoreComparison != 0 ||
-                ReferenceEquals(null, y.Value) ||
-                ReferenceEquals(null, x.Value))
+                y.Value.Length == 0 ||
+                x.Value.Length == 0)
             {
                 return scoreComparison;
             }

@@ -19,12 +19,12 @@ namespace Hangfire.InMemory.Entities
 {
     internal sealed class QueueWaitNode
     {
-        public QueueWaitNode(AutoResetEvent value)
+        public QueueWaitNode(AutoResetEvent? value)
         {
             Value = value;
         }
 
-        public readonly AutoResetEvent Value;
-        public QueueWaitNode Next;
+        public readonly AutoResetEvent? Value;
+        public QueueWaitNode? Next;
     }
 }

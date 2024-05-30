@@ -59,8 +59,8 @@ namespace Hangfire.InMemory.Entities
         public List<string> GetViewBetween(double from, double to, int count)
         {
             var view = _value.GetViewBetween(
-                new SortedSetItem(null, from),
-                new SortedSetItem(null, to));
+                new SortedSetItem(String.Empty, from),
+                new SortedSetItem(String.Empty, to));
 
             // Don't query view.Count here as it leads to VersionCheck(updateCount: true) call,
             // which is very expensive when there are a huge number of entries.
@@ -75,11 +75,11 @@ namespace Hangfire.InMemory.Entities
             return result;
         }
         
-        public string GetFirstBetween(double from, double to)
+        public string? GetFirstBetween(double from, double to)
         {
             var view = _value.GetViewBetween(
-                new SortedSetItem(null, from),
-                new SortedSetItem(null, to));
+                new SortedSetItem(String.Empty, from),
+                new SortedSetItem(String.Empty, to));
 
             return view.Count > 0 ? view.Min.Value : null;
         }

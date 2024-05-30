@@ -40,7 +40,7 @@ namespace Hangfire.InMemory.State
         private readonly SortedDictionary<string, CounterEntry> _counters;
         private readonly SortedDictionary<string, ServerEntry> _servers;
 
-        public MemoryState(StringComparer stringComparer, IComparer<TKey> keyComparer)
+        public MemoryState(StringComparer stringComparer, IComparer<TKey>? keyComparer)
         {
             _jobEntryComparer = new JobStateCreatedAtComparer<TKey>(keyComparer);
 
@@ -68,7 +68,7 @@ namespace Hangfire.InMemory.State
         }
 
         public StringComparer StringComparer { get; }
-        public IComparer<TKey> KeyComparer { get; }
+        public IComparer<TKey>? KeyComparer { get; }
 
         public ConcurrentDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
         public ConcurrentDictionary<string, QueueEntry<TKey>> Queues => _queues;

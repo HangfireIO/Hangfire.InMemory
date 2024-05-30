@@ -49,7 +49,7 @@ namespace Hangfire.InMemory.State
 
     internal static class ExtensionMethods
     {
-        public static Job TryGetJob(this InvocationData data, out JobLoadException exception)
+        public static Job? TryGetJob(this InvocationData data, out JobLoadException? exception)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
 

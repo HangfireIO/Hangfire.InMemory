@@ -58,7 +58,7 @@ namespace Hangfire.InMemory.State
             return entries;
         }
 
-        public bool TryAcquireLockEntry(JobStorageConnection owner, string resource, TimeSpan timeout, out LockEntry<JobStorageConnection> entry)
+        public bool TryAcquireLockEntry(JobStorageConnection owner, string resource, TimeSpan timeout, out LockEntry<JobStorageConnection>? entry)
         {
             var acquired = false;
             var spinWait = new SpinWait();
@@ -80,6 +80,7 @@ namespace Hangfire.InMemory.State
                     break;
                 }
 
+                entry = null;
                 spinWait.SpinOnce();
             } while (Environment.TickCount - started < timeout.TotalMilliseconds);
 
@@ -142,14 +143,20 @@ namespace Hangfire.InMemory.State
             }
         }
 
+        public T? QueryWriteAndWait<T>(ICommand<TKey, ValueCommand<TKey, T?>> query)
+            where T : struct
+        {
+            return QueryWriteAndWait<ValueCommand<TKey, T?>>(query).Result;
+        }
+
         public T QueryWriteAndWait<T>(ICommand<TKey, ValueCommand<TKey, T>> query)
             where T : struct
         {
-            return QueryWriteAndWait<ValueCommand<TKey, T>>(query)?.Result ?? default;
+            return QueryWriteAndWait<ValueCommand<TKey, T>>(query).Result;
         }
 
         public T QueryWriteAndWait<T>(ICommand<TKey, T> query)
-            where T : class
+            where T : class?
         {
             return (T)QueryWriteAndWait(query as ICommand<TKey, object>);
         }
@@ -158,14 +165,21 @@ namespace Hangfire.InMemory.State
         {
             return query.Execute(_state);
         }
-        
-        public T QueryReadAndWait<T>(ICommand<TKey, ValueCommand<TKey, T>> query)
+
+        public T? QueryReadAndWait<T>(ICommand<TKey, ValueCommand<TKey, T?>> query)
+            where T : struct
         {
-            return QueryReadAndWait<ValueCommand<TKey, T>>(query).Result ?? default;
+            return QueryReadAndWait<ValueCommand<TKey, T?>>(query).Result;
+        }
+
+        public T QueryReadAndWait<T>(ICommand<TKey, ValueCommand<TKey, T>> query)
+            where T : struct
+        {
+            return QueryReadAndWait<ValueCommand<TKey, T>>(query).Result;
         }
 
         public T QueryReadAndWait<T>(ICommand<TKey, T> query)
-            where T : class
+            where T : class?
         {
             return (T)QueryReadAndWait(query as ICommand<TKey, object>);
         }

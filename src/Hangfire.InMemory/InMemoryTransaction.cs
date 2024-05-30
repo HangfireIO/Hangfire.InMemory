@@ -28,7 +28,7 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction, ICommand<TKey>
         where TKey : IComparable<TKey>
     {
-        private readonly LinkedList<ICommand<TKey, object>> _commands = new LinkedList<ICommand<TKey, object>>();
+        private readonly LinkedList<ICommand<TKey, object?>> _commands = new LinkedList<ICommand<TKey, object?>>();
         private readonly HashSet<QueueEntry<TKey>> _enqueued = new HashSet<QueueEntry<TKey>>();
         private readonly InMemoryConnection<TKey> _connection;
         private readonly List<IDisposable> _acquiredLocks = new List<IDisposable>();
@@ -128,7 +128,7 @@ namespace Hangfire.InMemory
             // Getting data here, out of the dispatcher thread, to avoid killing it.
             var name = state.Name;
             var reason = state.Reason;
-            var data = state.SerializeData()?.ToArray();
+            var data = state.SerializeData()?.ToArray() ?? [];
             var now = _connection.Dispatcher.GetMonotonicTime();
 
             AddCommand(new Commands.JobAddState<TKey>(
@@ -149,7 +149,7 @@ namespace Hangfire.InMemory
             // Getting data here, out of the dispatcher thread, to avoid killing it.
             var name = state.Name;
             var reason = state.Reason;
-            var data = state.SerializeData()?.ToArray();
+            var data = state.SerializeData()?.ToArray() ?? [];
             var now = _connection.Dispatcher.GetMonotonicTime();
 
             AddCommand(new Commands.JobAddState<TKey>(
@@ -328,12 +328,12 @@ namespace Hangfire.InMemory
             AddCommand(new Commands.SortedSetExpire<TKey>(key, now: null, expireIn: null, maxExpiration: null));
         }
 
-        private void AddCommand(ICommand<TKey, object> action)
+        private void AddCommand(ICommand<TKey, object?> action)
         {
             _commands.AddLast(action);
         }
 
-        object ICommand<TKey, object>.Execute(MemoryState<TKey> state)
+        object? ICommand<TKey, object?>.Execute(MemoryState<TKey> state)
         {
             try
             {
