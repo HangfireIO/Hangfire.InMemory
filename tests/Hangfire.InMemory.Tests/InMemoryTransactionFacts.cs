@@ -49,7 +49,7 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions { StringComparer = StringComparer.Ordinal };
             _now = MonotonicTime.GetCurrent();
-            _state = new MemoryState<string>(_options, _options.StringComparer);
+            _state = new MemoryState<string>(_options.StringComparer, _options.StringComparer);
             _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
             _keyProvider = new StringKeyProvider();
             _parameters = new Dictionary<string, string>();
@@ -1862,7 +1862,7 @@ namespace Hangfire.InMemory.Tests
 
         private InMemoryConnection<string> CreateConnection()
         {
-            return new InMemoryConnection<string>(_dispatcher, _keyProvider);
+            return new InMemoryConnection<string>(_options, _dispatcher, _keyProvider);
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test

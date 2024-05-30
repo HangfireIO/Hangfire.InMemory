@@ -29,15 +29,7 @@ namespace Hangfire.InMemory.State
         {
             public object Execute(MemoryState<TKey> state)
             {
-                var entry = new JobEntry<TKey>(key, data, parameters, now);
-
-                // Background job is not yet initialized after calling this method, and
-                // transaction is expected a few moments later that will initialize this
-                // job. To prevent early, non-expected eviction when max expiration time
-                // limit is low or close to zero, that can lead to exceptions, we just
-                // ignoring this limit in very rare occasions when background job is not
-                // initialized for reasons I can't even realize with an in-memory storage.
-                state.JobCreate(entry, expireIn, ignoreMaxExpirationTime: true);
+                state.JobCreate(new JobEntry<TKey>(key, data, parameters, now), expireIn);
                 return null;
             }
         }
@@ -49,27 +41,28 @@ namespace Hangfire.InMemory.State
             {
                 if (state.Jobs.TryGetValue(key, out var jobEntry))
                 {
-                    jobEntry.SetParameter(name, value, state.Options.StringComparer);
+                    jobEntry.SetParameter(name, value, state.StringComparer);
                 }
                 return null;
             }
         }
 
-        public sealed class JobExpire<TKey>(TKey key, TimeSpan? expireIn, MonotonicTime? now) : ICommand<TKey>
+        public sealed class JobExpire<TKey>(TKey key, TimeSpan? expireIn, MonotonicTime? now, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
             {
                 if (state.Jobs.TryGetValue(key, out var job))
                 {
-                    state.JobExpire(job, now, expireIn);
+                    state.JobExpire(job, now, expireIn, maxExpiration);
                 }
 
                 return null;
             }
         }
 
-        public sealed class JobAddState<TKey>(TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, bool setAsCurrent) : ICommand<TKey>
+        public sealed class JobAddState<TKey>(
+            TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory, bool setAsCurrent) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
@@ -78,7 +71,7 @@ namespace Hangfire.InMemory.State
 
                 if (state.Jobs.TryGetValue(key, out var job))
                 {
-                    job.AddHistoryEntry(entry, state.Options.MaxStateHistoryLength);
+                    job.AddHistoryEntry(entry, maxHistory);
                     if (setAsCurrent)
                     {
                         state.JobSetState(job, entry);
@@ -177,12 +170,12 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetExpire<TKey>(string key, TimeSpan? expireIn, MonotonicTime? now) : ICommand<TKey>
+        public sealed class SortedSetExpire<TKey>(string key, TimeSpan? expireIn, MonotonicTime? now, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
             {
-                if (state.Sets.TryGetValue(key, out var set)) state.SetExpire(set, now, expireIn);
+                if (state.Sets.TryGetValue(key, out var set)) state.SetExpire(set, now, expireIn, maxExpiration);
                 return null;
             }
         }
@@ -203,7 +196,7 @@ namespace Hangfire.InMemory.State
             public object Execute(MemoryState<TKey> state)
             {
                 var list = state.ListGetOrAdd(key);
-                if (list.RemoveAll(value, state.Options.StringComparer) == 0)
+                if (list.RemoveAll(value, state.StringComparer) == 0)
                 {
                     state.ListDelete(list);
                 }
@@ -229,12 +222,12 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListExpire<TKey>(string key, TimeSpan? expireIn, MonotonicTime? now) : ICommand<TKey>
+        public sealed class ListExpire<TKey>(string key, TimeSpan? expireIn, MonotonicTime? now, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
             {
-                if (state.Lists.TryGetValue(key, out var list)) state.ListExpire(list, now, expireIn);
+                if (state.Lists.TryGetValue(key, out var list)) state.ListExpire(list, now, expireIn, maxExpiration);
                 return null;
             }
         }
@@ -260,12 +253,12 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashExpire<TKey>(string key, TimeSpan? expireIn, MonotonicTime? now) : ICommand<TKey>
+        public sealed class HashExpire<TKey>(string key, TimeSpan? expireIn, MonotonicTime? now, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
             {
-                if (state.Hashes.TryGetValue(key, out var hash)) state.HashExpire(hash, now, expireIn);
+                if (state.Hashes.TryGetValue(key, out var hash)) state.HashExpire(hash, now, expireIn, maxExpiration);
                 return null;
             }
         }

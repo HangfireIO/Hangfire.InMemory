@@ -76,14 +76,14 @@ namespace Hangfire.InMemory
                         "Hangfire:InMemoryDispatcher",
                         Options.CommandTimeout,
                         MonotonicTime.GetCurrent,
-                        new MemoryState<Guid>(Options, null));
+                        new MemoryState<Guid>(Options.StringComparer, null));
                     break;
                 case InMemoryStorageIdType.UInt64:
                     _longDispatcher = new Dispatcher<ulong>(
                         "Hangfire:InMemoryDispatcher",
                         Options.CommandTimeout,
                         MonotonicTime.GetCurrent,
-                        new MemoryState<ulong>(Options, null));
+                        new MemoryState<ulong>(Options.StringComparer, null));
                     break;
                 default:
                     throw new NotSupportedException(
@@ -139,12 +139,12 @@ namespace Hangfire.InMemory
         {
             if (_guidDispatcher != null)
             {
-                return new InMemoryConnection<Guid>(_guidDispatcher, this);
+                return new InMemoryConnection<Guid>(Options, _guidDispatcher, this);
             }
 
             if (_longDispatcher != null)
             {
-                return new InMemoryConnection<ulong>(_longDispatcher, this);
+                return new InMemoryConnection<ulong>(Options, _longDispatcher, this);
             }
 
             return null;

@@ -37,8 +37,8 @@ namespace Hangfire.InMemory.Tests
 
         public InMemoryMonitoringApiFacts()
         {
-            _options = new InMemoryStorageOptions { StringComparer = StringComparer.Ordinal };
-            _state = new MemoryState<string>(_options, _options.StringComparer);
+            _options = new InMemoryStorageOptions();
+            _state = new MemoryState<string>(_options.StringComparer, _options.StringComparer);
             _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
             _keyProvider = new StringKeyProvider();
         }
@@ -1588,7 +1588,7 @@ namespace Hangfire.InMemory.Tests
 
         private T UseConnection<T>(Func<InMemoryConnection<string>, T> action)
         {
-            using (var connection = new InMemoryConnection<string>(_dispatcher, _keyProvider))
+            using (var connection = new InMemoryConnection<string>(_options, _dispatcher, _keyProvider))
             {
                 return action(connection);
             }

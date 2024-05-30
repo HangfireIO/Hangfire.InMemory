@@ -38,7 +38,7 @@ namespace Hangfire.InMemory.State
                     State = entry.State?.Name,
                     CreatedAt = entry.CreatedAt,
                     Parameters = entry.GetParameters(),
-                    StringComparer = state.Options.StringComparer
+                    StringComparer = state.StringComparer
                 };
             }
 
@@ -67,7 +67,7 @@ namespace Hangfire.InMemory.State
                     Name = jobEntry.State.Name,
                     Reason = jobEntry.State.Reason,
                     StateData = jobEntry.State.Data,
-                    StringComparer = state.Options.StringComparer
+                    StringComparer = state.StringComparer
                 };
             }
             
@@ -86,7 +86,7 @@ namespace Hangfire.InMemory.State
             protected override string Execute(MemoryState<TKey> state)
             {
                 return state.Jobs.TryGetValue(key, out var entry)
-                    ? entry.GetParameter(name, state.Options.StringComparer)
+                    ? entry.GetParameter(name, state.StringComparer)
                     : null;
             }
         }
@@ -96,7 +96,7 @@ namespace Hangfire.InMemory.State
         {
             protected override HashSet<string> Execute(MemoryState<TKey> state)
             {
-                var result = new HashSet<string>(state.Options.StringComparer);
+                var result = new HashSet<string>(state.StringComparer);
 
                 if (state.Sets.TryGetValue(key, out var set))
                 {
@@ -222,7 +222,7 @@ namespace Hangfire.InMemory.State
             {
                 if (state.Hashes.TryGetValue(key, out var hash))
                 {
-                    return hash.Value.ToDictionary(x => x.Key, x => x.Value, state.Options.StringComparer);
+                    return hash.Value.ToDictionary(x => x.Key, x => x.Value, state.StringComparer);
                 }
 
                 return null;

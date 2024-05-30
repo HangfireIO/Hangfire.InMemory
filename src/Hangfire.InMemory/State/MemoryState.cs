@@ -40,33 +40,35 @@ namespace Hangfire.InMemory.State
         private readonly SortedDictionary<string, CounterEntry> _counters;
         private readonly SortedDictionary<string, ServerEntry> _servers;
 
-        public MemoryState(InMemoryStorageOptions options, IComparer<TKey> keyComparer)
+        public MemoryState(StringComparer stringComparer, IComparer<TKey> keyComparer)
         {
-            Options = options;
-
             _jobEntryComparer = new JobStateCreatedAtComparer<TKey>(keyComparer);
 
-            _locks = CreateConcurrentDictionary<LockEntry<JobStorageConnection>>(options.StringComparer);
-            _queues = CreateConcurrentDictionary<QueueEntry<TKey>>(options.StringComparer);
+            _locks = CreateConcurrentDictionary<LockEntry<JobStorageConnection>>(stringComparer);
+            _queues = CreateConcurrentDictionary<QueueEntry<TKey>>(stringComparer);
 
             _jobs = new SortedDictionary<TKey, JobEntry<TKey>>(keyComparer);
 
-            _hashes = CreateSortedDictionary<HashEntry>(options.StringComparer);
-            _lists = CreateSortedDictionary<ListEntry>(options.StringComparer);
-            _sets = CreateSortedDictionary<SetEntry>(options.StringComparer);
-            _counters = CreateSortedDictionary<CounterEntry>(options.StringComparer);
-            _servers = CreateSortedDictionary<ServerEntry>(options.StringComparer);
+            _hashes = CreateSortedDictionary<HashEntry>(stringComparer);
+            _lists = CreateSortedDictionary<ListEntry>(stringComparer);
+            _sets = CreateSortedDictionary<SetEntry>(stringComparer);
+            _counters = CreateSortedDictionary<CounterEntry>(stringComparer);
+            _servers = CreateSortedDictionary<ServerEntry>(stringComparer);
 
             ExpiringJobsIndex = new SortedSet<JobEntry<TKey>>(new ExpirableEntryComparer<TKey>(keyComparer));
 
-            var expirableEntryComparer = new ExpirableEntryComparer<string>(options.StringComparer);
+            var expirableEntryComparer = new ExpirableEntryComparer<string>(stringComparer);
             ExpiringCountersIndex = new SortedSet<CounterEntry>(expirableEntryComparer);
             ExpiringHashesIndex = new SortedSet<HashEntry>(expirableEntryComparer);
             ExpiringListsIndex = new SortedSet<ListEntry>(expirableEntryComparer);
             ExpiringSetsIndex = new SortedSet<SetEntry>(expirableEntryComparer);
+
+            StringComparer = stringComparer;
+            KeyComparer = keyComparer;
         }
 
-        public InMemoryStorageOptions Options { get; }
+        public StringComparer StringComparer { get; }
+        public IComparer<TKey> KeyComparer { get; }
 
         public ConcurrentDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
         public ConcurrentDictionary<string, QueueEntry<TKey>> Queues => _queues;
@@ -97,11 +99,17 @@ namespace Hangfire.InMemory.State
             return entry;
         }
 
-        public void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
+        public void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn)
         {
             _jobs.Add(entry.Key, entry);
 
-            if (EntryExpire<TKey, JobEntry<TKey>>(entry, ExpiringJobsIndex, entry.CreatedAt, expireIn, ignoreMaxExpirationTime))
+            // Background job is not yet initialized after calling this method, and
+            // transaction is expected a few moments later that will initialize this
+            // job. To prevent early, non-expected eviction when max expiration time
+            // limit is low or close to zero, that can lead to exceptions, we're just
+            // ignoring this limit in very rare occasions when background job is not
+            // initialized for reasons I can't even realize with an in-memory storage.
+            if (EntryExpire<TKey, JobEntry<TKey>>(entry, ExpiringJobsIndex, entry.CreatedAt, expireIn, maxExpiration: null))
             {
                 JobDelete(entry);
             }
@@ -125,9 +133,9 @@ namespace Hangfire.InMemory.State
             indexEntry.Add(entry);
         }
 
-        public void JobExpire(JobEntry<TKey> entry, MonotonicTime? now, TimeSpan? expireIn)
+        public void JobExpire(JobEntry<TKey> entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
         {
-            if (EntryExpire<TKey, JobEntry<TKey>>(entry, ExpiringJobsIndex, now, expireIn))
+            if (EntryExpire<TKey, JobEntry<TKey>>(entry, ExpiringJobsIndex, now, expireIn, maxExpiration))
             {
                 JobDelete(entry);
             }
@@ -148,15 +156,15 @@ namespace Hangfire.InMemory.State
         {
             if (!_hashes.TryGetValue(key, out var hash))
             {
-                _hashes.Add(key, hash = new HashEntry(key, Options.StringComparer));
+                _hashes.Add(key, hash = new HashEntry(key, StringComparer));
             }
 
             return hash;
         }
 
-        public void HashExpire(HashEntry hash, MonotonicTime? now, TimeSpan? expireIn)
+        public void HashExpire(HashEntry hash, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
         {
-            if (EntryExpire<string, HashEntry>(hash, ExpiringHashesIndex, now, expireIn))
+            if (EntryExpire<string, HashEntry>(hash, ExpiringHashesIndex, now, expireIn, maxExpiration))
             {
                 HashDelete(hash);
             }
@@ -171,15 +179,15 @@ namespace Hangfire.InMemory.State
         {
             if (!_sets.TryGetValue(key, out var set))
             {
-                _sets.Add(key, set = new SetEntry(key, Options.StringComparer));
+                _sets.Add(key, set = new SetEntry(key, StringComparer));
             }
 
             return set;
         }
 
-        public void SetExpire(SetEntry set, MonotonicTime? now, TimeSpan? expireIn)
+        public void SetExpire(SetEntry set, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
         {
-            if (EntryExpire<string, SetEntry>(set, ExpiringSetsIndex, now, expireIn))
+            if (EntryExpire<string, SetEntry>(set, ExpiringSetsIndex, now, expireIn, maxExpiration))
             {
                 SetDelete(set);
             }
@@ -200,9 +208,9 @@ namespace Hangfire.InMemory.State
             return list;
         }
 
-        public void ListExpire(ListEntry entry, MonotonicTime? now, TimeSpan? expireIn)
+        public void ListExpire(ListEntry entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
         {
-            if (EntryExpire<string, ListEntry>(entry, ExpiringListsIndex, now, expireIn))
+            if (EntryExpire<string, ListEntry>(entry, ExpiringListsIndex, now, expireIn, maxExpiration))
             {
                 ListDelete(entry);
             }
@@ -228,7 +236,7 @@ namespace Hangfire.InMemory.State
             // We don't apply MaxExpirationTime rules for counters, because they
             // usually have fixed size, and because statistics should be kept for
             // days.
-            if (EntryExpire<string, CounterEntry>(counter, ExpiringCountersIndex, now, expireIn, ignoreMaxExpirationTime: true))
+            if (EntryExpire<string, CounterEntry>(counter, ExpiringCountersIndex, now, expireIn, maxExpiration: null))
             {
                 CounterDelete(counter);
             }
@@ -280,7 +288,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        private bool EntryExpire<TEntryKey, TEntry>(TEntry entry, ISet<TEntry> index, MonotonicTime? now, TimeSpan? expireIn, bool ignoreMaxExpirationTime = false)
+        private static bool EntryExpire<TEntryKey, TEntry>(TEntry entry, SortedSet<TEntry> index, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
             where TEntry : IExpirableEntry<TEntryKey>
         {
             if (entry.ExpireAt.HasValue)
@@ -290,9 +298,9 @@ namespace Hangfire.InMemory.State
 
             if (now.HasValue && expireIn.HasValue)
             {
-                if (!ignoreMaxExpirationTime && Options.MaxExpirationTime.HasValue && expireIn > Options.MaxExpirationTime)
+                if (maxExpiration.HasValue && expireIn > maxExpiration.Value)
                 {
-                    expireIn = Options.MaxExpirationTime;
+                    expireIn = maxExpiration.Value;
                 }
 
                 if (expireIn <= TimeSpan.Zero)

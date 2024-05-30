@@ -41,7 +41,7 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions();
             _now = MonotonicTime.GetCurrent();
-            _state = new MemoryState<string>(_options, _options.StringComparer);
+            _state = new MemoryState<string>(_options.StringComparer, _options.StringComparer);
             _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
             _keyProvider = new StringKeyProvider();
             _parameters = new Dictionary<string, string>();
@@ -49,10 +49,19 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void Ctor_ThrowsAnException_WhenOptionsValueIsNull()
+        {
+            var exception = Assert.Throws<ArgumentNullException>(
+                () => new InMemoryConnection<string>(null, _dispatcher, _keyProvider));
+
+            Assert.Equal("options", exception.ParamName);
+        }
+
+        [Fact]
         public void Ctor_ThrowsAnException_WhenDispatcherIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new InMemoryConnection<string>(null, _keyProvider));
+                () => new InMemoryConnection<string>(_options, null, _keyProvider));
 
             Assert.Equal("dispatcher", exception.ParamName);
         }
@@ -61,7 +70,7 @@ namespace Hangfire.InMemory.Tests
         public void Ctor_ThrowsAnException_WhenKeyProviderIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new InMemoryConnection<string>(_dispatcher, null));
+                () => new InMemoryConnection<string>(_options, _dispatcher, null));
 
             Assert.Equal("keyProvider", exception.ParamName);
         }
@@ -2346,7 +2355,7 @@ namespace Hangfire.InMemory.Tests
 
         private InMemoryConnection<string> CreateConnection()
         {
-            return new InMemoryConnection<string>(_dispatcher, _keyProvider);
+            return new InMemoryConnection<string>(_options, _dispatcher, _keyProvider);
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test

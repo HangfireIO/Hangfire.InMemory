@@ -31,12 +31,14 @@ namespace Hangfire.InMemory
     {
         private readonly HashSet<LockDisposable> _acquiredLocks = new HashSet<LockDisposable>();
 
-        public InMemoryConnection([NotNull] DispatcherBase<TKey> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
+        public InMemoryConnection([NotNull] InMemoryStorageOptions options, [NotNull] DispatcherBase<TKey> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
         {
+            Options = options ?? throw new ArgumentNullException(nameof(options));
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             KeyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));
         }
 
+        public InMemoryStorageOptions Options { get; }
         public DispatcherBase<TKey> Dispatcher { get; }
         public IKeyProvider<TKey> KeyProvider { get; }
 

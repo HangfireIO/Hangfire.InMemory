@@ -32,10 +32,10 @@ namespace Hangfire.InMemory.Tests
         {
             var now = MonotonicTime.GetCurrent();
             var options = new InMemoryStorageOptions();
-            _state = new MemoryState<string>(options, options.StringComparer);
+            _state = new MemoryState<string>(options.StringComparer, options.StringComparer);
             _dispatcher = new TestInMemoryDispatcher<string>(() => now, _state);
             _keyProvider = new StringKeyProvider();
-            _connection = new InMemoryConnection<string>(_dispatcher, _keyProvider);
+            _connection = new InMemoryConnection<string>(options, _dispatcher, _keyProvider);
         }
 
         [Fact]
