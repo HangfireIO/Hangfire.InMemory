@@ -47,7 +47,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobExpire<TKey>(TKey key, TimeSpan? expireIn, MonotonicTime? now, TimeSpan? maxExpiration) : ICommand<TKey>
+        public sealed class JobExpire<TKey>(TKey key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
@@ -95,7 +95,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class CounterIncrement<TKey>(string key, long value, TimeSpan? expireIn, MonotonicTime? now) : ICommand<TKey>
+        public sealed class CounterIncrement<TKey>(string key, long value, MonotonicTime? now, TimeSpan? expireIn) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
@@ -170,7 +170,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetExpire<TKey>(string key, TimeSpan? expireIn, MonotonicTime? now, TimeSpan? maxExpiration) : ICommand<TKey>
+        public sealed class SortedSetExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
@@ -222,7 +222,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListExpire<TKey>(string key, TimeSpan? expireIn, MonotonicTime? now, TimeSpan? maxExpiration) : ICommand<TKey>
+        public sealed class ListExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
@@ -253,7 +253,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashExpire<TKey>(string key, TimeSpan? expireIn, MonotonicTime? now, TimeSpan? maxExpiration) : ICommand<TKey>
+        public sealed class HashExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn,  TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public object Execute(MemoryState<TKey> state)
