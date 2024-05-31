@@ -86,7 +86,7 @@ namespace Hangfire.InMemory.State
                     throw new InvalidOperationException("Dispatcher stopped due to an unhandled exception, storage state is corrupted.", (Exception?)callback.Result);
                 }
 
-                return callback.Result;
+                return callback.Result!;
             }
         }
 
@@ -116,7 +116,7 @@ namespace Hangfire.InMemory.State
                     throw new InvalidOperationException("An exception occurred while executing a read query. Please see inner exception for details.", (Exception?)callback.Result);
                 }
 
-                return callback.Result;
+                return callback.Result!;
             }
         }
 
