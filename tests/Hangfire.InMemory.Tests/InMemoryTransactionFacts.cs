@@ -41,7 +41,6 @@ namespace Hangfire.InMemory.Tests
         private readonly TestInMemoryDispatcher<string> _dispatcher;
         private readonly IKeyProvider<string> _keyProvider;
         private readonly MonotonicTime _now;
-        private readonly InMemoryConnection<string> _connection;
         private readonly Dictionary<string,string> _parameters;
         private readonly Job _job;
 
@@ -54,7 +53,6 @@ namespace Hangfire.InMemory.Tests
             _keyProvider = new StringKeyProvider();
             _parameters = new Dictionary<string, string>();
             _job = Job.FromExpression(() => MyMethod("value"));
-            _connection = CreateConnection();
         }
 
         [Fact]
@@ -279,13 +277,13 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void CreateJob_DoesNotUseMaxExpirationTimeLimit_ToEnsureJobCanNotBeEvictedBeforeInitialization()
         {
+            var options = _options with { MaxExpirationTime = TimeSpan.FromMinutes(30) };
             string jobId = null;
 
             Commit(transaction =>
             {
-                _options.MaxExpirationTime = TimeSpan.FromMinutes(30);
                 jobId = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromDays(30));
-            });
+            }, options); 
 
             Assert.True(_state.Jobs[jobId].ExpireAt.HasValue);
             Assert.Equal(_now.Add(TimeSpan.FromDays(30)), _state.Jobs[jobId].ExpireAt.Value);
@@ -632,7 +630,7 @@ namespace Hangfire.InMemory.Tests
 
             _state.JobCreate(CreateJobEntry("myjob"), expireIn: null);
 
-            _options.MaxStateHistoryLength = 3;
+            var options = _options with { MaxStateHistoryLength = 3 };
 
             // Act
             Commit(x =>
@@ -642,7 +640,7 @@ namespace Hangfire.InMemory.Tests
                 x.AddJobState("myjob", state3.Object);
                 x.AddJobState("myjob", state4.Object);
                 x.AddJobState("myjob", state5.Object);
-            });
+            }, options);
 
             // Assert
             var entries = _state.Jobs["myjob"].History.Select(x => x.Name).ToArray();
@@ -1851,18 +1849,19 @@ namespace Hangfire.InMemory.Tests
             Commit(x => { });
         }
 
-        private void Commit(Action<InMemoryTransaction<string>> action, InMemoryConnection<string> connection = null)
+        private void Commit(Action<InMemoryTransaction<string>> action, InMemoryStorageOptions options = null)
         {
-            using (var transaction = new InMemoryTransaction<string>(connection ?? _connection))
+            using (var connection = CreateConnection(options))
+            using (var transaction = new InMemoryTransaction<string>(connection))
             {
                 action(transaction);
                 transaction.Commit();
             }
         }
 
-        private InMemoryConnection<string> CreateConnection()
+        private InMemoryConnection<string> CreateConnection(InMemoryStorageOptions options = null)
         {
-            return new InMemoryConnection<string>(_options, _dispatcher, _keyProvider);
+            return new InMemoryConnection<string>(options ?? _options, _dispatcher, _keyProvider);
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test

@@ -14,6 +14,7 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Hangfire.Common;
 using Hangfire.Storage;
@@ -66,4 +67,10 @@ namespace Hangfire.InMemory.State
             }
         }
     }
+}
+
+namespace System.Runtime.CompilerServices
+{
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    internal class IsExternalInit{}
 }

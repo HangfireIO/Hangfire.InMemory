@@ -29,12 +29,12 @@ namespace Hangfire.InMemory.Tests
 {
     public class InMemoryConnectionFacts
     {
-        private readonly InMemoryStorageOptions _options;
         private readonly MemoryState<string> _state;
         private readonly TestInMemoryDispatcher<string> _dispatcher;
         private readonly IKeyProvider<string> _keyProvider;
         private readonly Dictionary<string, string> _parameters;
         private readonly Job _job;
+        private InMemoryStorageOptions _options;
         private MonotonicTime _now;
 
         public InMemoryConnectionFacts()
@@ -193,14 +193,15 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void CreateExpiredJob_DoesNotUseMaxExpirationTimeLimit_ToEnsureJobCanNotBeEvictedBeforeInitialization()
         {
+            var options = _options with { MaxExpirationTime = TimeSpan.FromMinutes(30) };
+
             UseConnection(connection =>
             {
-                _options.MaxExpirationTime = TimeSpan.FromMinutes(30);
                 var jobId = connection.CreateExpiredJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromDays(30));
 
                 Assert.True(_state.Jobs[jobId].ExpireAt.HasValue);
                 Assert.Equal(_now.Add(TimeSpan.FromDays(30)), _state.Jobs[jobId].ExpireAt.Value);
-            });
+            }, options);
         }
 
         [Fact]
@@ -2336,9 +2337,9 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
-        private void UseConnection(Action<InMemoryConnection<string>> action)
+        private void UseConnection(Action<InMemoryConnection<string>> action, InMemoryStorageOptions options = null)
         {
-            using (var connection = CreateConnection())
+            using (var connection = CreateConnection(options))
             {
                 action(connection);
             }
@@ -2353,9 +2354,9 @@ namespace Hangfire.InMemory.Tests
             }
         }
 
-        private InMemoryConnection<string> CreateConnection()
+        private InMemoryConnection<string> CreateConnection(InMemoryStorageOptions options = null)
         {
-            return new InMemoryConnection<string>(_options, _dispatcher, _keyProvider);
+            return new InMemoryConnection<string>(options ?? _options, _dispatcher, _keyProvider);
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test
