@@ -141,10 +141,10 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetRange<TKey>(string key, int startingFrom, int endingAt) : ICommand<TKey, List<string>>
+        public sealed class SortedSetRange<TKey>(string key, int startingFrom, int endingAt) : Command<TKey, List<string>>
             where TKey : IComparable<TKey>
         {
-            public List<string> Execute(MemoryState<TKey> state)
+            protected override List<string> Execute(MemoryState<TKey> state)
             {
                 var result = new List<string>();
 
@@ -216,10 +216,10 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashGetAll<TKey>(string key) : ICommand<TKey, Dictionary<string, string>?>
+        public sealed class HashGetAll<TKey>(string key) : Command<TKey, Dictionary<string, string>?>
             where TKey : IComparable<TKey>
         {
-            public Dictionary<string, string>? Execute(MemoryState<TKey> state)
+            protected override Dictionary<string, string>? Execute(MemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var hash))
                 {
@@ -230,10 +230,10 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashGet<TKey>(string key, string name) : ICommand<TKey, string?>
+        public sealed class HashGet<TKey>(string key, string name) : Command<TKey, string?>
             where TKey : IComparable<TKey>
         {
-            public string? Execute(MemoryState<TKey> state)
+            protected override string? Execute(MemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var hash) && hash.Value.TryGetValue(name, out var result))
                 {
@@ -267,10 +267,10 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListGetAll<TKey>(string key) : ICommand<TKey, List<string>>
+        public sealed class ListGetAll<TKey>(string key) : Command<TKey, List<string>>
             where TKey : IComparable<TKey>
         {
-            public List<string> Execute(MemoryState<TKey> state)
+            protected override List<string> Execute(MemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var list))
                 {
@@ -281,10 +281,10 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListRange<TKey>(string key, int startingFrom, int endingAt) : ICommand<TKey, List<string>>
+        public sealed class ListRange<TKey>(string key, int startingFrom, int endingAt) : Command<TKey, List<string>>
             where TKey : IComparable<TKey>
         {
-            public List<string> Execute(MemoryState<TKey> state)
+            protected override List<string> Execute(MemoryState<TKey> state)
             {
                 var result = new List<string>();
 
