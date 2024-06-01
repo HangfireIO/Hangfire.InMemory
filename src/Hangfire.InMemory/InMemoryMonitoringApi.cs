@@ -95,24 +95,15 @@ namespace Hangfire.InMemory
 
         public override IList<ServerDto> Servers()
         {
-            return QueryMonitoringAndWait(state =>
+            var servers = _dispatcher.QueryReadAndWait(new MonitoringQueries.ServersGetAll<TKey>());
+            return servers.Select(entry => new ServerDto
             {
-                var result = new List<ServerDto>(state.Servers.Count);
-
-                foreach (var entry in state.Servers)
-                {
-                    result.Add(new ServerDto
-                    {
-                        Name = entry.Key,
-                        Queues = entry.Value.Context.Queues.ToArray(),
-                        WorkersCount = entry.Value.Context.WorkerCount,
-                        Heartbeat = entry.Value.HeartbeatAt.ToUtcDateTime(),
-                        StartedAt = entry.Value.StartedAt.ToUtcDateTime(),
-                    });
-                }
-
-                return result.OrderBy(x => x.Name, state.StringComparer).ToList();
-            });
+                Name = entry.Name,
+                Queues = entry.Queues,
+                WorkersCount = entry.WorkersCount,
+                Heartbeat = entry.Heartbeat.ToUtcDateTime(),
+                StartedAt = entry.StartedAt.ToUtcDateTime()
+            }).ToList();
         }
 
         public override JobDetailsDto? JobDetails([NotNull] string jobId)
@@ -124,32 +115,25 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            return QueryMonitoringAndWait(state =>
+            var details = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetDetails<TKey>(jobKey));
+            if (details == null) return null;
+
+            return new JobDetailsDto
             {
-                if (!state.Jobs.TryGetValue(jobKey, out var entry))
+                Job = details.InvocationData.TryGetJob(out var loadException),
+                LoadException = loadException,
+                InvocationData = details.InvocationData,
+                Properties = details.Parameters.ToDictionary(x => x.Key, x => x.Value, details.StringComparer),
+                History = details.History.Select(x => new StateHistoryDto
                 {
-                    return null;
-                }
-
-                var job = entry.InvocationData.TryGetJob(out var loadException);
-
-                return new JobDetailsDto
-                {
-                    CreatedAt = entry.CreatedAt.ToUtcDateTime(),
-                    ExpireAt = entry.ExpireAt?.ToUtcDateTime(),
-                    Job = job,
-                    InvocationData = entry.InvocationData,
-                    LoadException = loadException,
-                    Properties = entry.GetParameters().ToDictionary(x => x.Key, x => x.Value, state.StringComparer),
-                    History = entry.History.Select(x => new StateHistoryDto
-                    {
-                        CreatedAt = x.CreatedAt.ToUtcDateTime(),
-                        StateName = x.Name,
-                        Reason = x.Reason,
-                        Data = x.Data.ToDictionary(d => d.Key, d => d.Value, state.StringComparer)
-                    }).Reverse().ToList()
-                };
-            });
+                    CreatedAt = x.CreatedAt.ToUtcDateTime(),
+                    StateName = x.Name,
+                    Reason = x.Reason,
+                    Data = x.Data.ToDictionary(d => d.Key, d => d.Value, details.StringComparer)
+                }).Reverse().ToList(),
+                CreatedAt = details.CreatedAt.ToUtcDateTime(),
+                ExpireAt = details.ExpireAt?.ToUtcDateTime()
+            };
         }
 
         public override StatisticsDto GetStatistics()
@@ -230,218 +214,130 @@ namespace Hangfire.InMemory
         public override JobList<FetchedJobDto> FetchedJobs([NotNull] string queueName, int from, int perPage)
         {
             if (queueName == null) throw new ArgumentNullException(nameof(queueName));
-            return new JobList<FetchedJobDto>(Enumerable.Empty<KeyValuePair<string, FetchedJobDto>>());
+            return new JobList<FetchedJobDto>([]);
         }
 
         public override JobList<ProcessingJobDto> ProcessingJobs(int from, int count)
         {
-            return QueryMonitoringAndWait(state =>
-            {
-                var result = new JobList<ProcessingJobDto>(Enumerable.Empty<KeyValuePair<string, ProcessingJobDto>>());
-                if (state.JobStateIndex.TryGetValue(ProcessingState.StateName, out var indexEntry))
+            var processing = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetProcessing<TKey>(from, count));
+
+            return new JobList<ProcessingJobDto>(processing.Select(entry => new KeyValuePair<string, ProcessingJobDto>(
+                _keyProvider.ToString(entry.Key),
+                new ProcessingJobDto
                 {
-                    var index = 0;
-
-                    foreach (var entry in indexEntry)
-                    {
-                        if (index < from) { index++; continue; }
-                        if (index >= from + count) break;
-
-                        var job = entry.InvocationData.TryGetJob(out var loadException);
-                        var inProcessingState = ProcessingState.StateName.Equals(
-                            entry.State?.Name,
-                            StringComparison.OrdinalIgnoreCase);
-                        var data = entry.State?.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer);
-
-                        result.Add(new KeyValuePair<string, ProcessingJobDto>(_keyProvider.ToString(entry.Key), new ProcessingJobDto
-                        {
-                            ServerId = data?.ContainsKey("ServerId") ?? false ? data["ServerId"] : null,
-                            Job = job,
-                            InvocationData = entry.InvocationData,
-                            LoadException = loadException,
-                            InProcessingState = inProcessingState,
-                            StartedAt = entry.State?.CreatedAt.ToUtcDateTime(),
-                            StateData = inProcessingState && data != null
-                                ? data
-                                : null
-                        }));
-
-                        index++;
-                    }
-                }
-
-                return result;
-            });
+                    InProcessingState = entry.InProcessingState,
+                    InvocationData = entry.InvocationData,
+                    Job = entry.InvocationData.TryGetJob(out var loadException),
+                    LoadException = loadException,
+                    StateData = entry.StateData?.ToDictionary(
+                        x => x.Key,
+                        x => x.Value,
+                        entry.StringComparer),
+                    StartedAt = entry.StartedAt?.ToUtcDateTime(),
+                    ServerId = entry.StateData?.TryGetValue("ServerId", out var serverId) ?? false
+                        ? serverId
+                        : null
+                })));
         }
 
         public override JobList<ScheduledJobDto> ScheduledJobs(int from, int count)
         {
-            return QueryMonitoringAndWait(state =>
-            {
-                var result = new JobList<ScheduledJobDto>(Enumerable.Empty<KeyValuePair<string, ScheduledJobDto>>());
-                if (state.JobStateIndex.TryGetValue(ScheduledState.StateName, out var indexEntry))
+            var scheduled = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetScheduled<TKey>(from, count));
+
+            return new JobList<ScheduledJobDto>(scheduled.Select(entry => new KeyValuePair<string, ScheduledJobDto>(
+                _keyProvider.ToString(entry.Key),
+                new ScheduledJobDto
                 {
-                    var index = 0;
-
-                    foreach (var entry in indexEntry)
-                    {
-                        if (index < from) { index++; continue; }
-                        if (index >= from + count) break;
-
-                        var job = entry.InvocationData.TryGetJob(out var loadException);
-                        
-                        var inScheduledState = ScheduledState.StateName.Equals(
-                            entry.State?.Name,
-                            StringComparison.OrdinalIgnoreCase);
-
-                        result.Add(new KeyValuePair<string, ScheduledJobDto>(_keyProvider.ToString(entry.Key), new ScheduledJobDto
-                        {
-                            EnqueueAt = (entry.State?.Data != null && entry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer).TryGetValue("EnqueueAt", out var enqueueAt)
-                                ? JobHelper.DeserializeNullableDateTime(enqueueAt)
-                                : null) ?? DateTime.MinValue,
-                            Job = job,
-                            InvocationData = entry.InvocationData,
-                            LoadException = loadException,
-                            InScheduledState = inScheduledState,
-                            ScheduledAt = entry.State?.CreatedAt.ToUtcDateTime(),
-                            StateData = inScheduledState && entry.State != null
-                                ? entry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer)
-                                : null
-                        }));
-
-                        index++;
-                    }
-                }
-
-                return result;
-            });
+                    InScheduledState = entry.InScheduledState,
+                    InvocationData = entry.InvocationData,
+                    Job = entry.InvocationData.TryGetJob(out var loadException),
+                    LoadException = loadException,
+                    StateData = entry.StateData?.ToDictionary(
+                        x => x.Key,
+                        x => x.Value,
+                        entry.StringComparer),
+                    ScheduledAt = entry.ScheduledAt?.ToUtcDateTime(),
+                    EnqueueAt = (entry.StateData?.TryGetValue("EnqueueAt", out var enqueueAt) ?? false
+                        ? JobHelper.DeserializeNullableDateTime(enqueueAt)
+                        : null) ?? DateTime.MinValue
+                })));
         }
 
         public override JobList<SucceededJobDto> SucceededJobs(int from, int count)
         {
-            return QueryMonitoringAndWait(state =>
-            {
-                var result = new JobList<SucceededJobDto>(Enumerable.Empty<KeyValuePair<string, SucceededJobDto>>());
-                if (state.JobStateIndex.TryGetValue(SucceededState.StateName, out var indexEntry))
+            var succeeded = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetSucceeded<TKey>(from, count));
+
+            return new JobList<SucceededJobDto>(succeeded.Select(entry => new KeyValuePair<string, SucceededJobDto>(
+                _keyProvider.ToString(entry.Key),
+                new SucceededJobDto
                 {
-                    var index = 0;
-
-                    foreach (var entry in indexEntry.Reverse())
-                    {
-                        if (index < from) { index++; continue; }
-                        if (index >= from + count) break;
-
-                        var job = entry.InvocationData.TryGetJob(out var loadException);
-                        var inSucceededState = SucceededState.StateName.Equals(
-                            entry.State?.Name,
-                            StringComparison.OrdinalIgnoreCase);
-                        var data = entry.State?.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer);
-
-                        result.Add(new KeyValuePair<string, SucceededJobDto>(_keyProvider.ToString(entry.Key), new SucceededJobDto
-                        {
-                            Result = data?.ContainsKey("Result") ?? false ? data["Result"] : null,
-                            TotalDuration = (data?.ContainsKey("PerformanceDuration") ?? false) && (data?.ContainsKey("Latency") ?? false) 
-                                ? long.Parse(data["PerformanceDuration"], CultureInfo.InvariantCulture) + long.Parse(data["Latency"], CultureInfo.InvariantCulture)
-                                : (long?)null,
-                            Job = job,
-                            InvocationData = entry.InvocationData,
-                            LoadException = loadException,
-                            InSucceededState = inSucceededState,
-                            SucceededAt = entry.State?.CreatedAt.ToUtcDateTime(),
-                            StateData = inSucceededState && data != null
-                                ? data
-                                : null
-                        }));
-
-                        index++;
-                    }
-                }
-
-                return result;
-            });
+                    InSucceededState = entry.InSucceededState,
+                    InvocationData = entry.InvocationData,
+                    Job = entry.InvocationData.TryGetJob(out var loadException),
+                    LoadException = loadException,
+                    StateData = entry.StateData?.ToDictionary(
+                        x => x.Key,
+                        x => x.Value,
+                        entry.StringComparer),
+                    SucceededAt = entry.SucceededAt?.ToUtcDateTime(),
+                    Result = entry.StateData?.TryGetValue("Result", out var result) ?? false
+                        ? result
+                        : null,
+                    TotalDuration = (entry.StateData?.TryGetValue("PerformanceDuration", out var duration) ?? false) && 
+                                    (entry.StateData?.TryGetValue("Latency", out var latency) ?? false) 
+                        ? long.Parse(duration, CultureInfo.InvariantCulture) + long.Parse(latency, CultureInfo.InvariantCulture)
+                        : null
+                })));
         }
 
         public override JobList<FailedJobDto> FailedJobs(int from, int count)
         {
-            return QueryMonitoringAndWait(state =>
-            {
-                var result = new JobList<FailedJobDto>(Enumerable.Empty<KeyValuePair<string, FailedJobDto>>());
-                if (state.JobStateIndex.TryGetValue(FailedState.StateName, out var indexEntry))
+            var failed = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetFailed<TKey>(from, count));
+
+            return new JobList<FailedJobDto>(failed.Select(entry => new KeyValuePair<string, FailedJobDto>(
+                _keyProvider.ToString(entry.Key),
+                new FailedJobDto
                 {
-                    var index = 0;
-
-                    foreach (var entry in indexEntry.Reverse())
-                    {
-                        if (index < from) { index++; continue; }
-                        if (index >= from + count) break;
-
-                        var job = entry.InvocationData.TryGetJob(out var loadException);
-                        var inFailedState = FailedState.StateName.Equals(
-                            entry.State?.Name,
-                            StringComparison.OrdinalIgnoreCase);
-                        var data = entry.State?.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer);
-
-                        result.Add(new KeyValuePair<string, FailedJobDto>(_keyProvider.ToString(entry.Key), new FailedJobDto
-                        {
-                            Job = job,
-                            InvocationData = entry.InvocationData,
-                            LoadException = loadException,
-                            ExceptionDetails = data?.ContainsKey("ExceptionDetails") ?? false ? data["ExceptionDetails"] : null,
-                            ExceptionType = data?.ContainsKey("ExceptionType") ?? false ? data["ExceptionType"] : null,
-                            ExceptionMessage = data?.ContainsKey("ExceptionMessage") ?? false ? data["ExceptionMessage"] : null,
-                            Reason = entry.State?.Reason,
-                            InFailedState = inFailedState,
-                            FailedAt = entry.State?.CreatedAt.ToUtcDateTime(),
-                            StateData = inFailedState && data != null
-                                ? data
-                                : null
-                        }));
-
-                        index++;
-                    }
-                }
-
-                return result;
-            });
+                    InFailedState = entry.InFailedState,
+                    InvocationData = entry.InvocationData,
+                    Job = entry.InvocationData.TryGetJob(out var loadException),
+                    LoadException = loadException,
+                    StateData = entry.StateData?.ToDictionary(
+                        x => x.Key,
+                        x => x.Value,
+                        entry.StringComparer),
+                    Reason = entry.Reason,
+                    FailedAt = entry.FailedAt?.ToUtcDateTime(),
+                    ExceptionDetails = entry.StateData?.TryGetValue("ExceptionDetails", out var details) ?? false 
+                        ? details
+                        : null,
+                    ExceptionType = entry.StateData?.TryGetValue("ExceptionType", out var type) ?? false
+                        ? type
+                        : null,
+                    ExceptionMessage = entry.StateData?.TryGetValue("ExceptionMessage", out var message) ?? false
+                        ? message
+                        : null,
+                })));
         }
 
         public override JobList<DeletedJobDto> DeletedJobs(int from, int count)
         {
-            return QueryMonitoringAndWait(state =>
-            {
-                var result = new JobList<DeletedJobDto>(Enumerable.Empty<KeyValuePair<string, DeletedJobDto>>());
-                if (state.JobStateIndex.TryGetValue(DeletedState.StateName, out var indexEntry))
+            var deleted = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetDeleted<TKey>(from, count));
+
+            return new JobList<DeletedJobDto>(deleted.Select(entry => new KeyValuePair<string, DeletedJobDto>(
+                _keyProvider.ToString(entry.Key),
+                new DeletedJobDto
                 {
-                    var index = 0;
-
-                    foreach (var entry in indexEntry.Reverse())
-                    {
-                        if (index < from) { index++; continue; }
-                        if (index >= from + count) break;
-
-                        var job = entry.InvocationData.TryGetJob(out var loadException);
-                        var inDeletedState = DeletedState.StateName.Equals(
-                            entry.State?.Name,
-                            StringComparison.OrdinalIgnoreCase);
-
-                        result.Add(new KeyValuePair<string, DeletedJobDto>(_keyProvider.ToString(entry.Key), new DeletedJobDto
-                        {
-                            Job = job,
-                            InvocationData = entry.InvocationData,
-                            LoadException = loadException,
-                            InDeletedState = inDeletedState,
-                            DeletedAt = entry.State?.CreatedAt.ToUtcDateTime(),
-                            StateData = inDeletedState && entry.State != null
-                                ? entry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer)
-                                : null
-                        }));
-
-                        index++;
-                    }
-                }
-
-                return result;
-            });
+                    InDeletedState = entry.InDeletedState,
+                    InvocationData = entry.InvocationData,
+                    Job = entry.InvocationData.TryGetJob(out var loadException),
+                    LoadException = loadException,
+                    StateData = entry.StateData?.ToDictionary(
+                        x => x.Key,
+                        x => x.Value,
+                        entry.StringComparer),
+                    DeletedAt = entry.DeletedAt?.ToUtcDateTime()
+                })));
         }
 
         public override JobList<AwaitingJobDto> AwaitingJobs(int from, int count)
