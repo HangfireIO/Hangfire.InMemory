@@ -40,57 +40,25 @@ namespace Hangfire.InMemory
 
         public override IList<QueueWithTopEnqueuedJobsDto> Queues()
         {
-            return QueryMonitoringAndWait(state =>
+            var queues = _dispatcher.QueryReadAndWait(new MonitoringQueries.QueuesGetAll<TKey>());
+            return queues.Select(entry => new QueueWithTopEnqueuedJobsDto
             {
-                var result = new List<QueueWithTopEnqueuedJobsDto>();
-
-                foreach (var queueEntry in state.Queues)
-                {
-                    var queueResult = new JobList<EnqueuedJobDto>(Enumerable.Empty<KeyValuePair<string, EnqueuedJobDto>>());
-                    var index = 0;
-                    const int count = 5;
-
-                    foreach (var message in queueEntry.Value.Queue)
-                    {
-                        if (index++ >= count) break;
-
-                        Job? job = null;
-                        JobLoadException? loadException = null;
-
-                        if (state.Jobs.TryGetValue(message, out var jobEntry))
+                Length = entry.Length,
+                Name = entry.Name,
+                FirstJobs = new JobList<EnqueuedJobDto>(entry.First.Select(x =>
+                    new KeyValuePair<string, EnqueuedJobDto>(
+                        _keyProvider.ToString(x.Key),
+                        new EnqueuedJobDto
                         {
-                            job = jobEntry.InvocationData.TryGetJob(out loadException);
-                        }
-
-                        var stateName = jobEntry?.State?.Name;
-                        var inEnqueuedState = EnqueuedState.StateName.Equals(
-                            stateName,
-                            StringComparison.OrdinalIgnoreCase);
-
-                        queueResult.Add(new KeyValuePair<string, EnqueuedJobDto>(_keyProvider.ToString(message), new EnqueuedJobDto
-                        {
-                            Job = job,
+                            InvocationData = x.InvocationData,
+                            Job = x.InvocationData.TryGetJob(out var loadException),
                             LoadException = loadException,
-                            InvocationData = jobEntry?.InvocationData,
-                            State = stateName,
-                            InEnqueuedState = inEnqueuedState,
-                            EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt.ToUtcDateTime() : null,
-                            StateData = inEnqueuedState && jobEntry?.State != null
-                                ? jobEntry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer)
-                                : null
-                        }));
-                    }
-
-                    result.Add(new QueueWithTopEnqueuedJobsDto
-                    {
-                        Length = queueEntry.Value.Queue.Count,
-                        Name = queueEntry.Key,
-                        FirstJobs = queueResult
-                    });
-                }
-
-                return result.OrderBy(x => x.Name, state.StringComparer).ToList();
-            });
+                            State = x.State,
+                            StateData = x.StateData?.ToDictionary(d => d.Key, d => d.Value, x.StringComparer),
+                            InEnqueuedState = x.InEnqueuedState,
+                            EnqueuedAt = x.EnqueuedAt?.ToUtcDateTime()
+                        })))
+            }).ToList();
         }
 
         public override IList<ServerDto> Servers()
@@ -138,77 +106,42 @@ namespace Hangfire.InMemory
 
         public override StatisticsDto GetStatistics()
         {
-            return QueryMonitoringAndWait(state => new StatisticsDto
+            var statistics = _dispatcher.QueryReadAndWait(new MonitoringQueries.StatisticsGetAll<TKey>());
+            return new StatisticsDto
             {
-                Enqueued = GetCountByStateName(EnqueuedState.StateName, state),
-                Scheduled = GetCountByStateName(ScheduledState.StateName, state),
-                Processing = GetCountByStateName(ProcessingState.StateName, state),
-                Failed = GetCountByStateName(FailedState.StateName, state),
-                Succeeded = state.Counters.TryGetValue("stats:succeeded", out var succeeded) ? succeeded.Value : 0,
-                Deleted = state.Counters.TryGetValue("stats:deleted", out var deleted) ? deleted.Value : 0,
-                Queues = state.Queues.Count,
-                Servers = state.Servers.Count,
-                Recurring = state.Sets.TryGetValue("recurring-jobs", out var recurring)
-                    ? recurring.Count
-                    : 0,
-                Retries = state.Sets.TryGetValue("retries", out var retries)
-                    ? retries.Count
-                    : 0,
-                Awaiting = state.JobStateIndex.TryGetValue(AwaitingState.StateName, out var indexEntry)
-                    ? indexEntry.Count
-                    : 0,
-            });
+                Enqueued = statistics.Enqueued,
+                Scheduled = statistics.Scheduled,
+                Processing = statistics.Processing,
+                Failed = statistics.Failed,
+                Succeeded = statistics.Succeeded,
+                Deleted = statistics.Deleted,
+                Queues = statistics.Queues,
+                Servers = statistics.Servers,
+                Recurring = statistics.Recurring,
+                Retries = statistics.Retries,
+                Awaiting = statistics.Awaiting
+            };
         }
 
         public override JobList<EnqueuedJobDto> EnqueuedJobs([NotNull] string queueName, int from, int perPage)
         {
             if (queueName == null) throw new ArgumentNullException(nameof(queueName));
 
-            return QueryMonitoringAndWait(state =>
-            {
-                var result = new JobList<EnqueuedJobDto>(Enumerable.Empty<KeyValuePair<string, EnqueuedJobDto>>());
+            var enqueued =
+                _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetEnqueued<TKey>(queueName, from, perPage));
 
-                if (state.Queues.TryGetValue(queueName, out var queue))
+            return new JobList<EnqueuedJobDto>(enqueued.Select(entry => new KeyValuePair<string, EnqueuedJobDto>(
+                _keyProvider.ToString(entry.Key),
+                new EnqueuedJobDto
                 {
-                    var counter = 0;
-
-                    foreach (var message in queue.Queue)
-                    {
-                        if (counter < from) { counter++; continue; }
-                        if (counter >= from + perPage) break;
-
-                        Job? job = null;
-                        JobLoadException? loadException = null;
-
-                        if (state.Jobs.TryGetValue(message, out var jobEntry))
-                        {
-                            job = jobEntry.InvocationData.TryGetJob(out loadException);
-                        }
-
-                        var stateName = jobEntry?.State?.Name;
-                        var inEnqueuedState = EnqueuedState.StateName.Equals(
-                            stateName,
-                            StringComparison.OrdinalIgnoreCase);
-
-                        result.Add(new KeyValuePair<string, EnqueuedJobDto>(_keyProvider.ToString(message), new EnqueuedJobDto
-                        {
-                            Job = job,
-                            InvocationData = jobEntry?.InvocationData,
-                            LoadException = loadException,
-                            State = stateName,
-                            InEnqueuedState = inEnqueuedState,
-                            EnqueuedAt = inEnqueuedState ? jobEntry?.State?.CreatedAt.ToUtcDateTime() : null,
-                            StateData = inEnqueuedState && jobEntry?.State != null
-                                ? jobEntry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer)
-                                : null
-                        }));
-
-                        counter++;
-                    }
-                }
-
-                return result;
-            });
+                    InvocationData = entry.InvocationData,
+                    Job =  entry.InvocationData.TryGetJob(out var loadException),
+                    LoadException = loadException,
+                    InEnqueuedState = entry.InEnqueuedState,
+                    State = entry.StateName,
+                    StateData = entry.StateData?.ToDictionary(d => d.Key, d => d.Value, entry.StringComparer),
+                    EnqueuedAt = entry.EnqueuedAt?.ToUtcDateTime()
+                })));
         }
 
         public override JobList<FetchedJobDto> FetchedJobs([NotNull] string queueName, int from, int perPage)
@@ -342,52 +275,23 @@ namespace Hangfire.InMemory
 
         public override JobList<AwaitingJobDto> AwaitingJobs(int from, int count)
         {
-            return QueryMonitoringAndWait(state =>
-            {
-                var result = new JobList<AwaitingJobDto>(Enumerable.Empty<KeyValuePair<string, AwaitingJobDto>>());
-                if (state.JobStateIndex.TryGetValue(AwaitingState.StateName, out var indexEntry))
+            var deleted = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetAwaiting<TKey>(from, count, _keyProvider));
+
+            return new JobList<AwaitingJobDto>(deleted.Select(entry => new KeyValuePair<string, AwaitingJobDto>(
+                _keyProvider.ToString(entry.Key),
+                new AwaitingJobDto
                 {
-                    var index = 0;
-
-                    foreach (var entry in indexEntry)
-                    {
-                        if (index < from) { index++; continue; }
-                        if (index >= from + count) break;
-
-                        var job = entry.InvocationData.TryGetJob(out var loadException);
-                        var inAwaitingState = AwaitingState.StateName.Equals(
-                            entry.State?.Name,
-                            StringComparison.OrdinalIgnoreCase);
-
-                        string? parentStateName = null;
-
-                        if (inAwaitingState && entry.State?.Data != null &&
-                            entry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer).TryGetValue("ParentId", out var parentId) &&
-                            _keyProvider.TryParse(parentId, out var parentKey) &&
-                            state.Jobs.TryGetValue(parentKey, out var parentEntry))
-                        {
-                            parentStateName = parentEntry.State?.Name;
-                        }
-
-                        result.Add(new KeyValuePair<string, AwaitingJobDto>(_keyProvider.ToString(entry.Key), new AwaitingJobDto
-                        {
-                            Job = job,
-                            InvocationData = entry.InvocationData,
-                            LoadException = loadException,
-                            InAwaitingState = inAwaitingState,
-                            AwaitingAt = entry.State?.CreatedAt.ToUtcDateTime(),
-                            StateData = inAwaitingState && entry.State != null
-                                ? entry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer)
-                                : null,
-                            ParentStateName = parentStateName
-                        }));
-
-                        index++;
-                    }
-                }
-
-                return result;
-            });
+                    InAwaitingState = entry.InAwaitingState,
+                    InvocationData = entry.InvocationData,
+                    Job = entry.InvocationData.TryGetJob(out var loadException),
+                    LoadException = loadException,
+                    StateData = entry.StateData?.ToDictionary(
+                        x => x.Key,
+                        x => x.Value,
+                        entry.StringComparer),
+                    AwaitingAt = entry.AwaitingAt?.ToUtcDateTime(),
+                    ParentStateName = entry.ParentState
+                })));
         }
 
         public override long ScheduledCount()
@@ -398,10 +302,7 @@ namespace Hangfire.InMemory
         public override long EnqueuedCount([NotNull] string queueName)
         {
             if (queueName == null) throw new ArgumentNullException(nameof(queueName));
-
-            return QueryMonitoringValueAndWait(state => state.Queues.TryGetValue(queueName, out var queue) 
-                ? queue.Queue.Count
-                : 0);
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.QueueGetCount<TKey>(queueName));
         }
 
         public override long FetchedCount([NotNull] string queue)
@@ -438,129 +339,42 @@ namespace Hangfire.InMemory
         public override IDictionary<DateTime, long> SucceededByDatesCount()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return QueryMonitoringAndWait(state => GetTimelineStats(state, now, "succeeded"));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetDailyTimeline<TKey>(now, "succeeded"));
         }
 
         public override IDictionary<DateTime, long> FailedByDatesCount()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return QueryMonitoringAndWait(state => GetTimelineStats(state, now, "failed"));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetDailyTimeline<TKey>(now, "failed"));
         }
 
         public override IDictionary<DateTime, long> DeletedByDatesCount()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return QueryMonitoringAndWait(state => GetTimelineStats(state, now, "deleted"));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetDailyTimeline<TKey>(now, "deleted"));
         }
 
         public override IDictionary<DateTime, long> HourlySucceededJobs()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return QueryMonitoringAndWait(state => GetHourlyTimelineStats(state, now, "succeeded"));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetHourlyTimeline<TKey>(now, "succeeded"));
         }
 
         public override IDictionary<DateTime, long> HourlyFailedJobs()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return QueryMonitoringAndWait(state => GetHourlyTimelineStats(state, now, "failed"));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetHourlyTimeline<TKey>(now, "failed"));
         }
 
         public override IDictionary<DateTime, long> HourlyDeletedJobs()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return QueryMonitoringAndWait(state => GetHourlyTimelineStats(state, now, "deleted"));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetHourlyTimeline<TKey>(now, "deleted"));
         }
 
         private long GetCountByStateName(string stateName)
         {
-            return QueryMonitoringValueAndWait(state => GetCountByStateName(stateName, state));
-        }
-
-        private static int GetCountByStateName(string stateName, MemoryState<TKey> state)
-        {
-            if (state.JobStateIndex.TryGetValue(stateName, out var index))
-            {
-                return index.Count;
-            }
-
-            return 0;
-        }
-
-        private static Dictionary<DateTime, long> GetHourlyTimelineStats(MemoryState<TKey> state, MonotonicTime now, string type)
-        {
-            var endDate = now.ToUtcDateTime();
-            var dates = new List<DateTime>();
-            for (var i = 0; i < 24; i++)
-            {
-                dates.Add(endDate);
-                endDate = endDate.AddHours(-1);
-            }
-
-            var keys = dates.Select(x => $"stats:{type}:{x:yyyy-MM-dd-HH}").ToArray();
-            var valuesMap = keys.Select(key => state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
-
-            var result = new Dictionary<DateTime, long>();
-            for (var i = 0; i < dates.Count; i++)
-            {
-                result.Add(dates[i], valuesMap[i]);
-            }
-
-            return result;
-        }
-
-        private static Dictionary<DateTime, long> GetTimelineStats(MemoryState<TKey> state, MonotonicTime now, string type)
-        {
-            var endDate = now.ToUtcDateTime().Date;
-            var startDate = endDate.AddDays(-7);
-            var dates = new List<DateTime>();
-
-            while (startDate < endDate)
-            {
-                dates.Add(endDate);
-                endDate = endDate.AddDays(-1);
-            }
-
-            var stringDates = dates.Select(x => x.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).ToList();
-            var keys = stringDates.Select(x => $"stats:{type}:{x}").ToArray();
-            var valuesMap = keys.Select(key => state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
-
-            var result = new Dictionary<DateTime, long>();
-            for (var i = 0; i < stringDates.Count; i++)
-            {
-                result.Add(dates[i], valuesMap[i]);
-            }
-
-            return result;
-        }
-
-        private T QueryMonitoringAndWait<T>(Func<MemoryState<TKey>, T> callback)
-            where T : class?
-        {
-            return _dispatcher.QueryReadAndWait(new MonitoringQuery<T>(callback));
-        }
-
-        private T QueryMonitoringValueAndWait<T>(Func<MemoryState<TKey>, T> callback)
-            where T : struct
-        {
-            return _dispatcher.QueryReadAndWait(new MonitoringValueQuery<T>(callback));
-        }
-
-        private sealed class MonitoringQuery<T>(Func<MemoryState<TKey>, T> callback) : Command<TKey, T>
-            where T : class?
-        {
-            protected override T Execute(MemoryState<TKey> state)
-            {
-                return callback(state);
-            }
-        }
-
-        private sealed class MonitoringValueQuery<T>(Func<MemoryState<TKey>, T> callback) : ValueCommand<TKey, T>
-            where T : struct
-        {
-            protected override T Execute(MemoryState<TKey> state)
-            {
-                return callback(state);
-            }
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetCountByState<TKey>(stateName));
         }
     }
 }

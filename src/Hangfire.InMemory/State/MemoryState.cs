@@ -152,6 +152,16 @@ namespace Hangfire.InMemory.State
             }
         }
 
+        public long GetCountByStateName(string stateName)
+        {
+            if (JobStateIndex.TryGetValue(stateName, out var index))
+            {
+                return index.Count;
+            }
+
+            return 0;
+        }
+
         public HashEntry HashGetOrAdd(string key)
         {
             if (!_hashes.TryGetValue(key, out var hash))
