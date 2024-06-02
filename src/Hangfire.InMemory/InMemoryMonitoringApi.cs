@@ -152,13 +152,16 @@ namespace Hangfire.InMemory
 
         public override JobList<ProcessingJobDto> ProcessingJobs(int from, int count)
         {
-            var processing = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetProcessing<TKey>(from, count));
+            var processing = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
+                ProcessingState.StateName,
+                from,
+                count));
 
             return new JobList<ProcessingJobDto>(processing.Select(entry => new KeyValuePair<string, ProcessingJobDto>(
                 _keyProvider.ToString(entry.Key),
                 new ProcessingJobDto
                 {
-                    InProcessingState = entry.InProcessingState,
+                    InProcessingState = entry.InRequiredState,
                     InvocationData = entry.InvocationData,
                     Job = entry.InvocationData.TryGetJob(out var loadException),
                     LoadException = loadException,
@@ -166,7 +169,7 @@ namespace Hangfire.InMemory
                         x => x.Key,
                         x => x.Value,
                         entry.StringComparer),
-                    StartedAt = entry.StartedAt?.ToUtcDateTime(),
+                    StartedAt = entry.StateCreatedAt?.ToUtcDateTime(),
                     ServerId = entry.StateData?.TryGetValue("ServerId", out var serverId) ?? false
                         ? serverId
                         : null
@@ -175,13 +178,16 @@ namespace Hangfire.InMemory
 
         public override JobList<ScheduledJobDto> ScheduledJobs(int from, int count)
         {
-            var scheduled = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetScheduled<TKey>(from, count));
+            var scheduled = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
+                ScheduledState.StateName,
+                from,
+                count));
 
             return new JobList<ScheduledJobDto>(scheduled.Select(entry => new KeyValuePair<string, ScheduledJobDto>(
                 _keyProvider.ToString(entry.Key),
                 new ScheduledJobDto
                 {
-                    InScheduledState = entry.InScheduledState,
+                    InScheduledState = entry.InRequiredState,
                     InvocationData = entry.InvocationData,
                     Job = entry.InvocationData.TryGetJob(out var loadException),
                     LoadException = loadException,
@@ -189,7 +195,7 @@ namespace Hangfire.InMemory
                         x => x.Key,
                         x => x.Value,
                         entry.StringComparer),
-                    ScheduledAt = entry.ScheduledAt?.ToUtcDateTime(),
+                    ScheduledAt = entry.StateCreatedAt?.ToUtcDateTime(),
                     EnqueueAt = (entry.StateData?.TryGetValue("EnqueueAt", out var enqueueAt) ?? false
                         ? JobHelper.DeserializeNullableDateTime(enqueueAt)
                         : null) ?? DateTime.MinValue
@@ -198,13 +204,17 @@ namespace Hangfire.InMemory
 
         public override JobList<SucceededJobDto> SucceededJobs(int from, int count)
         {
-            var succeeded = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetSucceeded<TKey>(from, count));
+            var succeeded = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
+                SucceededState.StateName,
+                from,
+                count,
+                reversed: true));
 
             return new JobList<SucceededJobDto>(succeeded.Select(entry => new KeyValuePair<string, SucceededJobDto>(
                 _keyProvider.ToString(entry.Key),
                 new SucceededJobDto
                 {
-                    InSucceededState = entry.InSucceededState,
+                    InSucceededState = entry.InRequiredState,
                     InvocationData = entry.InvocationData,
                     Job = entry.InvocationData.TryGetJob(out var loadException),
                     LoadException = loadException,
@@ -212,7 +222,7 @@ namespace Hangfire.InMemory
                         x => x.Key,
                         x => x.Value,
                         entry.StringComparer),
-                    SucceededAt = entry.SucceededAt?.ToUtcDateTime(),
+                    SucceededAt = entry.StateCreatedAt?.ToUtcDateTime(),
                     Result = entry.StateData?.TryGetValue("Result", out var result) ?? false
                         ? result
                         : null,
@@ -225,13 +235,17 @@ namespace Hangfire.InMemory
 
         public override JobList<FailedJobDto> FailedJobs(int from, int count)
         {
-            var failed = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetFailed<TKey>(from, count));
+            var failed = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
+                FailedState.StateName,
+                from,
+                count,
+                reversed: true));
 
             return new JobList<FailedJobDto>(failed.Select(entry => new KeyValuePair<string, FailedJobDto>(
                 _keyProvider.ToString(entry.Key),
                 new FailedJobDto
                 {
-                    InFailedState = entry.InFailedState,
+                    InFailedState = entry.InRequiredState,
                     InvocationData = entry.InvocationData,
                     Job = entry.InvocationData.TryGetJob(out var loadException),
                     LoadException = loadException,
@@ -239,8 +253,8 @@ namespace Hangfire.InMemory
                         x => x.Key,
                         x => x.Value,
                         entry.StringComparer),
-                    Reason = entry.Reason,
-                    FailedAt = entry.FailedAt?.ToUtcDateTime(),
+                    Reason = entry.StateReason,
+                    FailedAt = entry.StateCreatedAt?.ToUtcDateTime(),
                     ExceptionDetails = entry.StateData?.TryGetValue("ExceptionDetails", out var details) ?? false 
                         ? details
                         : null,
@@ -255,13 +269,17 @@ namespace Hangfire.InMemory
 
         public override JobList<DeletedJobDto> DeletedJobs(int from, int count)
         {
-            var deleted = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetDeleted<TKey>(from, count));
+            var deleted = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
+                DeletedState.StateName,
+                from,
+                count,
+                reversed: true));
 
             return new JobList<DeletedJobDto>(deleted.Select(entry => new KeyValuePair<string, DeletedJobDto>(
                 _keyProvider.ToString(entry.Key),
                 new DeletedJobDto
                 {
-                    InDeletedState = entry.InDeletedState,
+                    InDeletedState = entry.InRequiredState,
                     InvocationData = entry.InvocationData,
                     Job = entry.InvocationData.TryGetJob(out var loadException),
                     LoadException = loadException,
@@ -269,7 +287,7 @@ namespace Hangfire.InMemory
                         x => x.Key,
                         x => x.Value,
                         entry.StringComparer),
-                    DeletedAt = entry.DeletedAt?.ToUtcDateTime()
+                    DeletedAt = entry.StateCreatedAt?.ToUtcDateTime()
                 })));
         }
 
