@@ -37,7 +37,7 @@ namespace Hangfire.InMemory.Tests
         private readonly IKeyProvider<string> _keyProvider;
         private readonly Dictionary<string, string> _parameters;
         private readonly Job _job;
-        private InMemoryStorageOptions _options;
+        private readonly InMemoryStorageOptions _options;
         private MonotonicTime _now;
 
         public InMemoryConnectionFacts()
