@@ -17,7 +17,7 @@ namespace ConsoleSample
                 .UseIgnoredAssemblyVersionTypeResolver()
                 .UseInMemoryStorage(new InMemoryStorageOptions
                 {
-                    IdType = InMemoryStorageIdType.UInt64
+                    IdType = InMemoryStorageIdType.Integer
                 }));
 
             services.AddHangfireServer(options => options.Queues = new[] { "critical", "default" });
