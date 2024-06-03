@@ -309,7 +309,7 @@ namespace Hangfire.InMemory.Tests
             var exception = Assert.Throws<ArgumentNullException>(
                 () => Commit(x => x.SetJobParameter(null, "name", "value")));
 
-            Assert.Equal("id", exception.ParamName);
+            Assert.Equal("jobId", exception.ParamName);
         }
 
         [Fact]

@@ -194,7 +194,7 @@ namespace Hangfire.InMemory.Tests
             var exception = Assert.Throws<ArgumentException>(
                 () => time.CompareTo(1234));
             
-            Assert.Equal("other", exception.ParamName);
+            Assert.Equal("obj", exception.ParamName);
         }
 
         [Fact]

@@ -491,7 +491,7 @@ namespace Hangfire.InMemory.Tests
             var exception = Assert.Throws<ArgumentNullException>(
                 () => monitoring.EnqueuedJobs(null, 0, 10));
 
-            Assert.Equal("queueName", exception.ParamName);
+            Assert.Equal("queue", exception.ParamName);
         }
 
         [Fact]
@@ -679,7 +679,7 @@ namespace Hangfire.InMemory.Tests
             var exception = Assert.Throws<ArgumentNullException>(
                 () => monitoring.FetchedJobs(null, 0, 10));
 
-            Assert.Equal("queueName", exception.ParamName);
+            Assert.Equal("queue", exception.ParamName);
         }
 
         [Fact]
@@ -1202,7 +1202,7 @@ namespace Hangfire.InMemory.Tests
             var exception = Assert.Throws<ArgumentNullException>(
                 () => monitoring.EnqueuedCount(null));
 
-            Assert.Equal("queueName", exception.ParamName);
+            Assert.Equal("queue", exception.ParamName);
         }
 
         [Fact]

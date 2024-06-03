@@ -1702,7 +1702,7 @@ namespace Hangfire.InMemory.Tests
                 var exception = Assert.Throws<ArgumentException>(
                     () => connection.RemoveTimedOutServers(TimeSpan.FromMinutes(-1)));
 
-                Assert.Equal("timeout", exception.ParamName);
+                Assert.Equal("timeOut", exception.ParamName);
             });
         }
 
@@ -1714,7 +1714,7 @@ namespace Hangfire.InMemory.Tests
                 var exception = Assert.Throws<ArgumentException>(
                     () => connection.RemoveTimedOutServers(TimeSpan.Zero));
 
-                Assert.Equal("timeout", exception.ParamName);
+                Assert.Equal("timeOut", exception.ParamName);
             });
         }
 
