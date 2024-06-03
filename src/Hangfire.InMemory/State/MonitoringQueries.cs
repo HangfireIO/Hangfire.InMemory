@@ -188,7 +188,6 @@ namespace Hangfire.InMemory.State
                     if (state.Jobs.TryGetValue(key, out var entry))
                     {
                         record = new Record(
-                            entry.Key,
                             entry.InvocationData,
                             entry.State?.Name,
                             entry.State?.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer),
@@ -204,7 +203,6 @@ namespace Hangfire.InMemory.State
             }
 
             public sealed class Record(
-                TKey key,
                 InvocationData invocationData,
                 string? stateName,
                 IReadOnlyDictionary<string, string>? stateData,
@@ -212,7 +210,6 @@ namespace Hangfire.InMemory.State
                 MonotonicTime? stateCreatedAt,
                 StringComparer stringComparer)
             {
-                public TKey Key { get; } = key;
                 public InvocationData InvocationData { get; } = invocationData;
                 public string? StateName { get; } = stateName;
                 public IReadOnlyDictionary<string, string>? StateData { get; } = stateData;
