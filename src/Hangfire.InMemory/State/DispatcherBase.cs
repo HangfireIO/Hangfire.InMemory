@@ -40,10 +40,7 @@ namespace Hangfire.InMemory.State
             return _timeResolver();
         }
 
-        // Unsafe methods expose entries directly for callers, without using a
-        // dispatcher thread. Consumers should ensure each data structure is
-        // safe for a possible concurrent access.
-        public KeyValuePair<string, QueueEntry<TKey>>[] GetOrAddQueuesUnsafe(IReadOnlyCollection<string> queueNames)
+        public KeyValuePair<string, QueueEntry<TKey>>[] GetOrAddQueues(IReadOnlyCollection<string> queueNames)
         {
             var entries = new KeyValuePair<string, QueueEntry<TKey>>[queueNames.Count];
             var index = 0;

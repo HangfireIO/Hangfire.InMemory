@@ -120,7 +120,7 @@ namespace Hangfire.InMemory
 
             using (var cancellationEvent = cancellationToken.GetCancellationEvent())
             {
-                var entries = Dispatcher.GetOrAddQueuesUnsafe(queues);
+                var entries = Dispatcher.GetOrAddQueues(queues);
                 var readyEvents = new WaitHandle[entries.Length + 1];
                 var waitAdded = new bool[entries.Length];
 
