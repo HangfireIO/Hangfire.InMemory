@@ -25,6 +25,9 @@ using Hangfire.Storage;
 using Moq;
 using Xunit;
 
+// ReSharper disable AssignNullToNotNullAttribute
+// ReSharper disable PossibleNullReferenceException
+
 namespace Hangfire.InMemory.Tests
 {
     public class InMemoryConnectionFacts
@@ -929,7 +932,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 var exception = Assert.Throws<ArgumentNullException>(
-                    () => connection.GetSetCount((IEnumerable<string>)null, 1000));
+                    () => connection.GetSetCount(null, 1000));
 
                 Assert.Equal("keys", exception.ParamName);
             });
@@ -941,7 +944,7 @@ namespace Hangfire.InMemory.Tests
             UseConnection(connection =>
             {
                 var exception = Assert.Throws<ArgumentOutOfRangeException>(
-                    () => connection.GetSetCount((IEnumerable<string>)new string[0], -10));
+                    () => connection.GetSetCount(new string[0], -10));
 
                 Assert.Equal("limit", exception.ParamName);
             });
@@ -952,7 +955,7 @@ namespace Hangfire.InMemory.Tests
         {
             UseConnection(connection =>
             {
-                var result = connection.GetSetCount((IEnumerable<string>)new string[0], 1000);
+                var result = connection.GetSetCount(new string[0], 1000);
                 Assert.Equal(0, result);
             });
         }
@@ -976,7 +979,7 @@ namespace Hangfire.InMemory.Tests
                 });
 
                 // Act
-                var result = connection.GetSetCount((IEnumerable<string>)new[] { "set-1", "set-2", "set-3" }, 1000);
+                var result = connection.GetSetCount(new[] { "set-1", "set-2", "set-3" }, 1000);
 
                 // Assert
                 Assert.Equal(4, result);
@@ -997,7 +1000,7 @@ namespace Hangfire.InMemory.Tests
                 });
 
                 // Act
-                var result = connection.GetSetCount((IEnumerable<string>)new[] { "set-1" }, 2);
+                var result = connection.GetSetCount(new[] { "set-1" }, 2);
 
                 // Assert
                 Assert.Equal(2, result);

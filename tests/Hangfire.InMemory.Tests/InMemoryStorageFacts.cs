@@ -16,6 +16,9 @@
 using System;
 using Xunit;
 
+// ReSharper disable AssignNullToNotNullAttribute
+// ReSharper disable PossibleNullReferenceException
+
 namespace Hangfire.InMemory.Tests
 {
     public class InMemoryStorageFacts

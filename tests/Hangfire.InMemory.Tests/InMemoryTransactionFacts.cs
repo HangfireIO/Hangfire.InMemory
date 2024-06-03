@@ -26,6 +26,8 @@ using Moq;
 using Xunit;
 
 // ReSharper disable StringLiteralTypo
+// ReSharper disable AssignNullToNotNullAttribute
+// ReSharper disable PossibleNullReferenceException
 
 // TODO: Case sensitivity tests, may be for different modes – SQL Server and Redis compatibility
 // TODO: Add checks for key lengths for SQL Server compatibility mode

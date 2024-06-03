@@ -19,13 +19,14 @@ using Hangfire.InMemory.State;
 using Hangfire.Storage;
 using Xunit;
 
+// ReSharper disable AssignNullToNotNullAttribute
+// ReSharper disable PossibleNullReferenceException
+
 namespace Hangfire.InMemory.Tests
 {
     public class InMemoryFetchedJobFacts
     {
         private readonly MemoryState<string> _state;
-        private readonly DispatcherBase<string> _dispatcher;
-        private readonly StringKeyProvider _keyProvider;
         private readonly InMemoryConnection<string> _connection;
 
         public InMemoryFetchedJobFacts()
@@ -33,9 +34,10 @@ namespace Hangfire.InMemory.Tests
             var now = MonotonicTime.GetCurrent();
             var options = new InMemoryStorageOptions();
             _state = new MemoryState<string>(options.StringComparer, options.StringComparer);
-            _dispatcher = new TestInMemoryDispatcher<string>(() => now, _state);
-            _keyProvider = new StringKeyProvider();
-            _connection = new InMemoryConnection<string>(options, _dispatcher, _keyProvider);
+
+            var dispatcher = new TestInMemoryDispatcher<string>(() => now, _state);
+            var keyProvider = new StringKeyProvider();
+            _connection = new InMemoryConnection<string>(options, dispatcher, keyProvider);
         }
 
         [Fact]
