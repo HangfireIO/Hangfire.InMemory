@@ -19,6 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{3FACAFD2
 		appveyor.yml = appveyor.yml
 		psake-project.ps1 = psake-project.ps1
 		src\Directory.Build.props = src\Directory.Build.props
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C029F26E-B8DB-4996-BF96-23A062EA172B}"
