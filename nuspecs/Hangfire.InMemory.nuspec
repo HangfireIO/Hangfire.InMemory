@@ -17,10 +17,13 @@
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
 
 0.10.0
-• Added – Support long-based job identifiers through the `InMemoryOptions.IdType` property.
+• Breaking – `InMemoryStorageOptions` class instances are now immutable after initialization.
+• Added – Support long-based job identifiers through the `InMemoryStorageOptions.IdType` property.
+• Added – Expose the `InMemoryStorageOptions.CommandTimeout` option to control the command timeouts.
 • Changed – Significantly improve query dispatching pipeline in terms of speed and allocations.
 • Changed – More compact representation of jobs and their parameters.
 • Changed – Optimise the `GetFirstByLowestScoreFromSet` query when the number of items is huge.
+• Changed – Better concurrency handling implementation for the collection of locks
 
 0.9.0
 • Added – Implement the disposable pattern for the `InMemoryStorage` class.
