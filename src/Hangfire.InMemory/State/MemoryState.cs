@@ -26,9 +26,6 @@ namespace Hangfire.InMemory.State
     {
         private readonly JobStateCreatedAtComparer<TKey> _jobEntryComparer;
 
-        // State index uses case-insensitive comparisons, despite the current settings. SQL Server
-        // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
-
         public MemoryState(StringComparer stringComparer, IComparer<TKey>? keyComparer)
         {
             _jobEntryComparer = new JobStateCreatedAtComparer<TKey>(keyComparer);
@@ -67,6 +64,8 @@ namespace Hangfire.InMemory.State
         public SortedDictionary<string, CounterEntry> Counters { get; }
         public SortedDictionary<string, ServerEntry> Servers { get; }
 
+        // State index uses case-insensitive comparisons, despite the current settings. SQL Server
+        // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
         public Dictionary<string, SortedSet<JobEntry<TKey>>> JobStateIndex { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public SortedSet<JobEntry<TKey>> ExpiringJobsIndex { get; }
