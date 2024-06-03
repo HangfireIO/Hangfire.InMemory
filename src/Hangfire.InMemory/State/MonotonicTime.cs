@@ -54,25 +54,25 @@ namespace Hangfire.InMemory.State
             return obj is MonotonicTime other && Equals(other);
         }
 
+        public bool Equals(MonotonicTime other)
+        {
+            return _timestamp == other._timestamp;
+        }
+
         public override int GetHashCode()
         {
             return _timestamp.GetHashCode();
         }
 
-        public int CompareTo(object? other)
+        public int CompareTo(object? obj)
         {
-            if (other == null) return 1;
-            if (other is not MonotonicTime time)
+            if (obj == null) return 1;
+            if (obj is not MonotonicTime time)
             {
-                throw new ArgumentException("Value must be of type " + nameof(MonotonicTime), nameof(other));
+                throw new ArgumentException("Value must be of type " + nameof(MonotonicTime), nameof(obj));
             }
  
             return CompareTo(time);
-        }
-
-        public bool Equals(MonotonicTime other)
-        {
-            return _timestamp == other._timestamp;
         }
 
         public int CompareTo(MonotonicTime other)

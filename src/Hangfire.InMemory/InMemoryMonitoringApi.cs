@@ -158,12 +158,12 @@ namespace Hangfire.InMemory
             };
         }
 
-        public override JobList<EnqueuedJobDto> EnqueuedJobs([NotNull] string queueName, int from, int perPage)
+        public override JobList<EnqueuedJobDto> EnqueuedJobs([NotNull] string queue, int from, int perPage)
         {
-            if (queueName == null) throw new ArgumentNullException(nameof(queueName));
+            if (queue == null) throw new ArgumentNullException(nameof(queue));
 
             var enqueued =
-                _dispatcher.QueryReadAndWait(new MonitoringQueries.QueueGetEnqueued<TKey>(queueName, from, perPage));
+                _dispatcher.QueryReadAndWait(new MonitoringQueries.QueueGetEnqueued<TKey>(queue, from, perPage));
 
             var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(enqueued));
 
@@ -181,9 +181,9 @@ namespace Hangfire.InMemory
                 })));
         }
 
-        public override JobList<FetchedJobDto> FetchedJobs([NotNull] string queueName, int from, int perPage)
+        public override JobList<FetchedJobDto> FetchedJobs([NotNull] string queue, int from, int perPage)
         {
-            if (queueName == null) throw new ArgumentNullException(nameof(queueName));
+            if (queue == null) throw new ArgumentNullException(nameof(queue));
             return new JobList<FetchedJobDto>([]);
         }
 
@@ -368,10 +368,10 @@ namespace Hangfire.InMemory
             return GetCountByStateName(ScheduledState.StateName);
         }
 
-        public override long EnqueuedCount([NotNull] string queueName)
+        public override long EnqueuedCount([NotNull] string queue)
         {
-            if (queueName == null) throw new ArgumentNullException(nameof(queueName));
-            return _dispatcher.QueryReadAndWait(new MonitoringQueries.QueueGetCount<TKey>(queueName));
+            if (queue == null) throw new ArgumentNullException(nameof(queue));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.QueueGetCount<TKey>(queue));
         }
 
         public override long FetchedCount([NotNull] string queue)

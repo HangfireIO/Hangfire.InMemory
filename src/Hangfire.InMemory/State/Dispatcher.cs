@@ -68,12 +68,10 @@ namespace Hangfire.InMemory.State
             {
                 _queries.Enqueue(callback);
 
-                if (Volatile.Read(ref _outstandingRequests.Value) == 0)
+                if (Volatile.Read(ref _outstandingRequests.Value) == 0 &&
+                    Interlocked.Exchange(ref _outstandingRequests.Value, 1) == 0)
                 {
-                    if (Interlocked.Exchange(ref _outstandingRequests.Value, 1) == 0)
-                    {
-                        _semaphore.Release();
-                    }
+                    _semaphore.Release();
                 }
 
                 if (!callback.Wait(_commandTimeout, CancellationToken.None))
@@ -98,12 +96,10 @@ namespace Hangfire.InMemory.State
             {
                 _readQueries.Enqueue(callback);
 
-                if (Volatile.Read(ref _outstandingRequests.Value) == 0)
+                if (Volatile.Read(ref _outstandingRequests.Value) == 0 &&
+                    Interlocked.Exchange(ref _outstandingRequests.Value, 1) == 0)
                 {
-                    if (Interlocked.Exchange(ref _outstandingRequests.Value, 1) == 0)
-                    {
-                        _semaphore.Release();
-                    }
+                    _semaphore.Release();
                 }
 
                 if (!callback.Wait(_commandTimeout, CancellationToken.None))

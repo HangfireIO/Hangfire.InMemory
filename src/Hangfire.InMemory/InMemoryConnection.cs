@@ -173,12 +173,12 @@ namespace Hangfire.InMemory
             }
         }
 
-        public override void SetJobParameter([NotNull] string id, [NotNull] string name, [CanBeNull] string value)
+        public override void SetJobParameter([NotNull] string jobId, [NotNull] string name, [CanBeNull] string value)
         {
-            if (id == null) throw new ArgumentNullException(nameof(id));
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            if (!KeyProvider.TryParse(id, out var key))
+            if (!KeyProvider.TryParse(jobId, out var key))
             {
                 return;
             }
@@ -271,15 +271,15 @@ namespace Hangfire.InMemory
             }
         }
 
-        public override int RemoveTimedOutServers(TimeSpan timeout)
+        public override int RemoveTimedOutServers(TimeSpan timeOut)
         {
-            if (timeout.Duration() != timeout || timeout == TimeSpan.Zero)
+            if (timeOut.Duration() != timeOut || timeOut == TimeSpan.Zero)
             {
-                throw new ArgumentException("The `timeout` value must be positive.", nameof(timeout));
+                throw new ArgumentException("The `timeout` value must be positive.", nameof(timeOut));
             }
 
             var now = Dispatcher.GetMonotonicTime();
-            return Dispatcher.QueryWriteAndWait(new Commands.ServerDeleteInactive<TKey>(timeout, now));
+            return Dispatcher.QueryWriteAndWait(new Commands.ServerDeleteInactive<TKey>(timeOut, now));
         }
 
         public override DateTime GetUtcDateTime()

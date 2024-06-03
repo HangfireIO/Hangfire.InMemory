@@ -210,12 +210,9 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                if (state.Lists.TryGetValue(key, out var list))
+                if (state.Lists.TryGetValue(key, out var list) && list.Trim(keepStartingFrom, keepEndingAt) == 0)
                 {
-                    if (list.Trim(keepStartingFrom, keepEndingAt) == 0)
-                    {
-                        state.ListDelete(list);
-                    }
+                    state.ListDelete(list);
                 }
 
                 return null;

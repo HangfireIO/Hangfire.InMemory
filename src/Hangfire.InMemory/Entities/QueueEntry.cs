@@ -83,6 +83,7 @@ namespace Hangfire.InMemory.Entities
                 }
                 catch (ObjectDisposedException)
                 {
+                    // Benign race condition, nothing to signal in this case.
                 }
             }
         }

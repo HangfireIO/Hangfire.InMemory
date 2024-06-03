@@ -77,6 +77,7 @@ namespace Hangfire.InMemory.State
             }
             catch (ObjectDisposedException)
             {
+                // Benign race condition, nothing to signal in this case.
             }
         }
     }
