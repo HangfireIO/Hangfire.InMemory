@@ -15,7 +15,7 @@ version: 0.10.0-build-0{build}
 
 image:
   - Visual Studio 2022
-  - Ubuntu2204
+  - Ubuntu2004
 
 environment:
   SIGNPATH_API_TOKEN:
@@ -31,7 +31,8 @@ before_build:
 
 build_script:
   - cmd: build.bat sign
-  - sh: dotnet test -c Release -f net6.0
+  - sh: dotnet test -c release -f netcoreapp3.1
+  - sh: dotnet test -c release -f net6.0
 
 #---------------------------------#
 #       tests configuration       #
