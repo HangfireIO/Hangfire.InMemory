@@ -73,14 +73,14 @@ namespace Hangfire.InMemory
         }
 
         public override void SetJobParameter(
-            [NotNull] string id,
+            [NotNull] string jobId,
             [NotNull] string name,
             [CanBeNull] string value)
         {
-            if (id == null) throw new ArgumentNullException(nameof(id));
+            if (jobId == null) throw new ArgumentNullException(nameof(jobId));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            if (!_connection.KeyProvider.TryParse(id, out var key))
+            if (!_connection.KeyProvider.TryParse(jobId, out var key))
             {
                 return;
             }
