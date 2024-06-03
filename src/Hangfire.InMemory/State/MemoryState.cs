@@ -28,32 +28,21 @@ namespace Hangfire.InMemory.State
 
         // State index uses case-insensitive comparisons, despite the current settings. SQL Server
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
-        private readonly Dictionary<string, SortedSet<JobEntry<TKey>>> _jobStateIndex = new Dictionary<string, SortedSet<JobEntry<TKey>>>(StringComparer.OrdinalIgnoreCase);
-
-        private readonly ConcurrentDictionary<string, LockEntry<JobStorageConnection>> _locks;
-        private readonly ConcurrentDictionary<string, QueueEntry<TKey>> _queues;
-
-        private readonly SortedDictionary<TKey, JobEntry<TKey>> _jobs;
-        private readonly SortedDictionary<string, HashEntry> _hashes;
-        private readonly SortedDictionary<string, ListEntry> _lists;
-        private readonly SortedDictionary<string, SetEntry> _sets;
-        private readonly SortedDictionary<string, CounterEntry> _counters;
-        private readonly SortedDictionary<string, ServerEntry> _servers;
 
         public MemoryState(StringComparer stringComparer, IComparer<TKey>? keyComparer)
         {
             _jobEntryComparer = new JobStateCreatedAtComparer<TKey>(keyComparer);
 
-            _locks = CreateConcurrentDictionary<LockEntry<JobStorageConnection>>(stringComparer);
-            _queues = CreateConcurrentDictionary<QueueEntry<TKey>>(stringComparer);
+            Locks = new ConcurrentDictionary<string, LockEntry<JobStorageConnection>>(stringComparer);
+            Queues = new ConcurrentDictionary<string, QueueEntry<TKey>>(stringComparer);
 
-            _jobs = new SortedDictionary<TKey, JobEntry<TKey>>(keyComparer);
+            Jobs = new SortedDictionary<TKey, JobEntry<TKey>>(keyComparer);
 
-            _hashes = CreateSortedDictionary<HashEntry>(stringComparer);
-            _lists = CreateSortedDictionary<ListEntry>(stringComparer);
-            _sets = CreateSortedDictionary<SetEntry>(stringComparer);
-            _counters = CreateSortedDictionary<CounterEntry>(stringComparer);
-            _servers = CreateSortedDictionary<ServerEntry>(stringComparer);
+            Hashes = new SortedDictionary<string, HashEntry>(stringComparer);
+            Lists = new SortedDictionary<string, ListEntry>(stringComparer);
+            Sets = new SortedDictionary<string, SetEntry>(stringComparer);
+            Counters = new SortedDictionary<string, CounterEntry>(stringComparer);
+            Servers = new SortedDictionary<string, ServerEntry>(stringComparer);
 
             ExpiringJobsIndex = new SortedSet<JobEntry<TKey>>(new ExpirableEntryComparer<TKey>(keyComparer));
 
@@ -68,19 +57,18 @@ namespace Hangfire.InMemory.State
 
         public StringComparer StringComparer { get; }
 
-        public ConcurrentDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
-        public ConcurrentDictionary<string, QueueEntry<TKey>> Queues => _queues;
+        public ConcurrentDictionary<string, LockEntry<JobStorageConnection>> Locks { get; }
+        public ConcurrentDictionary<string, QueueEntry<TKey>> Queues { get; }
 
-        public IDictionary<TKey, JobEntry<TKey>> Jobs => _jobs;
-        public IDictionary<string, HashEntry> Hashes => _hashes;
-        public IDictionary<string, ListEntry> Lists => _lists;
-        public IDictionary<string, SetEntry> Sets => _sets;
-        public IDictionary<string, CounterEntry> Counters => _counters;
-        public IDictionary<string, ServerEntry> Servers => _servers;
+        public SortedDictionary<TKey, JobEntry<TKey>> Jobs { get; }
+        public SortedDictionary<string, HashEntry> Hashes { get; }
+        public SortedDictionary<string, ListEntry> Lists { get; }
+        public SortedDictionary<string, SetEntry> Sets { get; }
+        public SortedDictionary<string, CounterEntry> Counters { get; }
+        public SortedDictionary<string, ServerEntry> Servers { get; }
 
-        public IReadOnlyDictionary<string, SortedSet<JobEntry<TKey>>> JobStateIndex => _jobStateIndex;
+        public Dictionary<string, SortedSet<JobEntry<TKey>>> JobStateIndex { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-        // TODO: Hide these indexes from external access for safety reasons
         public SortedSet<JobEntry<TKey>> ExpiringJobsIndex { get; }
         public SortedSet<CounterEntry> ExpiringCountersIndex { get; }
         public SortedSet<HashEntry> ExpiringHashesIndex { get; }
@@ -89,9 +77,9 @@ namespace Hangfire.InMemory.State
 
         public QueueEntry<TKey> QueueGetOrCreate(string name)
         {
-            if (!_queues.TryGetValue(name, out var entry))
+            if (!Queues.TryGetValue(name, out var entry))
             {
-                entry = _queues.GetOrAdd(name, _ => new QueueEntry<TKey>());
+                entry = Queues.GetOrAdd(name, _ => new QueueEntry<TKey>());
             }
 
             return entry;
@@ -99,7 +87,7 @@ namespace Hangfire.InMemory.State
 
         public void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn)
         {
-            _jobs.Add(entry.Key, entry);
+            Jobs.Add(entry.Key, entry);
 
             // Background job is not yet initialized after calling this method, and
             // transaction is expected a few moments later that will initialize this
@@ -115,17 +103,17 @@ namespace Hangfire.InMemory.State
 
         public void JobSetState(JobEntry<TKey> entry, StateEntry state)
         {
-            if (entry.State != null && _jobStateIndex.TryGetValue(entry.State.Name, out var indexEntry))
+            if (entry.State != null && JobStateIndex.TryGetValue(entry.State.Name, out var indexEntry))
             {
                 indexEntry.Remove(entry);
-                if (indexEntry.Count == 0) _jobStateIndex.Remove(entry.State.Name);
+                if (indexEntry.Count == 0) JobStateIndex.Remove(entry.State.Name);
             }
 
             entry.State = state;
 
-            if (!_jobStateIndex.TryGetValue(state.Name, out indexEntry))
+            if (!JobStateIndex.TryGetValue(state.Name, out indexEntry))
             {
-                _jobStateIndex.Add(state.Name, indexEntry = new SortedSet<JobEntry<TKey>>(_jobEntryComparer));
+                JobStateIndex.Add(state.Name, indexEntry = new SortedSet<JobEntry<TKey>>(_jobEntryComparer));
             }
 
             indexEntry.Add(entry);
@@ -141,12 +129,12 @@ namespace Hangfire.InMemory.State
 
         public void JobDelete(JobEntry<TKey> entry)
         {
-            EntryRemove(entry, _jobs, ExpiringJobsIndex);
+            EntryRemove(entry, Jobs, ExpiringJobsIndex);
 
-            if (entry.State?.Name != null && _jobStateIndex.TryGetValue(entry.State.Name, out var stateIndex))
+            if (entry.State?.Name != null && JobStateIndex.TryGetValue(entry.State.Name, out var stateIndex))
             {
                 stateIndex.Remove(entry);
-                if (stateIndex.Count == 0) _jobStateIndex.Remove(entry.State.Name);
+                if (stateIndex.Count == 0) JobStateIndex.Remove(entry.State.Name);
             }
         }
 
@@ -162,9 +150,9 @@ namespace Hangfire.InMemory.State
 
         public HashEntry HashGetOrAdd(string key)
         {
-            if (!_hashes.TryGetValue(key, out var hash))
+            if (!Hashes.TryGetValue(key, out var hash))
             {
-                _hashes.Add(key, hash = new HashEntry(key, StringComparer));
+                Hashes.Add(key, hash = new HashEntry(key, StringComparer));
             }
 
             return hash;
@@ -180,14 +168,14 @@ namespace Hangfire.InMemory.State
 
         public void HashDelete(HashEntry hash)
         {
-            EntryRemove(hash, _hashes, ExpiringHashesIndex);
+            EntryRemove(hash, Hashes, ExpiringHashesIndex);
         }
 
         public SetEntry SetGetOrAdd(string key)
         {
-            if (!_sets.TryGetValue(key, out var set))
+            if (!Sets.TryGetValue(key, out var set))
             {
-                _sets.Add(key, set = new SetEntry(key, StringComparer));
+                Sets.Add(key, set = new SetEntry(key, StringComparer));
             }
 
             return set;
@@ -203,14 +191,14 @@ namespace Hangfire.InMemory.State
 
         public void SetDelete(SetEntry set)
         {
-            EntryRemove(set, _sets, ExpiringSetsIndex);
+            EntryRemove(set, Sets, ExpiringSetsIndex);
         }
 
         public ListEntry ListGetOrAdd(string key)
         {
-            if (!_lists.TryGetValue(key, out var list))
+            if (!Lists.TryGetValue(key, out var list))
             {
-                _lists.Add(key, list = new ListEntry(key));
+                Lists.Add(key, list = new ListEntry(key));
             }
 
             return list;
@@ -226,14 +214,14 @@ namespace Hangfire.InMemory.State
 
         public void ListDelete(ListEntry list)
         {
-            EntryRemove(list, _lists, ExpiringListsIndex);
+            EntryRemove(list, Lists, ExpiringListsIndex);
         }
 
         public CounterEntry CounterGetOrAdd(string key)
         {
-            if (!_counters.TryGetValue(key, out var counter))
+            if (!Counters.TryGetValue(key, out var counter))
             {
-                _counters.Add(key, counter = new CounterEntry(key));
+                Counters.Add(key, counter = new CounterEntry(key));
             }
 
             return counter;
@@ -252,17 +240,17 @@ namespace Hangfire.InMemory.State
 
         public void CounterDelete(CounterEntry entry)
         {
-            EntryRemove(entry, _counters, ExpiringCountersIndex);
+            EntryRemove(entry, Counters, ExpiringCountersIndex);
         }
 
         public void ServerAdd(string serverId, ServerEntry entry)
         {
-            _servers.Add(serverId, entry);
+            Servers.Add(serverId, entry);
         }
 
         public void ServerRemove(string serverId)
         {
-            _servers.Remove(serverId);
+            Servers.Remove(serverId);
         }
 
         public void EvictExpiredEntries(MonotonicTime now)
@@ -324,21 +312,6 @@ namespace Hangfire.InMemory.State
 
             entry.ExpireAt = null;
             return false;
-        }
-
-        private static Dictionary<string, T> CreateDictionary<T>(StringComparer comparer)
-        {
-            return new Dictionary<string, T>(comparer);
-        }
-
-        private static SortedDictionary<string, T> CreateSortedDictionary<T>(StringComparer comparer)
-        {
-            return new SortedDictionary<string, T>(comparer);
-        }
-
-        private static ConcurrentDictionary<string, T> CreateConcurrentDictionary<T>(StringComparer comparer)
-        {
-            return new ConcurrentDictionary<string, T>(comparer);
         }
     }
 }
