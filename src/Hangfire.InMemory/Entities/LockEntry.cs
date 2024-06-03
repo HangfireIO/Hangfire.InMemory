@@ -36,6 +36,8 @@ namespace Hangfire.InMemory.Entities
 
         public void TryAcquire(T owner, ref bool acquired, out bool finalized)
         {
+            if (owner == null) throw new ArgumentNullException(nameof(owner));
+
             finalized = false;
 
             lock (_syncRoot)
@@ -60,6 +62,8 @@ namespace Hangfire.InMemory.Entities
 
         public bool WaitUntilAcquired(T owner, TimeSpan timeout)
         {
+            if (owner == null) throw new ArgumentNullException(nameof(owner));
+
             lock (_syncRoot)
             {
                 if (_finalized) ThrowFinalizedException();
@@ -104,6 +108,8 @@ namespace Hangfire.InMemory.Entities
 
         public void Release(T owner, out bool finalized)
         {
+            if (owner == null) throw new ArgumentNullException(nameof(owner));
+
             lock (_syncRoot)
             {
                 if (_finalized) ThrowFinalizedException();

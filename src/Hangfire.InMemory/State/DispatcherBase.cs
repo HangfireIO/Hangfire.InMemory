@@ -57,6 +57,9 @@ namespace Hangfire.InMemory.State
 
         public bool TryAcquireLockEntry(JobStorageConnection owner, string resource, TimeSpan timeout, out LockEntry<JobStorageConnection>? entry)
         {
+            if (owner == null) throw new ArgumentNullException(nameof(owner));
+            if (resource == null) throw new ArgumentNullException(nameof(resource));
+
             var acquired = false;
             var spinWait = new SpinWait();
             var started = Environment.TickCount;
@@ -86,6 +89,9 @@ namespace Hangfire.InMemory.State
 
         public void CancelLockEntry(string resource, LockEntry<JobStorageConnection> entry)
         {
+            if (resource == null) throw new ArgumentNullException(nameof(resource));
+            if (entry == null) throw new ArgumentNullException(nameof(entry));
+
             if (_state.Locks.TryGetValue(resource, out var current))
             {
                 if (!ReferenceEquals(current, entry)) throw new InvalidOperationException("Does not contain a correct lock entry");
@@ -114,6 +120,10 @@ namespace Hangfire.InMemory.State
 
         public void ReleaseLockEntry(JobStorageConnection owner, string resource, LockEntry<JobStorageConnection> entry)
         {
+            if (owner == null) throw new ArgumentNullException(nameof(owner));
+            if (resource == null) throw new ArgumentNullException(nameof(resource));
+            if (entry == null) throw new ArgumentNullException(nameof(entry));
+
             if (_state.Locks.TryGetValue(resource, out var current))
             {
                 if (!ReferenceEquals(current, entry)) throw new InvalidOperationException("Does not contain a correct lock entry");
