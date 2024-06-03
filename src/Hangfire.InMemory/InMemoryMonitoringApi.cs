@@ -122,7 +122,7 @@ namespace Hangfire.InMemory
                 Job = details.InvocationData.TryGetJob(out var loadException),
                 LoadException = loadException,
                 InvocationData = details.InvocationData,
-                Properties = details.Parameters.ToDictionary(x => x.Key, x => x.Value, details.StringComparer),
+                Properties = details.Parameters.ToDictionary(static x => x.Key, static x => x.Value, details.StringComparer),
                 History = details.History.Select(x => new StateHistoryDto
                 {
                     CreatedAt = x.CreatedAt.ToUtcDateTime(),
@@ -465,7 +465,7 @@ namespace Hangfire.InMemory
 
                 if (targetState.Equals(record.StateName, StringComparison.OrdinalIgnoreCase))
                 {
-                    var stateData = record.StateData?.ToDictionary(x => x.Key, x => x.Value, record.StringComparer);
+                    var stateData = record.StateData?.ToDictionary(static x => x.Key, static x => x.Value, record.StringComparer);
                     var stateCreatedAt = record.StateCreatedAt?.ToUtcDateTime();
 
                     jobRecord = new JobRecord(data, job, loadException, stateName, record.StateReason, stateData, stateCreatedAt);

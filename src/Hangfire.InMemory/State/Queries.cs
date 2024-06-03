@@ -223,7 +223,7 @@ namespace Hangfire.InMemory.State
             {
                 if (state.Hashes.TryGetValue(key, out var hash))
                 {
-                    return hash.Value.ToDictionary(x => x.Key, x => x.Value, state.StringComparer);
+                    return hash.Value.ToDictionary(static x => x.Key, static x => x.Value, state.StringComparer);
                 }
 
                 return null;

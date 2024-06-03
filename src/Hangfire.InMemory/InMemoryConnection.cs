@@ -218,7 +218,7 @@ namespace Hangfire.InMemory
                 CreatedAt = data.CreatedAt.ToUtcDateTime(),
                 State = data.State,
                 InvocationData = data.InvocationData,
-                ParametersSnapshot = data.Parameters.ToDictionary(x => x.Key, x => x.Value, data.StringComparer)
+                ParametersSnapshot = data.Parameters.ToDictionary(static x => x.Key, static x => x.Value, data.StringComparer)
             };
         }
 
@@ -238,7 +238,7 @@ namespace Hangfire.InMemory
             {
                 Name = data.Name,
                 Reason = data.Reason,
-                Data = data.StateData.ToDictionary(x => x.Key, x => x.Value, data.StringComparer)
+                Data = data.StateData.ToDictionary(static x => x.Key, static x => x.Value, data.StringComparer)
             };
         }
 

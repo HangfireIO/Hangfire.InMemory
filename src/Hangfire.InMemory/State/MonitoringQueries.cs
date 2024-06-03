@@ -97,7 +97,7 @@ namespace Hangfire.InMemory.State
                         queueResult.AsReadOnly()));
                 }
 
-                return result.OrderBy(x => x.Name, state.StringComparer).ToList().AsReadOnly();
+                return result.OrderBy(static x => x.Name, state.StringComparer).ToList().AsReadOnly();
             }
 
             public sealed class QueueRecord(long length, string name, IReadOnlyList<TKey> first)
@@ -196,7 +196,7 @@ namespace Hangfire.InMemory.State
                         record = new Record(
                             entry.InvocationData,
                             entry.State?.Name,
-                            entry.State?.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer),
+                            entry.State?.Data.ToDictionary(static x => x.Key, static x => x.Value, state.StringComparer),
                             entry.State?.Reason,
                             entry.State?.CreatedAt,
                             state.StringComparer);
@@ -277,7 +277,7 @@ namespace Hangfire.InMemory.State
                         entry.Value.StartedAt));
                 }
                 
-                return result.OrderBy(x => x.Name, state.StringComparer).ToList().AsReadOnly();
+                return result.OrderBy(static x => x.Name, state.StringComparer).ToList().AsReadOnly();
             }
 
             public sealed class Record(
@@ -310,7 +310,7 @@ namespace Hangfire.InMemory.State
                     endDate = endDate.AddDays(-1);
                 }
 
-                var stringDates = dates.Select(x => x.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).ToList();
+                var stringDates = dates.Select(static x => x.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).ToList();
                 var keys = stringDates.Select(x => $"stats:{type}:{x}").ToArray();
                 var valuesMap = keys.Select(key => state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
 
