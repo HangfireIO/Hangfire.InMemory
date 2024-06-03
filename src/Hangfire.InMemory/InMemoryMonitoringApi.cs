@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using Hangfire.Annotations;
@@ -29,18 +30,21 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryMonitoringApi<TKey> : JobStorageMonitor
         where TKey : IComparable<TKey>
     {
+        [SuppressMessage("ReSharper", "StaticMemberInGenericType")] 
         private static readonly string[] StatisticsStates =
         [
             EnqueuedState.StateName, ScheduledState.StateName, ProcessingState.StateName, FailedState.StateName,
             AwaitingState.StateName
         ];
 
+        [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
         private static readonly IReadOnlyDictionary<string, string> StatisticsCounters = new Dictionary<string, string>
         {
             { "Succeeded", "stats:succeeded" },
             { "Deleted", "stats:deleted" }
         };
 
+        [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
         private static readonly IReadOnlyDictionary<string, string> StatisticsSets = new Dictionary<string, string>
         {
             { "Recurring", "recurring-jobs" },
