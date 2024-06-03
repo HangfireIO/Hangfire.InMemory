@@ -23,7 +23,7 @@
 • Changed – Significantly improve query dispatching pipeline in terms of speed and allocations.
 • Changed – More compact representation of jobs and their parameters.
 • Changed – Optimise the `GetFirstByLowestScoreFromSet` query when the number of items is huge.
-• Changed – Better concurrency handling implementation for the collection of locks
+• Changed – Better concurrency handling implementation for the collection of locks.
 
 0.9.0
 • Added – Implement the disposable pattern for the `InMemoryStorage` class.
