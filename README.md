@@ -1,6 +1,6 @@
 # Hangfire.InMemory
 
-[![Build status](https://ci.appveyor.com/api/projects/status/yq82w8ji419c61vy?svg=true)](https://ci.appveyor.com/project/HangfireIO/hangfire-inmemory)
+[![Build status](https://ci.appveyor.com/api/projects/status/yq82w8ji419c61vy?svg=true)](https://ci.appveyor.com/project/HangfireIO/hangfire-inmemory) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=HangfireIO_Hangfire.InMemory&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=HangfireIO_Hangfire.InMemory) [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=HangfireIO_Hangfire.InMemory&metric=bugs)](https://sonarcloud.io/summary/new_code?id=HangfireIO_Hangfire.InMemory) [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=HangfireIO_Hangfire.InMemory&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=HangfireIO_Hangfire.InMemory)
 
 This is an efficient implementation of in-memory job storage for Hangfire with data structures close to their optimal representation.
 
