@@ -75,31 +75,14 @@ namespace Hangfire.InMemory.State
 
                 foreach (var queueEntry in state.Queues)
                 {
-                    var queueResult = new List<JobRecord>();
+                    var queueResult = new List<TKey>();
                     var index = 0;
                     const int count = 5;
 
                     foreach (var message in queueEntry.Value.Queue)
                     {
                         if (index++ >= count) break;
-
-                        state.Jobs.TryGetValue(message, out var jobEntry);
-
-                        var stateName = jobEntry?.State?.Name;
-                        var inEnqueuedState = EnqueuedState.StateName.Equals(
-                            stateName,
-                            StringComparison.OrdinalIgnoreCase);
-
-                        queueResult.Add(new JobRecord(
-                            message,
-                            jobEntry?.InvocationData,
-                            stateName,
-                            inEnqueuedState && jobEntry?.State != null
-                                ? jobEntry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer)
-                                : null,
-                            inEnqueuedState,
-                            inEnqueuedState ? jobEntry?.State?.CreatedAt : null,
-                            state.StringComparer));
+                        queueResult.Add(message);
                     }
 
                     result.Add(new QueueRecord(
@@ -111,29 +94,11 @@ namespace Hangfire.InMemory.State
                 return result.OrderBy(x => x.Name, state.StringComparer).ToList().AsReadOnly();
             }
 
-            public sealed class QueueRecord(long length, string name, IReadOnlyList<JobRecord> first)
+            public sealed class QueueRecord(long length, string name, IReadOnlyList<TKey> first)
             {
                 public long Length { get; } = length;
                 public string Name { get; } = name;
-                public IReadOnlyList<JobRecord> First { get; } = first;
-            }
-
-            public sealed class JobRecord(
-                TKey key,
-                InvocationData? invocationData,
-                string? state,
-                IReadOnlyDictionary<string, string>? stateData,
-                bool inEnqueuedState,
-                MonotonicTime? enqueuedAt,
-                StringComparer stringComparer)
-            {
-                public TKey Key { get; } = key;
-                public InvocationData? InvocationData { get; } = invocationData;
-                public string? State { get; } = state;
-                public IReadOnlyDictionary<string, string>? StateData { get; } = stateData;
-                public bool InEnqueuedState { get; } = inEnqueuedState;
-                public MonotonicTime? EnqueuedAt { get; } = enqueuedAt;
-                public StringComparer StringComparer { get; } = stringComparer;
+                public IReadOnlyList<TKey> First { get; } = first;
             }
         }
 
@@ -148,63 +113,28 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobGetEnqueued<TKey>(string queueName, int from, int count) : Command<TKey, IReadOnlyList<JobGetEnqueued<TKey>.Record>>
+        public sealed class QueueGetEnqueued<TKey>(string queueName, int from, int count) : Command<TKey, IReadOnlyList<TKey>>
             where TKey : IComparable<TKey>
         {
-            protected override IReadOnlyList<Record> Execute(MemoryState<TKey> state)
+            protected override IReadOnlyList<TKey> Execute(MemoryState<TKey> state)
             {
-                var result = new List<Record>();
+                var result = new List<TKey>();
 
                 if (state.Queues.TryGetValue(queueName, out var queue))
                 {
-                    var counter = 0;
+                    var index = 0;
 
                     foreach (var message in queue.Queue)
                     {
-                        if (counter < from) { counter++; continue; }
-                        if (counter >= from + count) break;
+                        if (index < from) { index++; continue; }
+                        if (index >= from + count) break;
 
-                        state.Jobs.TryGetValue(message, out var jobEntry);
-
-                        var stateName = jobEntry?.State?.Name;
-                        var inEnqueuedState = EnqueuedState.StateName.Equals(
-                            stateName,
-                            StringComparison.OrdinalIgnoreCase);
-
-                        result.Add(new Record(
-                            message,
-                            jobEntry?.InvocationData,
-                            inEnqueuedState,
-                            stateName,
-                            inEnqueuedState && jobEntry?.State != null
-                                ? jobEntry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer)
-                                : null,
-                            inEnqueuedState ? jobEntry?.State?.CreatedAt : null,
-                            state.StringComparer));
-
-                        counter++;
+                        result.Add(message);
+                        index++;
                     }
                 }
 
                 return result.AsReadOnly();
-            }
-
-            public sealed class Record(
-                TKey key,
-                InvocationData? invocationData,
-                bool inEnqueuedState,
-                string? stateName,
-                IReadOnlyDictionary<string, string>? stateData,
-                MonotonicTime? enqueuedAt,
-                StringComparer stringComparer)
-            {
-                public TKey Key { get; } = key;
-                public bool InEnqueuedState { get; } = inEnqueuedState;
-                public string? StateName { get; } = stateName;
-                public InvocationData? InvocationData { get; } = invocationData;
-                public IReadOnlyDictionary<string, string>? StateData { get; } = stateData;
-                public MonotonicTime? EnqueuedAt { get; } = enqueuedAt;
-                public StringComparer StringComparer { get; } = stringComparer;
             }
         }
 
@@ -244,12 +174,60 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobsGetByState<TKey>(string stateName, int from, int count, bool reversed = false) : Command<TKey, IReadOnlyList<JobsGetByState<TKey>.Record>>
+        public sealed class JobsGetByKey<TKey>(IEnumerable<TKey> keys) : Command<TKey, IReadOnlyDictionary<TKey, JobsGetByKey<TKey>.Record?>>
             where TKey : IComparable<TKey>
         {
-            protected override IReadOnlyList<Record> Execute(MemoryState<TKey> state)
+            protected override IReadOnlyDictionary<TKey, Record?> Execute(MemoryState<TKey> state)
             {
-                var result = new List<Record>();
+                var result = new Dictionary<TKey, Record?>();
+
+                foreach (var key in keys)
+                {
+                    Record? record = null;
+                    
+                    if (state.Jobs.TryGetValue(key, out var entry))
+                    {
+                        record = new Record(
+                            entry.Key,
+                            entry.InvocationData,
+                            entry.State?.Name,
+                            entry.State?.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer),
+                            entry.State?.Reason,
+                            entry.State?.CreatedAt,
+                            state.StringComparer);
+                    }
+
+                    result.Add(key, record);
+                }
+
+                return result;
+            }
+
+            public sealed class Record(
+                TKey key,
+                InvocationData invocationData,
+                string? stateName,
+                IReadOnlyDictionary<string, string>? stateData,
+                string? stateReason,
+                MonotonicTime? stateCreatedAt,
+                StringComparer stringComparer)
+            {
+                public TKey Key { get; } = key;
+                public InvocationData InvocationData { get; } = invocationData;
+                public string? StateName { get; } = stateName;
+                public IReadOnlyDictionary<string, string>? StateData { get; } = stateData;
+                public string? StateReason { get; } = stateReason;
+                public MonotonicTime? StateCreatedAt { get; } = stateCreatedAt;
+                public StringComparer StringComparer { get; } = stringComparer;
+            }
+        }
+
+        public sealed class JobsGetByState<TKey>(string stateName, int from, int count, bool reversed = false) : Command<TKey, IReadOnlyList<TKey>>
+            where TKey : IComparable<TKey>
+        {
+            protected override IReadOnlyList<TKey> Execute(MemoryState<TKey> state)
+            {
+                var result = new List<TKey>();
 
                 if (state.JobStateIndex.TryGetValue(stateName, out var indexEntry))
                 {
@@ -261,112 +239,12 @@ namespace Hangfire.InMemory.State
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        var inRequiredState = stateName.Equals(
-                            entry.State?.Name,
-                            StringComparison.OrdinalIgnoreCase);
-
-                        result.Add(new Record(
-                            entry.Key,
-                            inRequiredState,
-                            entry.InvocationData,
-                            inRequiredState
-                                ? entry.State?.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer)
-                                : null,
-                            entry.State?.Reason,
-                            entry.State?.CreatedAt,
-                            state.StringComparer));
-
+                        result.Add(entry.Key);
                         index++;
                     }
                 }
 
                 return result.AsReadOnly();
-            }
-
-            public sealed class Record(
-                TKey key,
-                bool inRequiredState,
-                InvocationData invocationData,
-                IReadOnlyDictionary<string, string>? stateData,
-                string? stateReason,
-                MonotonicTime? stateCreatedAt,
-                StringComparer stringComparer)
-            {
-                public TKey Key { get; } = key;
-                public bool InRequiredState { get; } = inRequiredState;
-                public InvocationData InvocationData { get; } = invocationData;
-                public IReadOnlyDictionary<string, string>? StateData { get; } = stateData;
-                public string? StateReason { get; } = stateReason;
-                public MonotonicTime? StateCreatedAt { get; } = stateCreatedAt;
-                public StringComparer StringComparer { get; } = stringComparer;
-            }
-        }
-
-        public sealed class JobGetAwaiting<TKey>(int from, int count, IKeyProvider<TKey> keyProvider)
-            : Command<TKey, IReadOnlyList<JobGetAwaiting<TKey>.Record>>
-            where TKey : IComparable<TKey>
-        {
-            protected override IReadOnlyList<Record> Execute(MemoryState<TKey> state)
-            {
-                var result = new List<Record>();
-
-                if (state.JobStateIndex.TryGetValue(AwaitingState.StateName, out var indexEntry))
-                {
-                    var index = 0;
-
-                    foreach (var entry in indexEntry)
-                    {
-                        if (index < from) { index++; continue; }
-                        if (index >= from + count) break;
-
-                        var inAwaitingState = AwaitingState.StateName.Equals(
-                            entry.State?.Name,
-                            StringComparison.OrdinalIgnoreCase);
-
-                        string? parentStateName = null;
-
-                        if (inAwaitingState && entry.State?.Data != null &&
-                            entry.State.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer).TryGetValue("ParentId", out var parentId) &&
-                            keyProvider.TryParse(parentId, out var parentKey) &&
-                            state.Jobs.TryGetValue(parentKey, out var parentEntry))
-                        {
-                            parentStateName = parentEntry.State?.Name;
-                        }
-
-                        result.Add(new Record(
-                            entry.Key,
-                            inAwaitingState,
-                            entry.InvocationData,
-                            inAwaitingState
-                                ? entry.State?.Data.ToDictionary(x => x.Key, x => x.Value, state.StringComparer)
-                                : null,
-                            entry.State?.CreatedAt,
-                            state.StringComparer,
-                            parentStateName));
-
-                        index++;
-                    }
-                }
-
-                return result.AsReadOnly();
-            }
-
-            public sealed class Record(
-                TKey key,
-                bool inAwaitingState,
-                InvocationData invocationData,
-                IReadOnlyDictionary<string, string>? stateData,
-                MonotonicTime? awaitingAt,
-                StringComparer stringComparer,
-                string? parentState)
-            {
-                public TKey Key { get; } = key;
-                public bool InAwaitingState { get; } = inAwaitingState;
-                public InvocationData InvocationData { get; } = invocationData;
-                public IReadOnlyDictionary<string, string>? StateData { get; } = stateData;
-                public MonotonicTime? AwaitingAt { get; } = awaitingAt;
-                public StringComparer StringComparer { get; } = stringComparer;
-                public string? ParentState { get; } = parentState;
             }
         }
 
