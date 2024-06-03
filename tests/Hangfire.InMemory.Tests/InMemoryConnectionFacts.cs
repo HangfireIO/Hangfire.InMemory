@@ -2317,7 +2317,7 @@ namespace Hangfire.InMemory.Tests
             using (var connection2 = CreateConnection())
             {
                 var lock1 = connection1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
-                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
                 cts.Token.Register(() => lock1.Dispose());
 
                 using (connection2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(15)))

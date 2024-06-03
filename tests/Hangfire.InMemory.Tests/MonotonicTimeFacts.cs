@@ -14,6 +14,7 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Hangfire.InMemory.State;
 using Xunit;
@@ -204,6 +205,7 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        [SuppressMessage("SonarLint", "S1764:IdenticalExpressionsShouldNotBeUsedOnBothSidesOfOperators", Justification = "Checking the correct behavior.")]
         public void op_Subtraction_ReturnsZeroTimeSpan_ForEqualValues()
         {
             var time = MonotonicTime.GetCurrent();
