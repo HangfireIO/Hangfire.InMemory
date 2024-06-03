@@ -29,6 +29,24 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryMonitoringApi<TKey> : JobStorageMonitor
         where TKey : IComparable<TKey>
     {
+        private static readonly string[] StatisticsStates =
+        [
+            EnqueuedState.StateName, ScheduledState.StateName, ProcessingState.StateName, FailedState.StateName,
+            AwaitingState.StateName
+        ];
+
+        private static readonly IReadOnlyDictionary<string, string> StatisticsCounters = new Dictionary<string, string>
+        {
+            { "Succeeded", "stats:succeeded" },
+            { "Deleted", "stats:deleted" }
+        };
+
+        private static readonly IReadOnlyDictionary<string, string> StatisticsSets = new Dictionary<string, string>
+        {
+            { "Recurring", "recurring-jobs" },
+            { "Retries", "retries" }
+        };
+
         private readonly DispatcherBase<TKey> _dispatcher;
         private readonly IKeyProvider<TKey> _keyProvider;
 
@@ -115,20 +133,24 @@ namespace Hangfire.InMemory
 
         public override StatisticsDto GetStatistics()
         {
-            var statistics = _dispatcher.QueryReadAndWait(new MonitoringQueries.StatisticsGetAll<TKey>());
+            var statistics = _dispatcher.QueryReadAndWait(new MonitoringQueries.StatisticsGetAll<TKey>(
+                StatisticsStates,
+                StatisticsCounters,
+                StatisticsSets));
+
             return new StatisticsDto
             {
-                Enqueued = statistics.Enqueued,
-                Scheduled = statistics.Scheduled,
-                Processing = statistics.Processing,
-                Failed = statistics.Failed,
-                Succeeded = statistics.Succeeded,
-                Deleted = statistics.Deleted,
+                Enqueued = statistics.States[EnqueuedState.StateName],
+                Scheduled = statistics.States[ScheduledState.StateName],
+                Processing = statistics.States[ProcessingState.StateName],
+                Failed = statistics.States[FailedState.StateName],
+                Awaiting = statistics.States[AwaitingState.StateName],
+                Succeeded = statistics.Counters["Succeeded"],
+                Deleted = statistics.Counters["Deleted"],
                 Queues = statistics.Queues,
                 Servers = statistics.Servers,
-                Recurring = statistics.Recurring,
-                Retries = statistics.Retries,
-                Awaiting = statistics.Awaiting
+                Recurring = statistics.Sets["Recurring"],
+                Retries = statistics.Sets["Retries"]
             };
         }
 

@@ -18,51 +18,57 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Hangfire.InMemory.Entities;
-using Hangfire.States;
 using Hangfire.Storage;
 
 namespace Hangfire.InMemory.State
 {
     internal static class MonitoringQueries
     {
-        public sealed class StatisticsGetAll<TKey> : Command<TKey, StatisticsGetAll<TKey>.Data>
+        public sealed class StatisticsGetAll<TKey>(IReadOnlyCollection<string> states, IReadOnlyDictionary<string, string> counters, IReadOnlyDictionary<string, string> sets)
+            : Command<TKey, StatisticsGetAll<TKey>.Data>
             where TKey : IComparable<TKey>
         {
             protected override Data Execute(MemoryState<TKey> state)
             {
-                return new Data
+                var stateCounts = new Dictionary<string, long>(states.Count);
+                foreach (var stateName in states)
                 {
-                    Enqueued = state.GetCountByStateName(EnqueuedState.StateName),
-                    Scheduled = state.GetCountByStateName(ScheduledState.StateName),
-                    Processing = state.GetCountByStateName(ProcessingState.StateName),
-                    Failed = state.GetCountByStateName(FailedState.StateName),
-                    Succeeded = state.Counters.TryGetValue("stats:succeeded", out var succeeded) ? succeeded.Value : 0,
-                    Deleted = state.Counters.TryGetValue("stats:deleted", out var deleted) ? deleted.Value : 0,
+                    stateCounts.Add(stateName, state.GetCountByStateName(stateName));
+                }
+
+                var counterCounts = new Dictionary<string, long>(counters.Count);
+                foreach (var counter in counters)
+                {
+                    counterCounts.Add(
+                        counter.Key,
+                        state.Counters.TryGetValue(counter.Value, out var value) ? value.Value : 0);
+                }
+
+                var setCounts = new Dictionary<string, long>(sets.Count);
+                foreach (var set in sets)
+                {
+                    setCounts.Add(
+                        set.Key,
+                        state.Sets.TryGetValue(set.Value, out var value) ? value.Count : 0);
+                }
+
+                return new Data(stateCounts, counterCounts, setCounts)
+                {
                     Queues = state.Queues.Count,
-                    Servers = state.Servers.Count,
-                    Recurring = state.Sets.TryGetValue("recurring-jobs", out var recurring)
-                        ? recurring.Count
-                        : 0,
-                    Retries = state.Sets.TryGetValue("retries", out var retries)
-                        ? retries.Count
-                        : 0,
-                    Awaiting = (int)state.GetCountByStateName(AwaitingState.StateName)
+                    Servers = state.Servers.Count
                 };
             }
 
-            public sealed class Data
+            public sealed class Data(
+                IReadOnlyDictionary<string, long> states,
+                IReadOnlyDictionary<string, long> counters,
+                IReadOnlyDictionary<string, long> sets)
             {
-                public long Enqueued { get; init; }
-                public long Scheduled { get; init; }
-                public long Processing { get; init; }
-                public long Failed { get; init; }
-                public long Succeeded { get; init; }
-                public long Deleted { get; init; }
+                public IReadOnlyDictionary<string, long> States { get; } = states;
+                public IReadOnlyDictionary<string, long> Counters { get; } = counters;
+                public IReadOnlyDictionary<string, long> Sets { get; } = sets;
                 public int Queues { get; init; }
                 public int Servers { get; init; }
-                public int Recurring { get; init; }
-                public int Retries { get; init; }
-                public int Awaiting { get; init; }
             }
         }
 
