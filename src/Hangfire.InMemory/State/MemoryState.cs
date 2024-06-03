@@ -64,11 +64,9 @@ namespace Hangfire.InMemory.State
             ExpiringSetsIndex = new SortedSet<SetEntry>(expirableEntryComparer);
 
             StringComparer = stringComparer;
-            KeyComparer = keyComparer;
         }
 
         public StringComparer StringComparer { get; }
-        public IComparer<TKey>? KeyComparer { get; }
 
         public ConcurrentDictionary<string, LockEntry<JobStorageConnection>> Locks => _locks;
         public ConcurrentDictionary<string, QueueEntry<TKey>> Queues => _queues;
