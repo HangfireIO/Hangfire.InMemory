@@ -11,7 +11,7 @@ namespace Hangfire.InMemory
         /// <summary>
         /// Background job identifiers will be integer-based as in Hangfire.SqlServer storage.
         /// </summary>
-        Integer,
+        Long,
 
         /// <summary>
         /// Background job identifiers will be Guid-based like in Hangfire.Pro.Redis storage.

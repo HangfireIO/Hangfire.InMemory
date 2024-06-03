@@ -78,7 +78,7 @@ namespace Hangfire.InMemory
                         MonotonicTime.GetCurrent,
                         new MemoryState<Guid>(Options.StringComparer, null));
                     break;
-                case InMemoryStorageIdType.Integer:
+                case InMemoryStorageIdType.Long:
                     _longDispatcher = new Dispatcher<ulong>(
                         "Hangfire:InMemoryDispatcher",
                         Options.CommandTimeout,
