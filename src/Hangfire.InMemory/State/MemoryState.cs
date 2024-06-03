@@ -86,7 +86,7 @@ namespace Hangfire.InMemory.State
 
         public void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn)
         {
-            Jobs.Add(entry.Key, entry);
+            Jobs[entry.Key] = entry;
 
             // Background job is not yet initialized after calling this method, and
             // transaction is expected a few moments later that will initialize this
