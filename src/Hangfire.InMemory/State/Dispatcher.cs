@@ -23,7 +23,7 @@ namespace Hangfire.InMemory.State
     internal sealed class Dispatcher<TKey> : DispatcherBase<TKey>, IDisposable
         where TKey : IComparable<TKey>
     {
-        private const uint DefaultExpirationIntervalMs = 1000U;
+        private const uint DefaultEvictionIntervalMs = 15000U;
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
         private readonly ConcurrentQueue<DispatcherCallback<TKey>> _readQueries = new ConcurrentQueue<DispatcherCallback<TKey>>();
@@ -122,7 +122,7 @@ namespace Hangfire.InMemory.State
             {
                 while (!_disposed)
                 {
-                    if (_semaphore.Wait(TimeSpan.FromMilliseconds(DefaultExpirationIntervalMs)))
+                    if (_semaphore.Wait(TimeSpan.FromMilliseconds(DefaultEvictionIntervalMs)))
                     {
                         Interlocked.Exchange(ref _outstandingRequests.Value, 0);
 
@@ -132,7 +132,7 @@ namespace Hangfire.InMemory.State
                         {
                             next.Execute(State);
 
-                            if (Environment.TickCount - startTime >= DefaultExpirationIntervalMs)
+                            if (Environment.TickCount - startTime >= DefaultEvictionIntervalMs)
                             {
                                 EvictExpiredEntries();
                                 startTime = Environment.TickCount;
