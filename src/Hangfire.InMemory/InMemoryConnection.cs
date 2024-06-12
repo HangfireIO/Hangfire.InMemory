@@ -119,6 +119,21 @@ namespace Hangfire.InMemory
             if (queues.Length == 0) throw new ArgumentException("Queue array must be non-empty.", nameof(queues));
 
             var entries = Dispatcher.GetOrAddQueues(queues);
+
+            foreach (var entry in entries)
+            {
+                if (entry.Value.Queue.TryDequeue(out var jobId))
+                {
+                    entry.Value.SignalOneWaitNode();
+                    return new InMemoryFetchedJob<TKey>(this, entry.Key, KeyProvider.ToString(jobId));
+                }
+            }
+
+            return FetchNextJobSlow(entries, cancellationToken);
+        }
+
+        private InMemoryFetchedJob<TKey> FetchNextJobSlow(KeyValuePair<string, QueueEntry<TKey>>[] entries, CancellationToken cancellationToken)
+        {
             var readyEvents = new WaitHandle[entries.Length + 1];
             var waitAdded = new bool[entries.Length];
 
