@@ -82,7 +82,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class QueueEnqueue<TKey>(string queue, TKey key, HashSet<QueueEntry<TKey>>? enqueued) : ICommand<TKey, QueueEntry<TKey>>
+        public sealed class QueueEnqueue<TKey>(string queue, TKey key) : ICommand<TKey, QueueEntry<TKey>>
             where TKey : IComparable<TKey>
         {
             public QueueEntry<TKey> Execute(MemoryState<TKey> state)
@@ -90,7 +90,6 @@ namespace Hangfire.InMemory.State
                 var entry = state.QueueGetOrCreate(queue);
                 entry.Queue.Enqueue(key);
 
-                enqueued?.Add(entry);
                 return entry;
             }
         }

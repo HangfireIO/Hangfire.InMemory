@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Hangfire.Annotations;
 using Hangfire.Common;
-using Hangfire.InMemory.Entities;
 using Hangfire.InMemory.State;
 using Hangfire.States;
 using Hangfire.Storage;
@@ -29,7 +28,7 @@ namespace Hangfire.InMemory
         where TKey : IComparable<TKey>
     {
         private readonly LinkedList<ICommand<TKey, object?>> _commands = new LinkedList<ICommand<TKey, object?>>();
-        private readonly HashSet<QueueEntry<TKey>> _enqueued = new HashSet<QueueEntry<TKey>>();
+        private readonly HashSet<string> _enqueued = new HashSet<string>();
         private readonly InMemoryConnection<TKey> _connection;
         private readonly List<IDisposable> _acquiredLocks = new List<IDisposable>();
 
@@ -166,7 +165,8 @@ namespace Hangfire.InMemory
                 return;
             }
 
-            AddCommand(new Commands.QueueEnqueue<TKey>(queue, key, _enqueued));
+            AddCommand(new Commands.QueueEnqueue<TKey>(queue, key));
+            _enqueued.Add(queue);
         }
 
         public override void RemoveFromQueue([NotNull] IFetchedJob fetchedJob)
@@ -363,7 +363,7 @@ namespace Hangfire.InMemory
 
             foreach (var queue in _enqueued)
             {
-                queue.SignalOneWaitNode();
+                state.QueueGetOrCreate(queue).SignalOneWaitNode();
             }
 
             return null;
