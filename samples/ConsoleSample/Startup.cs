@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using Hangfire;
 using Hangfire.InMemory;
 using Microsoft.AspNetCore.Builder;
