@@ -282,13 +282,13 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void CreateJob_DoesNotUseMaxExpirationTimeLimit_ToEnsureJobCanNotBeEvictedBeforeInitialization()
         {
-            var options = _options with { MaxExpirationTime = TimeSpan.FromMinutes(30) };
+            _options.MaxExpirationTime = TimeSpan.FromMinutes(30);
             string jobId = null;
 
             Commit(transaction =>
             {
                 jobId = transaction.CreateJob(_job, _parameters, _now.ToUtcDateTime(), TimeSpan.FromDays(30));
-            }, options); 
+            }); 
 
             Assert.True(_state.Jobs[jobId].ExpireAt.HasValue);
             Assert.Equal(_now.Add(TimeSpan.FromDays(30)), _state.Jobs[jobId].ExpireAt.Value);
@@ -638,7 +638,7 @@ namespace Hangfire.InMemory.Tests
 
             _state.JobCreate(CreateJobEntry("myjob"), expireIn: null);
 
-            var options = _options with { MaxStateHistoryLength = 3 };
+            _options.MaxStateHistoryLength = 3;
 
             // Act
             Commit(x =>
@@ -648,7 +648,7 @@ namespace Hangfire.InMemory.Tests
                 x.AddJobState("myjob", state3.Object);
                 x.AddJobState("myjob", state4.Object);
                 x.AddJobState("myjob", state5.Object);
-            }, options);
+            });
 
             // Assert
             var entries = _state.Jobs["myjob"].History.Select(x => x.Name).ToArray();

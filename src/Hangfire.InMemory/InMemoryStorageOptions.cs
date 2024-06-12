@@ -21,15 +21,15 @@ namespace Hangfire.InMemory
     /// <summary>
     /// Provides configuration options for in-memory storage in Hangfire.
     /// </summary>
-    public record InMemoryStorageOptions
+    public sealed class InMemoryStorageOptions
     {
-        private readonly int _maxStateHistoryLength = 10;
+        private int _maxStateHistoryLength = 10;
 
         /// <summary>
         /// Gets or sets the underlying key type for background jobs that can be useful
         /// to simulate different persistent storages.
         /// </summary>
-        public InMemoryStorageIdType IdType { get; init; } = InMemoryStorageIdType.Guid;
+        public InMemoryStorageIdType IdType { get; set; } = InMemoryStorageIdType.Guid;
 
         /// <summary>
         /// Gets or sets the maximum expiration time for all the entries. When set, this
@@ -37,7 +37,7 @@ namespace Hangfire.InMemory
         /// main rationale for this is to control the amount of consumed RAM, since we are
         /// more limited in this case, especially when comparing to disk-based storages.
         /// </summary>
-        public TimeSpan? MaxExpirationTime { get; init; } = TimeSpan.FromHours(3);
+        public TimeSpan? MaxExpirationTime { get; set; } = TimeSpan.FromHours(3);
 
         /// <summary>
         /// Gets or sets the maximum length of state history for each background job. Older
@@ -47,7 +47,7 @@ namespace Hangfire.InMemory
         public int MaxStateHistoryLength
         {
             get => _maxStateHistoryLength;
-            init
+            set
             {
                 if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value), "Value is out of range. Must be greater than zero.");
                 _maxStateHistoryLength = value;
@@ -61,17 +61,17 @@ namespace Hangfire.InMemory
         /// or use the <see cref="StringComparer.OrdinalIgnoreCase"/> option to match SQL Server's
         /// default case-insensitive rules.
         /// </summary>
-        public StringComparer StringComparer { get; init; } = StringComparer.Ordinal;
+        public StringComparer StringComparer { get; set; } = StringComparer.Ordinal;
 
         /// <summary>
         /// This option is deprecated now.
         /// </summary>
         [Obsolete("Doesn't affect anything now, serialization is always enabled. Will be removed in 1.0.0.")]
-        public bool DisableJobSerialization { get; init; }
+        public bool DisableJobSerialization { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum time to wait for a command completion.
         /// </summary>
-        public TimeSpan CommandTimeout { get; init; } = System.Diagnostics.Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(15);
+        public TimeSpan CommandTimeout { get; set; } = System.Diagnostics.Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(15);
     }
 }

@@ -200,7 +200,7 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void CreateExpiredJob_DoesNotUseMaxExpirationTimeLimit_ToEnsureJobCanNotBeEvictedBeforeInitialization()
         {
-            var options = _options with { MaxExpirationTime = TimeSpan.FromMinutes(30) };
+            _options.MaxExpirationTime = TimeSpan.FromMinutes(30);
 
             UseConnection(connection =>
             {
@@ -208,7 +208,7 @@ namespace Hangfire.InMemory.Tests
 
                 Assert.True(_state.Jobs[jobId].ExpireAt.HasValue);
                 Assert.Equal(_now.Add(TimeSpan.FromDays(30)), _state.Jobs[jobId].ExpireAt.Value);
-            }, options);
+            });
         }
 
         [Fact]
@@ -2356,9 +2356,9 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
-        private void UseConnection(Action<InMemoryConnection<string>> action, InMemoryStorageOptions options = null)
+        private void UseConnection(Action<InMemoryConnection<string>> action)
         {
-            using (var connection = CreateConnection(options))
+            using (var connection = CreateConnection())
             {
                 action(connection);
             }
@@ -2373,9 +2373,9 @@ namespace Hangfire.InMemory.Tests
             }
         }
 
-        private InMemoryConnection<string> CreateConnection(InMemoryStorageOptions options = null)
+        private InMemoryConnection<string> CreateConnection()
         {
-            return new InMemoryConnection<string>(options ?? _options, _dispatcher, _keyProvider);
+            return new InMemoryConnection<string>(_options, _dispatcher, _keyProvider);
         }
 
 #pragma warning disable xUnit1013 // Public method should be marked as test
