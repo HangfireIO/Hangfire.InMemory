@@ -22,7 +22,7 @@ namespace Hangfire.InMemory.Entities
 {
     internal sealed class JobEntry<T> : IExpirableEntry<T>
     {
-        private readonly List<StateRecord> _history = new();
+        private StateRecord[] _history = [];
         private KeyValuePair<string, string>[] _parameters;
 
         public JobEntry(
@@ -72,11 +72,8 @@ namespace Hangfire.InMemory.Entities
                 }
             }
 
-            var arrayToResize = _parameters;
-            Array.Resize(ref arrayToResize, _parameters.Length + 1);
-            arrayToResize[arrayToResize.Length - 1] = parameter;
-
-            _parameters = arrayToResize;
+            Array.Resize(ref _parameters, _parameters.Length + 1);
+            _parameters[_parameters.Length - 1] = parameter;
         }
 
         public KeyValuePair<string, string>[] GetParameters()
@@ -89,19 +86,16 @@ namespace Hangfire.InMemory.Entities
             if (record == null) throw new ArgumentNullException(nameof(record));
             if (maxLength <= 0) throw new ArgumentOutOfRangeException(nameof(maxLength));
 
-            if (_history.Count < maxLength)
+            if (_history.Length < maxLength)
             {
-                _history.Add(record);
+                Array.Resize(ref _history, _history.Length + 1);
             }
             else
             {
-                for (var i = 0; i < _history.Count - 1; i++)
-                {
-                    _history[i] = _history[i + 1];
-                }
-
-                _history[_history.Count - 1] = record;
+                Array.Copy(_history, 1, _history, 0, _history.Length - 1);
             }
+
+            _history[_history.Length - 1] = record;
         }
     }
 }
