@@ -150,7 +150,7 @@ namespace Hangfire.InMemory.Tests
             {
                 transaction1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-                cts.Token.Register(() => transaction1.Commit());
+                using var registration = cts.Token.Register(() => transaction1.Commit());
 
                 transaction2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(15));
                 transaction2.Commit();
@@ -167,7 +167,7 @@ namespace Hangfire.InMemory.Tests
             {
                 transaction1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-                cts.Token.Register(() => transaction1.Dispose());
+                using var registration = cts.Token.Register(() => transaction1.Dispose());
 
                 transaction2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(15));
                 transaction2.Commit();

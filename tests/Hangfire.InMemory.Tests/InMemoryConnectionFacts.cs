@@ -2181,7 +2181,7 @@ namespace Hangfire.InMemory.Tests
             {
                 using (var cts = new CancellationTokenSource(millisecondsDelay: 500))
                 {
-                    cts.Token.Register(() =>
+                    using var registration = cts.Token.Register(() =>
                     {
                         Commit(connection, x => x.AddToQueue("default", "job-id"));
                     });
@@ -2224,7 +2224,7 @@ namespace Hangfire.InMemory.Tests
                 using (var cts = new CancellationTokenSource(millisecondsDelay: 500))
                 {
                     // Arrange
-                    cts.Token.Register(() =>
+                    using var registration = cts.Token.Register(() =>
                     {
                         Commit(connection, x => x.AddToQueue("default", "1"));
                         Thread.Sleep(millisecondsTimeout: 100);
@@ -2337,7 +2337,7 @@ namespace Hangfire.InMemory.Tests
             {
                 var lock1 = connection1.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
-                cts.Token.Register(() => lock1.Dispose());
+                using var registration = cts.Token.Register(() => lock1.Dispose());
 
                 using (connection2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(15)))
                 {
