@@ -77,7 +77,7 @@ namespace Hangfire.InMemory.State
                     _semaphore.Release();
                 }
 
-                if (!callback.Wait(_commandTimeout, CancellationToken.None))
+                if (!callback.Wait(_commandTimeout, _cts.Token))
                 {
                     throw new TimeoutException();
                 }
@@ -105,7 +105,7 @@ namespace Hangfire.InMemory.State
                     _semaphore.Release();
                 }
 
-                if (!callback.Wait(_commandTimeout, CancellationToken.None))
+                if (!callback.Wait(_commandTimeout, _cts.Token))
                 {
                     throw new TimeoutException();
                 }
