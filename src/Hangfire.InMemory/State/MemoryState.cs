@@ -78,7 +78,7 @@ namespace Hangfire.InMemory.State
         {
             if (!Queues.TryGetValue(name, out var entry))
             {
-                entry = Queues.GetOrAdd(name, _ => new QueueEntry<TKey>());
+                entry = Queues.GetOrAdd(name, static _ => new QueueEntry<TKey>());
             }
 
             return entry;

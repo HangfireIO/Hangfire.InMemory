@@ -95,7 +95,7 @@ namespace Hangfire.InMemory
         public override IList<ServerDto> Servers()
         {
             var servers = _dispatcher.QueryReadAndWait(new MonitoringQueries.ServersGetAll<TKey>());
-            return servers.Select(entry => new ServerDto
+            return servers.Select(static entry => new ServerDto
             {
                 Name = entry.Name,
                 Queues = entry.Queues,
@@ -128,7 +128,7 @@ namespace Hangfire.InMemory
                     CreatedAt = x.CreatedAt.ToUtcDateTime(),
                     StateName = x.Name,
                     Reason = x.Reason,
-                    Data = x.Data.ToDictionary(d => d.Key, d => d.Value, details.StringComparer)
+                    Data = x.Data.ToDictionary(static d => d.Key, static d => d.Value, details.StringComparer)
                 }).Reverse().ToList(),
                 CreatedAt = details.CreatedAt.ToUtcDateTime(),
                 ExpireAt = details.ExpireAt?.ToUtcDateTime()
