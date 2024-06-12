@@ -227,10 +227,12 @@ namespace Hangfire.InMemory
             {
                 Job = data.InvocationData.TryGetJob(out var loadException),
                 LoadException = loadException,
+#if !HANGFIRE_170
+                InvocationData = data.InvocationData,
+                ParametersSnapshot = data.Parameters.ToDictionary(static x => x.Key, static x => x.Value, data.StringComparer),
+#endif
                 CreatedAt = data.CreatedAt.ToUtcDateTime(),
                 State = data.State,
-                InvocationData = data.InvocationData,
-                ParametersSnapshot = data.Parameters.ToDictionary(static x => x.Key, static x => x.Value, data.StringComparer)
             };
         }
 
@@ -294,10 +296,12 @@ namespace Hangfire.InMemory
             return Dispatcher.QueryWriteAndWait(new Commands.ServerDeleteInactive<TKey>(timeOut, now));
         }
 
+#if !HANGFIRE_170
         public override DateTime GetUtcDateTime()
         {
             return Dispatcher.GetMonotonicTime().ToUtcDateTime();
         }
+#endif
 
         public override HashSet<string> GetAllItemsFromSet([NotNull] string key)
         {
@@ -330,6 +334,7 @@ namespace Hangfire.InMemory
                 count));
         }
 
+#if !HANGFIRE_170
         public override bool GetSetContains([NotNull] string key, [NotNull] string value)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
@@ -337,6 +342,7 @@ namespace Hangfire.InMemory
 
             return Dispatcher.QueryReadAndWait(new Queries.SortedSetContains<TKey>(key, value));
         }
+#endif
 
         public override long GetSetCount([NotNull] string key)
         {
@@ -345,6 +351,7 @@ namespace Hangfire.InMemory
             return Dispatcher.QueryReadAndWait(new Queries.SortedSetCount<TKey>(key));
         }
 
+#if !HANGFIRE_170
         public override long GetSetCount([NotNull] IEnumerable<string> keys, int limit)
         {
             if (keys == null) throw new ArgumentNullException(nameof(keys));
@@ -354,6 +361,7 @@ namespace Hangfire.InMemory
                 keys,
                 limit));
         }
+#endif
 
         public override long GetListCount([NotNull] string key)
         {

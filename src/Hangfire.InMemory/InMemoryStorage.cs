@@ -14,7 +14,9 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+#if !HANGFIRE_170
 using System.Collections.Generic;
+#endif
 using System.Globalization;
 using System.Threading;
 using Hangfire.Annotations;
@@ -34,6 +36,7 @@ namespace Hangfire.InMemory
 
         private PaddedInt64 _nextId;
 
+#if !HANGFIRE_170
         // These options don't relate to the defined storage comparison options
         private readonly Dictionary<string, bool> _features = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
         {
@@ -51,6 +54,7 @@ namespace Hangfire.InMemory
             { "Monitoring.DeletedStateGraphs", true },
             { "Monitoring.AwaitingJobs", true }
         };
+#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InMemoryStorage"/> class with default options.
@@ -108,6 +112,7 @@ namespace Hangfire.InMemory
         /// </summary>
         public override bool LinearizableReads => true;
 
+#if !HANGFIRE_170
         /// <inheritdoc />
         public override bool HasFeature(string featureId)
         {
@@ -117,6 +122,7 @@ namespace Hangfire.InMemory
                 ? isSupported
                 : base.HasFeature(featureId);
         }
+#endif
 
         /// <inheritdoc />
         public override IMonitoringApi GetMonitoringApi()

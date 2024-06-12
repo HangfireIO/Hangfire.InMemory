@@ -64,6 +64,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal("connection", exception.ParamName);
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void AcquireDistributedLock_ThrowsAnException_WhenResourceIsNull()
         {
@@ -172,7 +173,9 @@ namespace Hangfire.InMemory.Tests
                 transaction2.Commit();
             }
         }
+#endif
 
+#if !HANGFIRE_170
         [Fact]
         public void CreateJob_ThrowsAnException_WhenJobIsNull()
         {
@@ -302,7 +305,9 @@ namespace Hangfire.InMemory.Tests
             Assert.Empty(_state.Jobs);
             Assert.Empty(_state.ExpiringJobsIndex);
         }
+#endif
 
+#if !HANGFIRE_170
         [Fact]
         public void SetJobParameter_ThrowsAnException_WhenIdIsNull()
         {
@@ -372,6 +377,7 @@ namespace Hangfire.InMemory.Tests
 
             Assert.Equal("2", _state.Jobs[jobId].GetParameter("RetryCount", _options.StringComparer));
         }
+#endif
 
         [Fact]
         public void ExpireJob_ThrowsAnException_WhenJobIdIsNull()
@@ -701,11 +707,13 @@ namespace Hangfire.InMemory.Tests
             }
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void RemoveFromQueue_DoesNotDoAnything()
         {
             Commit(x => x.RemoveFromQueue(null));
         }
+#endif
 
         [Fact]
         public void IncrementCounter_ThrowsAnException_WhenKeyIsNull()

@@ -149,7 +149,9 @@ namespace Hangfire.InMemory.Tests
                 Assert.Equal(data.Method, entry.InvocationData.Method);
                 Assert.Equal(data.ParameterTypes, entry.InvocationData.ParameterTypes);
                 Assert.Equal(data.Arguments, entry.InvocationData.Arguments);
+#if !HANGFIRE_170
                 Assert.Null(entry.InvocationData.Queue);
+#endif
             });
         }
 
@@ -181,6 +183,7 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void CreateExpiredJob_CapturesJobQueue_Field()
         {
@@ -192,6 +195,7 @@ namespace Hangfire.InMemory.Tests
                 Assert.Equal("critical", _state.Jobs[jobId].InvocationData.Queue);
             });
         }
+#endif
 
         [Fact]
         public void CreateExpiredJob_DoesNotUseMaxExpirationTimeLimit_ToEnsureJobCanNotBeEvictedBeforeInitialization()
@@ -406,7 +410,9 @@ namespace Hangfire.InMemory.Tests
                 Assert.Same(_job.Method, data.Job.Method);
                 Assert.Equal(_job.Args, data.Job.Args);
                 Assert.Null(data.State);
+#if !HANGFIRE_170
                 Assert.Null(data.Job.Queue);
+#endif
             });
         }
 
@@ -450,6 +456,7 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void GetJobData_Populates_JobQueueProperty_WhenItIsStored()
         {
@@ -466,7 +473,9 @@ namespace Hangfire.InMemory.Tests
                 Assert.Equal("critical", data.Job.Queue);
             });
         }
+#endif
 
+#if !HANGFIRE_170
         [Fact]
         public void GetJobData_Populates_InvocationData_AndParametersSnapshot_Properties()
         {
@@ -484,6 +493,7 @@ namespace Hangfire.InMemory.Tests
                 Assert.NotNull(data.InvocationData);
             });
         }
+#endif
 
         [Fact]
         public void GetStateData_ThrowsAnException_WhenJobIdIsNull()
@@ -800,6 +810,7 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void GetSetContains_ThrowsAnException_WhenKeyIsNull()
         {
@@ -884,6 +895,7 @@ namespace Hangfire.InMemory.Tests
                 Assert.False(result);
             });
         }
+#endif
 
         [Fact]
         public void GetSetCount_ThrowsAnException_WhenKeyIsNull()
@@ -926,6 +938,7 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void GetSetCount_Limited_ThrowsAnException_WhenKeysArgument_IsNull()
         {
@@ -1006,6 +1019,7 @@ namespace Hangfire.InMemory.Tests
                 Assert.Equal(2, result);
             });
         }
+#endif
 
         [Fact]
         public void GetRangeFromSet_ThrowsAnException_WhenKeyIsNull()
@@ -1741,6 +1755,7 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void GetUtcDateTime_ReturnsValueFromTimeResolver()
         {
@@ -1750,6 +1765,7 @@ namespace Hangfire.InMemory.Tests
                 AssertWithinSecond(_now.ToUtcDateTime(), result);
             });
         }
+#endif
 
         [Fact]
         public void GetFirstByLowestScoreFromSet_ThrowsAnException_WhenKeyIsNull()

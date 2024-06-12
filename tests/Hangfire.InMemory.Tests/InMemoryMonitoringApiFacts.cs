@@ -480,7 +480,9 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(0, result.Scheduled);
             Assert.Equal(0, result.Servers);
             Assert.Equal(0, result.Succeeded);
+#if !HANGFIRE_170 
             Assert.Equal(0, result.Retries);
+#endif
         }
 
         [Fact]
@@ -802,6 +804,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal("Empty", scheduledJob.Value.Job.Method.Name);
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void ScheduledJobs_ReturnsCorrectJobs_InTheScheduledState_WithCompositeIndex()
         {
@@ -820,6 +823,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId, scheduledJob.Key);
             Assert.Equal("critical", scheduledJob.Value.Job.Queue);
         }
+#endif
 
         [Fact]
         public void ScheduledJobs_ReturnsJobs_InTheAscendingOrder()
@@ -1091,6 +1095,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId3, result[1].Key);
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void AwaitingJobs_ReturnsEmptyCollection_WhenThereAreNoAwaitingJobs()
         {
@@ -1167,6 +1172,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId2, result[0].Key);
             Assert.Equal(jobId3, result[1].Key);
         }
+#endif
 
         [Fact]
         public void ScheduledCount_ReturnsZero_WhenThereAreNoScheduledJobs()
@@ -1365,6 +1371,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(3, result);
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void AwaitingCount_ReturnsZero_WhenThereAreNoAwaitingJobs()
         {
@@ -1392,6 +1399,7 @@ namespace Hangfire.InMemory.Tests
             // Assert
             Assert.Equal(4, result);
         }
+#endif
 
         [Fact]
         public void SucceededByDatesCount_ReturnsEntriesForTheWholeWeek_EvenWhenThereAreNoSucceededJobs()
@@ -1429,6 +1437,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(0, result[date.AddDays(-6)]);
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void DeletedByDatesCount_ReturnsEntriesForTheWholeWeek_EvenWhenThereAreNoDeletedJobs()
         {
@@ -1446,6 +1455,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(0, result[date.AddDays(-5)]);
             Assert.Equal(0, result[date.AddDays(-6)]);
         }
+#endif
 
         [Fact]
         public void HourlySucceededJobs_ReturnsEntriesForTheWholeDay_EvenWhenThereAreNoSucceededJobs()
@@ -1483,6 +1493,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(0, result[result.Keys.ElementAt(21)]);
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void HourlyDeletedJobs_ReturnsEntriesForTheWholeDay_EvenWhenThereAreNoDeletedJobs()
         {
@@ -1500,6 +1511,7 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(0, result[result.Keys.ElementAt(18)]);
             Assert.Equal(0, result[result.Keys.ElementAt(21)]);
         }
+#endif
 
         private string SimpleProcessingJob(string serverId = null, string workerId = null, Job job = null)
         {
@@ -1517,7 +1529,10 @@ namespace Hangfire.InMemory.Tests
             {
                 transaction.AddToSet(
                     "schedule",
-                    assignedJob.Queue != null ? $"{assignedJob.Queue}:{assignedJobId}" : assignedJobId,
+#if !HANGFIRE_170
+                    assignedJob.Queue != null ? $"{assignedJob.Queue}:{assignedJobId}" :
+#endif
+                        assignedJobId,
                     JobHelper.ToTimestamp(state.EnqueueAt));
             });
         }
@@ -1548,7 +1563,11 @@ namespace Hangfire.InMemory.Tests
         {
             return SimpleJob(
                 job: job,
-                state: new DeletedState(new ExceptionInfo(exception ?? new InvalidOperationException())));
+                state: new DeletedState(
+#if !HANGFIRE_170
+                    new ExceptionInfo(exception ?? new InvalidOperationException())
+#endif
+                ));
         }
 
         private string SimpleAwaitingJob(string parentId, Job job = null)

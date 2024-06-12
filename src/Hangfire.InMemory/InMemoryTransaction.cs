@@ -52,12 +52,15 @@ namespace Hangfire.InMemory
             _connection.Dispatcher.QueryWriteAndWait(this);
         }
 
+#if !HANGFIRE_170
         public override void AcquireDistributedLock(string resource, TimeSpan timeout)
         {
             var disposableLock = _connection.AcquireDistributedLock(resource, timeout);
             _acquiredLocks.Add(disposableLock);
         }
+#endif
 
+#if !HANGFIRE_170
         public override string CreateJob([NotNull] Job job, [NotNull] IDictionary<string, string> parameters, DateTime createdAt, TimeSpan expireIn)
         {
             if (job == null) throw new ArgumentNullException(nameof(job));
@@ -70,7 +73,9 @@ namespace Hangfire.InMemory
             AddCommand(new Commands.JobCreate<TKey>(key, data, parameters.ToArray(), now, expireIn));
             return _connection.KeyProvider.ToString(key);
         }
+#endif
 
+#if !HANGFIRE_170
         public override void SetJobParameter(
             [NotNull] string jobId,
             [NotNull] string name,
@@ -86,6 +91,7 @@ namespace Hangfire.InMemory
 
             AddCommand(new Commands.JobSetParameter<TKey>(key, name, value));
         }
+#endif
 
         public override void ExpireJob([NotNull] string jobId, TimeSpan expireIn)
         {
@@ -169,10 +175,12 @@ namespace Hangfire.InMemory
             _enqueued.Add(queue);
         }
 
+#if !HANGFIRE_170
         public override void RemoveFromQueue([NotNull] IFetchedJob fetchedJob)
         {
             // Nothing to do here
         }
+#endif
 
         public override void IncrementCounter([NotNull] string key)
         {

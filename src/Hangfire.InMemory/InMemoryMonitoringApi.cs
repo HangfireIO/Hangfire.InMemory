@@ -82,11 +82,13 @@ namespace Hangfire.InMemory
                         new EnqueuedJobDto
                         {
                             InEnqueuedState = TryGetJobRecord(jobs, key, EnqueuedState.StateName, out var job),
-                            InvocationData = job.InvocationData,
                             Job = job.Job,
-                            LoadException = job.LoadException,
                             State = job.StateName,
+#if !HANGFIRE_170
+                            InvocationData = job.InvocationData,
+                            LoadException = job.LoadException,
                             StateData = job.StateData,
+#endif
                             EnqueuedAt = job.StateCreatedAt
                         })))
             }).ToList();
@@ -120,8 +122,10 @@ namespace Hangfire.InMemory
             return new JobDetailsDto
             {
                 Job = details.InvocationData.TryGetJob(out var loadException),
+#if !HANGFIRE_170
                 LoadException = loadException,
                 InvocationData = details.InvocationData,
+#endif
                 Properties = details.Parameters.ToDictionary(static x => x.Key, static x => x.Value, details.StringComparer),
                 History = details.History.Select(x => new StateHistoryDto
                 {
@@ -148,13 +152,17 @@ namespace Hangfire.InMemory
                 Scheduled = statistics.States[ScheduledState.StateName],
                 Processing = statistics.States[ProcessingState.StateName],
                 Failed = statistics.States[FailedState.StateName],
+#if !HANGFIRE_170
                 Awaiting = statistics.States[AwaitingState.StateName],
+#endif
                 Succeeded = statistics.Counters["Succeeded"],
                 Deleted = statistics.Counters["Deleted"],
                 Queues = statistics.Queues,
                 Servers = statistics.Servers,
-                Recurring = statistics.Sets["Recurring"],
-                Retries = statistics.Sets["Retries"]
+#if !HANGFIRE_170
+                Retries = statistics.Sets["Retries"],
+#endif
+                Recurring = statistics.Sets["Recurring"]
             };
         }
 
@@ -172,11 +180,13 @@ namespace Hangfire.InMemory
                 new EnqueuedJobDto
                 {
                     InEnqueuedState = TryGetJobRecord(jobs, key, EnqueuedState.StateName, out var job),
-                    InvocationData = job.InvocationData,
                     Job =  job.Job,
-                    LoadException = job.LoadException,
                     State = job.StateName,
+#if !HANGFIRE_170
+                    InvocationData = job.InvocationData,
+                    LoadException = job.LoadException,
                     StateData = job.StateData,
+#endif
                     EnqueuedAt = job.StateCreatedAt
                 })));
         }
@@ -201,10 +211,12 @@ namespace Hangfire.InMemory
                 new ProcessingJobDto
                 {
                     InProcessingState = TryGetJobRecord(jobs, key, ProcessingState.StateName, out var job),
-                    InvocationData = job.InvocationData,
                     Job = job.Job,
+#if !HANGFIRE_170
+                    InvocationData = job.InvocationData,
                     LoadException = job.LoadException,
                     StateData = job.StateData,
+#endif
                     StartedAt = job.StateCreatedAt,
                     ServerId = job.StateData?.TryGetValue("ServerId", out var serverId) ?? false
                         ? serverId
@@ -226,10 +238,12 @@ namespace Hangfire.InMemory
                 new ScheduledJobDto
                 {
                     InScheduledState = TryGetJobRecord(jobs, key, ScheduledState.StateName, out var job),
-                    InvocationData = job.InvocationData,
                     Job = job.Job,
+#if !HANGFIRE_170
+                    InvocationData = job.InvocationData,
                     LoadException = job.LoadException,
                     StateData = job.StateData,
+#endif
                     ScheduledAt = job.StateCreatedAt,
                     EnqueueAt = (job.StateData?.TryGetValue("EnqueueAt", out var enqueueAt) ?? false
                         ? JobHelper.DeserializeNullableDateTime(enqueueAt)
@@ -252,10 +266,12 @@ namespace Hangfire.InMemory
                 new SucceededJobDto
                 {
                     InSucceededState = TryGetJobRecord(jobs, key, SucceededState.StateName, out var job),
-                    InvocationData = job.InvocationData,
                     Job = job.Job,
+#if !HANGFIRE_170
+                    InvocationData = job.InvocationData,
                     LoadException = job.LoadException,
                     StateData = job.StateData,
+#endif
                     SucceededAt = job.StateCreatedAt,
                     Result = job.StateData?.TryGetValue("Result", out var result) ?? false
                         ? result
@@ -282,10 +298,12 @@ namespace Hangfire.InMemory
                 new FailedJobDto
                 {
                     InFailedState = TryGetJobRecord(jobs, key, FailedState.StateName, out var job),
-                    InvocationData = job.InvocationData,
                     Job = job.Job,
+#if !HANGFIRE_170
+                    InvocationData = job.InvocationData,
                     LoadException = job.LoadException,
                     StateData = job.StateData,
+#endif
                     Reason = job.StateReason,
                     FailedAt = job.StateCreatedAt,
                     ExceptionDetails = job.StateData?.TryGetValue("ExceptionDetails", out var details) ?? false 
@@ -315,14 +333,17 @@ namespace Hangfire.InMemory
                 new DeletedJobDto
                 {
                     InDeletedState = TryGetJobRecord(jobs, key, DeletedState.StateName, out var job),
-                    InvocationData = job.InvocationData,
                     Job = job.Job,
+#if !HANGFIRE_170
+                    InvocationData = job.InvocationData,
                     LoadException = job.LoadException,
                     StateData = job.StateData,
+#endif
                     DeletedAt = job.StateCreatedAt
                 })));
         }
 
+#if !HANGFIRE_170
         public override JobList<AwaitingJobDto> AwaitingJobs(int from, int count)
         {
             var awaiting = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
@@ -362,6 +383,7 @@ namespace Hangfire.InMemory
                                       : null
                 })));
         }
+#endif
 
         public override long ScheduledCount()
         {
@@ -400,10 +422,12 @@ namespace Hangfire.InMemory
             return GetCountByStateName(DeletedState.StateName);
         }
 
+#if !HANGFIRE_170
         public override long AwaitingCount()
         {
             return GetCountByStateName(AwaitingState.StateName);
         }
+#endif
 
         public override IDictionary<DateTime, long> SucceededByDatesCount()
         {
@@ -417,11 +441,13 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetDailyTimeline<TKey>(now, "failed"));
         }
 
+#if !HANGFIRE_170
         public override IDictionary<DateTime, long> DeletedByDatesCount()
         {
             var now = _dispatcher.GetMonotonicTime();
             return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetDailyTimeline<TKey>(now, "deleted"));
         }
+#endif
 
         public override IDictionary<DateTime, long> HourlySucceededJobs()
         {
@@ -435,11 +461,13 @@ namespace Hangfire.InMemory
             return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetHourlyTimeline<TKey>(now, "failed"));
         }
 
+#if !HANGFIRE_170
         public override IDictionary<DateTime, long> HourlyDeletedJobs()
         {
             var now = _dispatcher.GetMonotonicTime();
             return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetHourlyTimeline<TKey>(now, "deleted"));
         }
+#endif
 
         private long GetCountByStateName(string stateName)
         {

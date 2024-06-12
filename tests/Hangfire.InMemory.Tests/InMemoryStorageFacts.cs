@@ -34,6 +34,7 @@ namespace Hangfire.InMemory.Tests
             Assert.True(storage.LinearizableReads);
         }
 
+#if !HANGFIRE_170
         [Fact]
         public void HasFeature_ThrowsArgumentNullException_WhenFeatureIdIsNull()
         {
@@ -69,6 +70,7 @@ namespace Hangfire.InMemory.Tests
             Assert.True(storage.HasFeature("Monitoring.AwaitingJobs"));
             Assert.False(storage.HasFeature("SomeNonExistingFeature"));
         }
+#endif
 
         [Fact]
         public void Dispose_ReturnsAlmostImmediately()
