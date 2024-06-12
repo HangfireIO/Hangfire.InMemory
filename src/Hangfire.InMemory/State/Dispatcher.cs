@@ -23,7 +23,7 @@ namespace Hangfire.InMemory.State
     internal sealed class Dispatcher<TKey> : DispatcherBase<TKey>, IDisposable
         where TKey : IComparable<TKey>
     {
-        private const uint DefaultEvictionIntervalMs = 15000U;
+        private const uint DefaultEvictionIntervalMs = 5000U;
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
         private readonly ConcurrentQueue<DispatcherCallback<TKey>> _readQueries = new ConcurrentQueue<DispatcherCallback<TKey>>();
@@ -123,29 +123,23 @@ namespace Hangfire.InMemory.State
         {
             try
             {
+                var lastEviction = Environment.TickCount;
+
                 while (!_disposed)
                 {
                     if (_semaphore.Wait(TimeSpan.FromMilliseconds(DefaultEvictionIntervalMs), _cts.Token))
                     {
                         Interlocked.Exchange(ref _outstandingRequests.Value, 0);
 
-                        var startTime = Environment.TickCount;
-
                         while (_readQueries.TryDequeue(out var next) || _queries.TryDequeue(out next))
                         {
                             next.Execute(State);
 
-                            if (Environment.TickCount - startTime >= DefaultEvictionIntervalMs)
-                            {
-                                EvictExpiredEntries();
-                                startTime = Environment.TickCount;
-                            }
+                            EvictExpiredEntriesIfNeeded(ref lastEviction);
                         }
                     }
-                    else
-                    {
-                        EvictExpiredEntries();
-                    }
+
+                    EvictExpiredEntriesIfNeeded(ref lastEviction);
                 }
             }
             catch (OperationCanceledException ex) when (ex.CancellationToken == _cts.Token)
@@ -159,6 +153,15 @@ namespace Hangfire.InMemory.State
             catch (Exception ex) when (ExceptionHelper.IsCatchableExceptionType(ex))
             {
                 _logger.FatalException("Query dispatcher stopped due to an exception, no queries will be processed. Please report this problem to Hangfire.InMemory developers.", ex);
+            }
+        }
+
+        private void EvictExpiredEntriesIfNeeded(ref int lastEviction)
+        {
+            if (Environment.TickCount - lastEviction >= DefaultEvictionIntervalMs)
+            {
+                EvictExpiredEntries();
+                lastEviction = Environment.TickCount;
             }
         }
 
