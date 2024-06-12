@@ -22,17 +22,9 @@ namespace Hangfire.InMemory.Entities
     {
         private readonly object _syncRoot = new object();
         private T? _owner;
-        private int _referenceCount;
-        private int _level;
+        private int _referenceCount = 1;
+        private int _level = 1;
         private bool _finalized;
-
-        public LockEntry(T owner)
-        {
-            _owner = owner ?? throw new ArgumentNullException(nameof(owner));
-            _referenceCount = 1;
-            _level = 0;
-            _finalized = false;
-        }
 
         public void TryAcquire(T owner, ref bool acquired, out bool finalized)
         {
@@ -48,7 +40,12 @@ namespace Hangfire.InMemory.Entities
                     return;
                 }
 
-                if (ReferenceEquals(_owner, owner))
+                if (_owner == null)
+                {
+                    _owner = owner;
+                    acquired = true;
+                }
+                else if (ReferenceEquals(_owner, owner))
                 {
                     _level++;
                     acquired = true;

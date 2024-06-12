@@ -72,7 +72,7 @@ namespace Hangfire.InMemory.State
                 // between finalization and removal from the collection to avoid additional synchronization.
                 // So we'll just wait for a few moments and retry once again, since finalized locks should
                 // be removed soon.
-                entry = _state.Locks.GetOrAdd(resource, _ => new LockEntry<JobStorageConnection>(owner));
+                entry = _state.Locks.GetOrAdd(resource, static _ => new LockEntry<JobStorageConnection>());
                 entry.TryAcquire(owner, ref acquired, out var finalized);
 
                 if (!finalized)
