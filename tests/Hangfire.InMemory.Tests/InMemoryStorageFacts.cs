@@ -14,6 +14,7 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using System.Diagnostics;
 using Xunit;
 
 // ReSharper disable AssignNullToNotNullAttribute
@@ -67,6 +68,18 @@ namespace Hangfire.InMemory.Tests
             Assert.True(storage.HasFeature("Monitoring.DeletedStateGraphs"));
             Assert.True(storage.HasFeature("Monitoring.AwaitingJobs"));
             Assert.False(storage.HasFeature("SomeNonExistingFeature"));
+        }
+
+        [Fact]
+        public void Dispose_ReturnsAlmostImmediately()
+        {
+            var storage = CreateStorage();
+            var sw = Stopwatch.StartNew();
+
+            storage.Dispose();
+
+            sw.Stop();
+            Assert.True(sw.ElapsedMilliseconds < 1_000);
         }
 
         [Fact]

@@ -34,6 +34,7 @@ namespace Hangfire.InMemory.State
         private readonly TimeSpan _commandTimeout;
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
+        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
         private volatile bool _disposed;
 
         private PaddedInt64 _outstandingRequests;
@@ -56,8 +57,10 @@ namespace Hangfire.InMemory.State
             if (_disposed) return;
 
             _disposed = true;
+            _cts.Cancel();
             _semaphore.Dispose();
             _thread.Join();
+            _cts.Dispose();
         }
 
         protected override object QueryWriteAndWait(ICommand<TKey, object> query)
@@ -122,7 +125,7 @@ namespace Hangfire.InMemory.State
             {
                 while (!_disposed)
                 {
-                    if (_semaphore.Wait(TimeSpan.FromMilliseconds(DefaultEvictionIntervalMs)))
+                    if (_semaphore.Wait(TimeSpan.FromMilliseconds(DefaultEvictionIntervalMs), _cts.Token))
                     {
                         Interlocked.Exchange(ref _outstandingRequests.Value, 0);
 
@@ -144,6 +147,10 @@ namespace Hangfire.InMemory.State
                         EvictExpiredEntries();
                     }
                 }
+            }
+            catch (OperationCanceledException ex) when (ex.CancellationToken == _cts.Token)
+            {
+                _logger.Debug("Query dispatcher has been gracefully stopped.");
             }
             catch (ObjectDisposedException ex) when (_disposed)
             {
