@@ -118,57 +118,54 @@ namespace Hangfire.InMemory
             if (queues == null) throw new ArgumentNullException(nameof(queues));
             if (queues.Length == 0) throw new ArgumentException("Queue array must be non-empty.", nameof(queues));
 
-            using (var cancellationEvent = cancellationToken.GetCancellationEvent())
+            var entries = Dispatcher.GetOrAddQueues(queues);
+            var readyEvents = new WaitHandle[entries.Length + 1];
+            var waitAdded = new bool[entries.Length];
+
+            try
             {
-                var entries = Dispatcher.GetOrAddQueues(queues);
-                var readyEvents = new WaitHandle[entries.Length + 1];
-                var waitAdded = new bool[entries.Length];
-
-                try
+                for (var i = 0; i < entries.Length; i++)
                 {
-                    for (var i = 0; i < entries.Length; i++)
-                    {
-                        readyEvents[i] = new AutoResetEvent(false);
-                    }
-
-                    readyEvents[entries.Length] = cancellationEvent.WaitHandle;
-
-                    while (!cancellationToken.IsCancellationRequested)
-                    {
-                        foreach (var entry in entries)
-                        {
-                            if (entry.Value.Queue.TryDequeue(out var jobId))
-                            {
-                                entry.Value.SignalOneWaitNode();
-                                return new InMemoryFetchedJob<TKey>(this, entry.Key, KeyProvider.ToString(jobId));
-                            }
-                        }
-
-                        for (var i = 0; i < entries.Length; i++)
-                        {
-                            if (!waitAdded[i])
-                            {
-                                entries[i].Value.AddWaitNode(new QueueWaitNode((AutoResetEvent)readyEvents[i]));
-                                waitAdded[i] = true;
-                            }
-                        }
-
-                        var ready = WaitHandle.WaitAny(readyEvents, TimeSpan.FromSeconds(1));
-                        if (ready != WaitHandle.WaitTimeout && ready < entries.Length)
-                        {
-                            waitAdded[ready] = false;
-                        }
-                    }
-
-                    cancellationToken.ThrowIfCancellationRequested();
-                    throw new OperationCanceledException(cancellationToken);
+                    readyEvents[i] = new AutoResetEvent(false);
                 }
-                finally
+
+                readyEvents[entries.Length] = cancellationToken.WaitHandle;
+
+                while (!cancellationToken.IsCancellationRequested)
                 {
+                    foreach (var entry in entries)
+                    {
+                        if (entry.Value.Queue.TryDequeue(out var jobId))
+                        {
+                            entry.Value.SignalOneWaitNode();
+                            return new InMemoryFetchedJob<TKey>(this, entry.Key, KeyProvider.ToString(jobId));
+                        }
+                    }
+
                     for (var i = 0; i < entries.Length; i++)
                     {
-                        readyEvents[i]?.Dispose();
+                        if (!waitAdded[i])
+                        {
+                            entries[i].Value.AddWaitNode(new QueueWaitNode((AutoResetEvent)readyEvents[i]));
+                            waitAdded[i] = true;
+                        }
                     }
+
+                    var ready = WaitHandle.WaitAny(readyEvents, TimeSpan.FromSeconds(1));
+                    if (ready != WaitHandle.WaitTimeout && ready < entries.Length)
+                    {
+                        waitAdded[ready] = false;
+                    }
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                throw new OperationCanceledException(cancellationToken);
+            }
+            finally
+            {
+                for (var i = 0; i < entries.Length; i++)
+                {
+                    readyEvents[i]?.Dispose();
                 }
             }
         }
