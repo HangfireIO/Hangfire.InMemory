@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Hangfire;
 using Hangfire.InMemory;
 using Microsoft.AspNetCore.Builder;
@@ -15,6 +16,7 @@ namespace ConsoleSample
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseIgnoredAssemblyVersionTypeResolver()
+                .UseDefaultCulture(CultureInfo.CurrentCulture, captureDefault: false)
                 .UseInMemoryStorage(new InMemoryStorageOptions
                 {
                     IdType = InMemoryStorageIdType.Long
