@@ -33,7 +33,9 @@ namespace Hangfire.InMemory.State
                 var stateCounts = new Dictionary<string, long>(states.Count);
                 foreach (var stateName in states)
                 {
-                    stateCounts.Add(stateName, state.GetCountByStateName(stateName));
+                    stateCounts.Add(
+                        stateName,
+                        state.JobStateIndex.TryGetValue(stateName, out var indexEntry) ? indexEntry.Count : 0);
                 }
 
                 var counterCounts = new Dictionary<string, long>(counters.Count);
@@ -41,7 +43,7 @@ namespace Hangfire.InMemory.State
                 {
                     counterCounts.Add(
                         counter.Key,
-                        state.Counters.TryGetValue(counter.Value, out var value) ? value.Value : 0);
+                        state.Counters.TryGetValue(counter.Value, out var entry) ? entry.Value : 0);
                 }
 
                 var setCounts = new Dictionary<string, long>(sets.Count);
@@ -49,7 +51,7 @@ namespace Hangfire.InMemory.State
                 {
                     setCounts.Add(
                         set.Key,
-                        state.Sets.TryGetValue(set.Value, out var value) ? value.Count : 0);
+                        state.Sets.TryGetValue(set.Value, out var entry) ? entry.Count : 0);
                 }
 
                 return new Data(stateCounts, counterCounts, setCounts)
@@ -79,21 +81,21 @@ namespace Hangfire.InMemory.State
             {
                 var result = new List<QueueRecord>();
 
-                foreach (var queueEntry in state.Queues)
+                foreach (var entry in state.Queues)
                 {
                     var queueResult = new List<TKey>();
                     var index = 0;
                     const int count = 5;
 
-                    foreach (var message in queueEntry.Value.Queue)
+                    foreach (var message in entry.Value.Queue)
                     {
                         if (index++ >= count) break;
                         queueResult.Add(message);
                     }
 
                     result.Add(new QueueRecord(
-                        queueEntry.Value.Queue.Count,
-                        queueEntry.Key,
+                        entry.Value.Queue.Count,
+                        entry.Key,
                         queueResult.AsReadOnly()));
                 }
 
@@ -113,8 +115,8 @@ namespace Hangfire.InMemory.State
         {
             protected override long Execute(MemoryState<TKey> state)
             {
-                return state.Queues.TryGetValue(queueName, out var queue)
-                    ? queue.Queue.Count
+                return state.Queues.TryGetValue(queueName, out var entry)
+                    ? entry.Queue.Count
                     : 0;
             }
         }
@@ -126,11 +128,11 @@ namespace Hangfire.InMemory.State
             {
                 var result = new List<TKey>();
 
-                if (state.Queues.TryGetValue(queueName, out var queue))
+                if (state.Queues.TryGetValue(queueName, out var entry))
                 {
                     var index = 0;
 
-                    foreach (var message in queue.Queue)
+                    foreach (var message in entry.Queue)
                     {
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
@@ -166,14 +168,14 @@ namespace Hangfire.InMemory.State
             public sealed class Data(
                 InvocationData invocationData,
                 KeyValuePair<string, string>[] parameters,
-                StateEntry[] history,
+                StateRecord[] history,
                 MonotonicTime createdAt,
                 MonotonicTime? expireAt,
                 StringComparer stringComparer)
             {
                 public InvocationData InvocationData { get; } = invocationData;
                 public KeyValuePair<string, string>[] Parameters { get; } = parameters;
-                public StateEntry[] History { get; } = history;
+                public StateRecord[] History { get; } = history;
                 public MonotonicTime CreatedAt { get; } = createdAt;
                 public MonotonicTime? ExpireAt { get; } = expireAt;
                 public StringComparer StringComparer { get; } = stringComparer;
@@ -256,7 +258,12 @@ namespace Hangfire.InMemory.State
         {
             protected override long Execute(MemoryState<TKey> state)
             {
-                return state.GetCountByStateName(stateName);
+                if (state.JobStateIndex.TryGetValue(stateName, out var indexEntry))
+                {
+                    return indexEntry.Count;
+                }
+
+                return 0;
             }
         }
 

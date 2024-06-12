@@ -19,9 +19,9 @@ using Hangfire.InMemory.State;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class StateEntry
+    internal sealed class StateRecord
     {
-        public StateEntry(string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime createdAt)
+        public StateRecord(string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime createdAt)
         {
             Name = name;
             Reason = reason;

@@ -39,9 +39,9 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                if (state.Jobs.TryGetValue(key, out var jobEntry))
+                if (state.Jobs.TryGetValue(key, out var entry))
                 {
-                    jobEntry.SetParameter(name, value, state.StringComparer);
+                    entry.SetParameter(name, value, state.StringComparer);
                 }
                 return null;
             }
@@ -52,9 +52,9 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                if (state.Jobs.TryGetValue(key, out var job))
+                if (state.Jobs.TryGetValue(key, out var entry))
                 {
-                    state.JobExpire(job, now, expireIn, maxExpiration);
+                    state.JobExpire(entry, now, expireIn, maxExpiration);
                 }
 
                 return null;
@@ -67,14 +67,14 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                var entry = new StateEntry(name, reason, data, now);
+                var record = new StateRecord(name, reason, data, now);
 
-                if (state.Jobs.TryGetValue(key, out var job))
+                if (state.Jobs.TryGetValue(key, out var entry))
                 {
-                    job.AddHistoryEntry(entry, maxHistory);
+                    entry.AddHistoryEntry(record, maxHistory);
                     if (setAsCurrent)
                     {
-                        state.JobSetState(job, entry);
+                        state.JobSetState(entry, record);
                     }
                 }
 
@@ -100,19 +100,19 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                var counter = state.CounterGetOrAdd(key);
-                counter.Value += value;
+                var entry = state.CounterGetOrAdd(key);
+                entry.Value += value;
 
-                if (counter.Value != 0)
+                if (entry.Value != 0)
                 {
                     if (expireIn.HasValue)
                     {
-                        state.CounterExpire(counter, now, expireIn);
+                        state.CounterExpire(entry, now, expireIn);
                     }
                 }
                 else
                 {
-                    state.CounterDelete(counter);
+                    state.CounterDelete(entry);
                 }
 
                 return null;
@@ -134,11 +134,11 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                var set = state.SetGetOrAdd(key);
+                var entry = state.SetGetOrAdd(key);
 
-                foreach (var value in items)
+                foreach (var item in items)
                 {
-                    set.Add(value, 0.0D);
+                    entry.Add(item, 0.0D);
                 }
 
                 return null;
@@ -150,10 +150,10 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                if (state.Sets.TryGetValue(key, out var set))
+                if (state.Sets.TryGetValue(key, out var entry))
                 {
-                    set.Remove(value);
-                    if (set.Count == 0) state.SetDelete(set);
+                    entry.Remove(value);
+                    if (entry.Count == 0) state.SetDelete(entry);
                 }
 
                 return null;
@@ -165,7 +165,7 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                if (state.Sets.TryGetValue(key, out var set)) state.SetDelete(set);
+                if (state.Sets.TryGetValue(key, out var entry)) state.SetDelete(entry);
                 return null;
             }
         }
@@ -175,7 +175,7 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                if (state.Sets.TryGetValue(key, out var set)) state.SetExpire(set, now, expireIn, maxExpiration);
+                if (state.Sets.TryGetValue(key, out var entry)) state.SetExpire(entry, now, expireIn, maxExpiration);
                 return null;
             }
         }
@@ -195,10 +195,10 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                var list = state.ListGetOrAdd(key);
-                if (list.RemoveAll(value, state.StringComparer) == 0)
+                var entry = state.ListGetOrAdd(key);
+                if (entry.RemoveAll(value, state.StringComparer) == 0)
                 {
-                    state.ListDelete(list);
+                    state.ListDelete(entry);
                 }
 
                 return null;
@@ -210,9 +210,9 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                if (state.Lists.TryGetValue(key, out var list) && list.Trim(keepStartingFrom, keepEndingAt) == 0)
+                if (state.Lists.TryGetValue(key, out var entry) && entry.Trim(keepStartingFrom, keepEndingAt) == 0)
                 {
-                    state.ListDelete(list);
+                    state.ListDelete(entry);
                 }
 
                 return null;
@@ -224,7 +224,7 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                if (state.Lists.TryGetValue(key, out var list)) state.ListExpire(list, now, expireIn, maxExpiration);
+                if (state.Lists.TryGetValue(key, out var entry)) state.ListExpire(entry, now, expireIn, maxExpiration);
                 return null;
             }
         }
@@ -234,16 +234,16 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                var hash = state.HashGetOrAdd(key);
+                var entry = state.HashGetOrAdd(key);
 
                 foreach (var item in items)
                 {
-                    hash.Value[item.Key] = item.Value;
+                    entry.Value[item.Key] = item.Value;
                 }
 
-                if (hash.Value.Count == 0)
+                if (entry.Value.Count == 0)
                 {
-                    state.HashDelete(hash);
+                    state.HashDelete(entry);
                 }
 
                 return null;
@@ -255,7 +255,7 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                if (state.Hashes.TryGetValue(key, out var hash)) state.HashExpire(hash, now, expireIn, maxExpiration);
+                if (state.Hashes.TryGetValue(key, out var entry)) state.HashExpire(entry, now, expireIn, maxExpiration);
                 return null;
             }
         }
@@ -265,7 +265,7 @@ namespace Hangfire.InMemory.State
         {
             public object? Execute(MemoryState<TKey> state)
             {
-                if (state.Hashes.TryGetValue(key, out var hash)) state.HashDelete(hash);
+                if (state.Hashes.TryGetValue(key, out var entry)) state.HashDelete(entry);
                 return null;
             }
         }
@@ -291,9 +291,9 @@ namespace Hangfire.InMemory.State
         {
             protected override bool Execute(MemoryState<TKey> state)
             {
-                if (state.Servers.TryGetValue(serverId, out var server))
+                if (state.Servers.TryGetValue(serverId, out var entry))
                 {
-                    server.HeartbeatAt = now;
+                    entry.HeartbeatAt = now;
                     return true;
                 }
 
@@ -318,12 +318,12 @@ namespace Hangfire.InMemory.State
             {
                 var serversToRemove = new List<string>();
 
-                foreach (var server in state.Servers)
+                foreach (var entry in state.Servers)
                 {
-                    if (now > server.Value.HeartbeatAt.Add(timeout))
+                    if (now > entry.Value.HeartbeatAt.Add(timeout))
                     {
                         // Adding for removal first, to avoid breaking the iterator
-                        serversToRemove.Add(server.Key);
+                        serversToRemove.Add(entry.Key);
                     }
                 }
 

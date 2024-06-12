@@ -100,7 +100,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public void JobSetState(JobEntry<TKey> entry, StateEntry state)
+        public void JobSetState(JobEntry<TKey> entry, StateRecord state)
         {
             if (entry.State != null && JobStateIndex.TryGetValue(entry.State.Name, out var indexEntry))
             {
@@ -135,16 +135,6 @@ namespace Hangfire.InMemory.State
                 stateIndex.Remove(entry);
                 if (stateIndex.Count == 0) JobStateIndex.Remove(entry.State.Name);
             }
-        }
-
-        public long GetCountByStateName(string stateName)
-        {
-            if (JobStateIndex.TryGetValue(stateName, out var index))
-            {
-                return index.Count;
-            }
-
-            return 0;
         }
 
         public HashEntry HashGetOrAdd(string key)

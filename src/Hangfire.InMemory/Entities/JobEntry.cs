@@ -22,7 +22,7 @@ namespace Hangfire.InMemory.Entities
 {
     internal sealed class JobEntry<T> : IExpirableEntry<T>
     {
-        private readonly List<StateEntry> _history = new();
+        private readonly List<StateRecord> _history = new();
         private KeyValuePair<string, string>[] _parameters;
 
         public JobEntry(
@@ -41,8 +41,8 @@ namespace Hangfire.InMemory.Entities
         public T Key { get; }
         public InvocationData InvocationData { get; internal set; }
 
-        public StateEntry? State { get; set; }
-        public IEnumerable<StateEntry> History => _history;
+        public StateRecord? State { get; set; }
+        public IEnumerable<StateRecord> History => _history;
         public MonotonicTime CreatedAt { get; }
         public MonotonicTime? ExpireAt { get; set; }
 
@@ -84,14 +84,14 @@ namespace Hangfire.InMemory.Entities
             return _parameters;
         }
 
-        public void AddHistoryEntry(StateEntry entry, int maxLength)
+        public void AddHistoryEntry(StateRecord record, int maxLength)
         {
-            if (entry == null) throw new ArgumentNullException(nameof(entry));
+            if (record == null) throw new ArgumentNullException(nameof(record));
             if (maxLength <= 0) throw new ArgumentOutOfRangeException(nameof(maxLength));
 
             if (_history.Count < maxLength)
             {
-                _history.Add(entry);
+                _history.Add(record);
             }
             else
             {
@@ -100,7 +100,7 @@ namespace Hangfire.InMemory.Entities
                     _history[i] = _history[i + 1];
                 }
 
-                _history[_history.Count - 1] = entry;
+                _history[_history.Count - 1] = record;
             }
         }
     }
