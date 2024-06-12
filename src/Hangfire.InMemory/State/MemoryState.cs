@@ -139,58 +139,58 @@ namespace Hangfire.InMemory.State
 
         public HashEntry HashGetOrAdd(string key)
         {
-            if (!Hashes.TryGetValue(key, out var hash))
+            if (!Hashes.TryGetValue(key, out var entry))
             {
-                Hashes.Add(key, hash = new HashEntry(key, StringComparer));
+                Hashes.Add(key, entry = new HashEntry(key, StringComparer));
             }
 
-            return hash;
+            return entry;
         }
 
-        public void HashExpire(HashEntry hash, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
+        public void HashExpire(HashEntry entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
         {
-            if (EntryExpire<string, HashEntry>(hash, ExpiringHashesIndex, now, expireIn, maxExpiration))
+            if (EntryExpire<string, HashEntry>(entry, ExpiringHashesIndex, now, expireIn, maxExpiration))
             {
-                HashDelete(hash);
+                HashDelete(entry);
             }
         }
 
-        public void HashDelete(HashEntry hash)
+        public void HashDelete(HashEntry entry)
         {
-            EntryRemove(hash, Hashes, ExpiringHashesIndex);
+            EntryRemove(entry, Hashes, ExpiringHashesIndex);
         }
 
         public SetEntry SetGetOrAdd(string key)
         {
-            if (!Sets.TryGetValue(key, out var set))
+            if (!Sets.TryGetValue(key, out var entry))
             {
-                Sets.Add(key, set = new SetEntry(key, StringComparer));
+                Sets.Add(key, entry = new SetEntry(key, StringComparer));
             }
 
-            return set;
+            return entry;
         }
 
-        public void SetExpire(SetEntry set, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
+        public void SetExpire(SetEntry entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
         {
-            if (EntryExpire<string, SetEntry>(set, ExpiringSetsIndex, now, expireIn, maxExpiration))
+            if (EntryExpire<string, SetEntry>(entry, ExpiringSetsIndex, now, expireIn, maxExpiration))
             {
-                SetDelete(set);
+                SetDelete(entry);
             }
         }
 
-        public void SetDelete(SetEntry set)
+        public void SetDelete(SetEntry entry)
         {
-            EntryRemove(set, Sets, ExpiringSetsIndex);
+            EntryRemove(entry, Sets, ExpiringSetsIndex);
         }
 
         public ListEntry ListGetOrAdd(string key)
         {
-            if (!Lists.TryGetValue(key, out var list))
+            if (!Lists.TryGetValue(key, out var entry))
             {
-                Lists.Add(key, list = new ListEntry(key));
+                Lists.Add(key, entry = new ListEntry(key));
             }
 
-            return list;
+            return entry;
         }
 
         public void ListExpire(ListEntry entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
@@ -201,29 +201,29 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public void ListDelete(ListEntry list)
+        public void ListDelete(ListEntry entry)
         {
-            EntryRemove(list, Lists, ExpiringListsIndex);
+            EntryRemove(entry, Lists, ExpiringListsIndex);
         }
 
         public CounterEntry CounterGetOrAdd(string key)
         {
-            if (!Counters.TryGetValue(key, out var counter))
+            if (!Counters.TryGetValue(key, out var entry))
             {
-                Counters.Add(key, counter = new CounterEntry(key));
+                Counters.Add(key, entry = new CounterEntry(key));
             }
 
-            return counter;
+            return entry;
         }
 
-        public void CounterExpire(CounterEntry counter, MonotonicTime? now, TimeSpan? expireIn)
+        public void CounterExpire(CounterEntry entry, MonotonicTime? now, TimeSpan? expireIn)
         {
             // We don't apply MaxExpirationTime rules for counters, because they
             // usually have fixed size, and because statistics should be kept for
             // days.
-            if (EntryExpire<string, CounterEntry>(counter, ExpiringCountersIndex, now, expireIn, maxExpiration: null))
+            if (EntryExpire<string, CounterEntry>(entry, ExpiringCountersIndex, now, expireIn, maxExpiration: null))
             {
-                CounterDelete(counter);
+                CounterDelete(entry);
             }
         }
 
