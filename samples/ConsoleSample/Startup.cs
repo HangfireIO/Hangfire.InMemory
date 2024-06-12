@@ -16,7 +16,6 @@ namespace ConsoleSample
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseIgnoredAssemblyVersionTypeResolver()
-                .UseDefaultCulture(CultureInfo.CurrentCulture, captureDefault: false)
                 .UseInMemoryStorage(new InMemoryStorageOptions
                 {
                     IdType = InMemoryStorageIdType.Long
