@@ -87,7 +87,7 @@ namespace Hangfire.InMemory.State
         {
             public QueueEntry<TKey> Execute(MemoryState<TKey> state)
             {
-                var entry = state.QueueGetOrCreate(queue);
+                var entry = state.QueueGetOrAdd(queue);
                 entry.Queue.Enqueue(key);
 
                 return entry;

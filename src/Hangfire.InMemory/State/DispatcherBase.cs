@@ -49,7 +49,7 @@ namespace Hangfire.InMemory.State
             {
                 entries[index++] = new KeyValuePair<string, QueueEntry<TKey>>(
                     queueName,
-                    _state.QueueGetOrCreate(queueName));
+                    _state.QueueGetOrAdd(queueName));
             }
 
             return entries;

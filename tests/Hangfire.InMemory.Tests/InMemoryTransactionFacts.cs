@@ -670,7 +670,7 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void AddToQueue_EnqueuesTheGivenJobId_ToTheGivenQueue_WhenItAlreadyExists()
         {
-            var entry = _state.QueueGetOrCreate("myqueue");
+            var entry = _state.QueueGetOrAdd("myqueue");
 
             Commit(x => x.AddToQueue("myqueue", "jobid"));
 
@@ -690,7 +690,7 @@ namespace Hangfire.InMemory.Tests
             using (var semaphore = new AutoResetEvent(false))
             {
                 // Arrange
-                var entry = _state.QueueGetOrCreate("myqueue");
+                var entry = _state.QueueGetOrAdd("myqueue");
                 entry.WaitHead.Next = new QueueWaitNode(semaphore);
 
                 // Act

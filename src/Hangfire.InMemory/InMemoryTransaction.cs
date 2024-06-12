@@ -363,7 +363,7 @@ namespace Hangfire.InMemory
 
             foreach (var queue in _enqueued)
             {
-                state.QueueGetOrCreate(queue).SignalOneWaitNode();
+                state.QueueGetOrAdd(queue).SignalOneWaitNode();
             }
 
             return null;

@@ -74,14 +74,9 @@ namespace Hangfire.InMemory.State
         public SortedSet<ListEntry> ExpiringListsIndex { get; }
         public SortedSet<SetEntry> ExpiringSetsIndex { get; }
 
-        public QueueEntry<TKey> QueueGetOrCreate(string name)
+        public QueueEntry<TKey> QueueGetOrAdd(string name)
         {
-            if (!Queues.TryGetValue(name, out var entry))
-            {
-                entry = Queues.GetOrAdd(name, static _ => new QueueEntry<TKey>());
-            }
-
-            return entry;
+            return Queues.GetOrAdd(name, static _ => new QueueEntry<TKey>());
         }
 
         public void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn)

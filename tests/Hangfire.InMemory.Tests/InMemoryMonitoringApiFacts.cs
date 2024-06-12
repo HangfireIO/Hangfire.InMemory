@@ -79,7 +79,7 @@ namespace Hangfire.InMemory.Tests
         public void Queues_ReturnEmptyQueue_WhenQueueExistWithoutAnyJobs()
         {
             // Arrange
-            _state.QueueGetOrCreate("default");
+            _state.QueueGetOrAdd("default");
 
             var monitoring = CreateMonitoringApi();
 
