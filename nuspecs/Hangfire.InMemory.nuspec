@@ -16,6 +16,15 @@
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
 
+0.10.1
+• Changed – Roll back a breaking change in 0.10.0 for the `InMemoryStorageOptions` class.
+• Changed – Increase the default eviction interval to 5 seconds.
+• Changed – More efficient storage of state history records.
+• Changed – Implement fast path for the `FetchNextJob` method.
+• Fixed – More robust entry eviction implementation.
+• Fixed – Graceful dispatcher shutdown without additional waiting.
+• Project – Faster build pipeline on AppVeyor after migration to modern Powershell 7+.
+
 0.10.0
 • Breaking – `InMemoryStorageOptions` class instances are now immutable after initialization.
 • Added – Support long-based job identifiers through the `InMemoryStorageOptions.IdType` property.
