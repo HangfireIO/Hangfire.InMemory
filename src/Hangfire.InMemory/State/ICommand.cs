@@ -38,18 +38,4 @@ namespace Hangfire.InMemory.State
             return Execute(state);
         }
     }
-    
-    internal abstract class ValueCommand<TKey, T> : ICommand<TKey, ValueCommand<TKey, T>>
-        where TKey : IComparable<TKey>
-    {
-        public T? Result { get; private set; }
-
-        protected abstract T Execute(MemoryState<TKey> state);
-
-        ValueCommand<TKey, T> ICommand<TKey, ValueCommand<TKey, T>>.Execute(MemoryState<TKey> state)
-        {
-            Result = Execute(state);
-            return this;
-        }
-    }
 }

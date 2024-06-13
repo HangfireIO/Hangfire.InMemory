@@ -285,7 +285,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ServerHeartbeat<TKey>(string serverId, MonotonicTime now) : ValueCommand<TKey, bool>
+        public sealed class ServerHeartbeat<TKey>(string serverId, MonotonicTime now) : Command<TKey, bool>
             where TKey : IComparable<TKey>
         {
             protected override bool Execute(MemoryState<TKey> state)
@@ -310,7 +310,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ServerDeleteInactive<TKey>(TimeSpan timeout, MonotonicTime now) : ValueCommand<TKey, int>
+        public sealed class ServerDeleteInactive<TKey>(TimeSpan timeout, MonotonicTime now) : Command<TKey, int>
             where TKey : IComparable<TKey>
         {
             protected override int Execute(MemoryState<TKey> state)

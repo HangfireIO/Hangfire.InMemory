@@ -110,7 +110,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class QueueGetCount<TKey>(string queueName) : ValueCommand<TKey, long>
+        public sealed class QueueGetCount<TKey>(string queueName) : Command<TKey, long>
             where TKey : IComparable<TKey>
         {
             protected override long Execute(MemoryState<TKey> state)
@@ -253,7 +253,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobGetCountByState<TKey>(string stateName) : ValueCommand<TKey, long>
+        public sealed class JobGetCountByState<TKey>(string stateName) : Command<TKey, long>
             where TKey : IComparable<TKey>
         {
             protected override long Execute(MemoryState<TKey> state)

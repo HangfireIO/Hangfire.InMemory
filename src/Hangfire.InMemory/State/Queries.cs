@@ -167,7 +167,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetContains<TKey>(string key, string value) : ValueCommand<TKey, bool>
+        public sealed class SortedSetContains<TKey>(string key, string value) : Command<TKey, bool>
             where TKey : IComparable<TKey>
         {
             protected override bool Execute(MemoryState<TKey> state)
@@ -176,7 +176,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetCount<TKey>(string key) : ValueCommand<TKey, int>
+        public sealed class SortedSetCount<TKey>(string key) : Command<TKey, int>
             where TKey : IComparable<TKey>
         {
             protected override int Execute(MemoryState<TKey> state)
@@ -185,7 +185,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetCountMultiple<TKey>(IEnumerable<string> keys, int limit) : ValueCommand<TKey, int>
+        public sealed class SortedSetCountMultiple<TKey>(IEnumerable<string> keys, int limit) : Command<TKey, int>
             where TKey : IComparable<TKey>
         {
             protected override int Execute(MemoryState<TKey> state)
@@ -202,7 +202,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetTimeToLive<TKey>(string key) : ValueCommand<TKey, MonotonicTime?>
+        public sealed class SortedSetTimeToLive<TKey>(string key) : Command<TKey, MonotonicTime?>
             where TKey : IComparable<TKey>
         {
             protected override MonotonicTime? Execute(MemoryState<TKey> state)
@@ -244,7 +244,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashFieldCount<TKey>(string key) : ValueCommand<TKey, int>
+        public sealed class HashFieldCount<TKey>(string key) : Command<TKey, int>
             where TKey : IComparable<TKey>
         {
             protected override int Execute(MemoryState<TKey> state)
@@ -253,7 +253,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashTimeToLive<TKey>(string key) : ValueCommand<TKey, MonotonicTime?>
+        public sealed class HashTimeToLive<TKey>(string key) : Command<TKey, MonotonicTime?>
             where TKey : IComparable<TKey>
         {
             protected override MonotonicTime? Execute(MemoryState<TKey> state)
@@ -304,7 +304,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListCount<TKey>(string key) : ValueCommand<TKey, int>
+        public sealed class ListCount<TKey>(string key) : Command<TKey, int>
             where TKey : IComparable<TKey>
         {
             protected override int Execute(MemoryState<TKey> state)
@@ -313,7 +313,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListTimeToLive<TKey>(string key) : ValueCommand<TKey, MonotonicTime?>
+        public sealed class ListTimeToLive<TKey>(string key) : Command<TKey, MonotonicTime?>
             where TKey : IComparable<TKey>
         {
             protected override MonotonicTime? Execute(MemoryState<TKey> state)
@@ -327,7 +327,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class CounterGet<TKey>(string key) : ValueCommand<TKey, long>
+        public sealed class CounterGet<TKey>(string key) : Command<TKey, long>
             where TKey : IComparable<TKey>
         {
             protected override long Execute(MemoryState<TKey> state)

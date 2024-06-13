@@ -19,38 +19,10 @@ namespace Hangfire.InMemory.State
 {
     internal static class DispatcherExtensions
     {
-        public static T? QueryWriteAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ValueCommand<TKey, T?> query)
-            where TKey : IComparable<TKey>
-            where T : struct
-        {
-            return dispatcher.QueryWriteAndWait<ValueCommand<TKey, T?>, ValueCommand<TKey, T?>>(query).Result;
-        }
-
-        public static T QueryWriteAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ValueCommand<TKey, T> query)
-            where TKey : IComparable<TKey>
-            where T : struct
-        {
-            return dispatcher.QueryWriteAndWait<ValueCommand<TKey, T>, ValueCommand<TKey, T>>(query).Result;
-        }
-
         public static T QueryWriteAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, T> query)
             where TKey : IComparable<TKey>
         {
             return dispatcher.QueryWriteAndWait<ICommand<TKey, T>, T>(query);
-        }
-
-        public static T? QueryReadAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ValueCommand<TKey, T?> query)
-            where TKey : IComparable<TKey>
-            where T : struct
-        {
-            return dispatcher.QueryReadAndWait<ValueCommand<TKey, T?>, ValueCommand<TKey, T?>>(query).Result;
-        }
-
-        public static T QueryReadAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ValueCommand<TKey, T> query)
-            where TKey : IComparable<TKey>
-            where T : struct
-        {
-            return dispatcher.QueryReadAndWait<ValueCommand<TKey, T>, ValueCommand<TKey, T>>(query).Result;
         }
 
         public static T QueryReadAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, T> query)
