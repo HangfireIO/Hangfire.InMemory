@@ -152,14 +152,12 @@ namespace Hangfire.InMemory.State
 
         public virtual T QueryWriteAndWait<TCommand, T>(TCommand query)
             where TCommand : ICommand<TKey, T>
-            where T : class?
         {
             return query.Execute(_state);
         }
 
         public virtual T QueryReadAndWait<TCommand, T>(TCommand query)
             where TCommand : ICommand<TKey, T>
-            where T : class?
         {
             return QueryWriteAndWait<TCommand, T>(query);
         }

@@ -35,7 +35,6 @@ namespace Hangfire.InMemory.State
 
         public static T QueryWriteAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, T> query)
             where TKey : IComparable<TKey>
-            where T : class?
         {
             return dispatcher.QueryWriteAndWait<ICommand<TKey, T>, T>(query);
         }
@@ -56,7 +55,6 @@ namespace Hangfire.InMemory.State
 
         public static T QueryReadAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, T> query)
             where TKey : IComparable<TKey>
-            where T : class?
         {
             return dispatcher.QueryReadAndWait<ICommand<TKey, T>, T>(query);
         }

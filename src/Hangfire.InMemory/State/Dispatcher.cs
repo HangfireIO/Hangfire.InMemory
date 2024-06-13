@@ -26,11 +26,11 @@ namespace Hangfire.InMemory.State
         private const uint DefaultEvictionIntervalMs = 5000U;
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
-        private readonly ConcurrentQueue<DispatcherCallback<TKey>> _readQueries = new ConcurrentQueue<DispatcherCallback<TKey>>();
+        private readonly ConcurrentQueue<IDispatcherCallback<TKey>> _readQueries = new ConcurrentQueue<IDispatcherCallback<TKey>>();
 
         // ConcurrentBag for writes give much better throughput, but less stable, since some items are processed
         // with a heavy delay when new ones are constantly arriving.
-        private readonly ConcurrentQueue<DispatcherCallback<TKey>> _queries = new ConcurrentQueue<DispatcherCallback<TKey>>();
+        private readonly ConcurrentQueue<IDispatcherCallback<TKey>> _queries = new ConcurrentQueue<IDispatcherCallback<TKey>>();
         private readonly TimeSpan _commandTimeout;
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
@@ -67,7 +67,7 @@ namespace Hangfire.InMemory.State
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new DispatcherCallback<TKey>(query, rethrowExceptions: true))
+            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, rethrowExceptions: true))
             {
                 _queries.Enqueue(callback);
 
@@ -84,10 +84,10 @@ namespace Hangfire.InMemory.State
 
                 if (callback.IsFaulted)
                 {
-                    throw new InvalidOperationException("Dispatcher stopped due to an unhandled exception, storage state is corrupted.", (Exception?)callback.Result);
+                    throw new InvalidOperationException("Dispatcher stopped due to an unhandled exception, storage state is corrupted.", callback.Exception);
                 }
 
-                return (T)callback.Result!;
+                return callback.Result!;
             }
         }
 
@@ -95,7 +95,7 @@ namespace Hangfire.InMemory.State
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new DispatcherCallback<TKey>(query, rethrowExceptions: false))
+            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, rethrowExceptions: false))
             {
                 _readQueries.Enqueue(callback);
 
@@ -112,10 +112,10 @@ namespace Hangfire.InMemory.State
 
                 if (callback.IsFaulted)
                 {
-                    throw new InvalidOperationException("An exception occurred while executing a read query. Please see inner exception for details.", (Exception?)callback.Result);
+                    throw new InvalidOperationException("An exception occurred while executing a read query. Please see inner exception for details.", callback.Exception);
                 }
 
-                return (T)callback.Result!;
+                return callback.Result!;
             }
         }
 

@@ -19,7 +19,6 @@ namespace Hangfire.InMemory.State
 {
     internal interface ICommand<TKey, out T>
         where TKey : IComparable<TKey>
-        where T : class?
     {
         T Execute(MemoryState<TKey> state);
     }
@@ -31,7 +30,6 @@ namespace Hangfire.InMemory.State
 
     internal abstract class Command<TKey, T> : ICommand<TKey, T>
         where TKey : IComparable<TKey>
-        where T : class?
     {
         protected abstract T Execute(MemoryState<TKey> state);
         
