@@ -19,48 +19,46 @@ namespace Hangfire.InMemory.State
 {
     internal static class DispatcherExtensions
     {
-        public static T? QueryWriteAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, ValueCommand<TKey, T?>> query)
+        public static T? QueryWriteAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ValueCommand<TKey, T?> query)
             where TKey : IComparable<TKey>
             where T : struct
         {
-            return dispatcher.QueryWriteAndWait<ICommand<TKey, ValueCommand<TKey, T?>>, ValueCommand<TKey, T?>>(query).Result;
+            return dispatcher.QueryWriteAndWait<ValueCommand<TKey, T?>, ValueCommand<TKey, T?>>(query).Result;
         }
 
-        public static T QueryWriteAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, ValueCommand<TKey, T>> query)
+        public static T QueryWriteAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ValueCommand<TKey, T> query)
             where TKey : IComparable<TKey>
             where T : struct
         {
-            return dispatcher.QueryWriteAndWait<ICommand<TKey, ValueCommand<TKey, T>>, ValueCommand<TKey, T>>(query).Result;
+            return dispatcher.QueryWriteAndWait<ValueCommand<TKey, T>, ValueCommand<TKey, T>>(query).Result;
         }
 
         public static T QueryWriteAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, T> query)
             where TKey : IComparable<TKey>
             where T : class?
         {
-            return (T)dispatcher.QueryWriteAndWait<ICommand<TKey, object?>, object?>(query)!;
+            return dispatcher.QueryWriteAndWait<ICommand<TKey, T>, T>(query);
         }
-        
-        
-        
+
         public static T? QueryReadAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ValueCommand<TKey, T?> query)
             where TKey : IComparable<TKey>
             where T : struct
         {
-            return dispatcher.QueryReadAndWait<ICommand<TKey, ValueCommand<TKey, T?>>, ValueCommand<TKey, T?>>(query).Result;
+            return dispatcher.QueryReadAndWait<ValueCommand<TKey, T?>, ValueCommand<TKey, T?>>(query).Result;
         }
 
         public static T QueryReadAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ValueCommand<TKey, T> query)
             where TKey : IComparable<TKey>
             where T : struct
         {
-            return dispatcher.QueryReadAndWait<ICommand<TKey, ValueCommand<TKey, T>>, ValueCommand<TKey, T>>(query).Result;
+            return dispatcher.QueryReadAndWait<ValueCommand<TKey, T>, ValueCommand<TKey, T>>(query).Result;
         }
 
-        public static T QueryReadAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, Command<TKey, T> query)
+        public static T QueryReadAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, T> query)
             where TKey : IComparable<TKey>
             where T : class?
         {
-            return (T)dispatcher.QueryReadAndWait<ICommand<TKey, object?>, object?>(query)!;
+            return dispatcher.QueryReadAndWait<ICommand<TKey, T>, T>(query);
         }
     }
 }
