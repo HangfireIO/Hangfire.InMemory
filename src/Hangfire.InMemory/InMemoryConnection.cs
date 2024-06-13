@@ -109,10 +109,7 @@ namespace Hangfire.InMemory
             var data = InvocationData.SerializeJob(job);
             var now = Dispatcher.GetMonotonicTime();
 
-            Dispatcher.QueryWriteAndWait(
-                new Commands.JobCreate<TKey>(key, data, parameters.ToArray(), now, expireIn),
-                static (q, s) => q.Execute(s));
-
+            Dispatcher.QueryWriteAndWait(new Commands.JobCreate<TKey>(key, data, parameters.ToArray(), now, expireIn));
             return KeyProvider.ToString(key);
         }
 
@@ -198,7 +195,7 @@ namespace Hangfire.InMemory
                 return;
             }
 
-            Dispatcher.QueryWriteAndWait(new Commands.JobSetParameter<TKey>(key, name, value), static (q, s) => q.Execute(s));
+            Dispatcher.QueryWriteAndWait(new Commands.JobSetParameter<TKey>(key, name, value));
         }
 
         public override string? GetJobParameter([NotNull] string id, [NotNull] string name)
@@ -211,7 +208,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            return Dispatcher.QueryReadAndWait(new Queries.JobGetParameter<TKey>(key, name), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.JobGetParameter<TKey>(key, name));
         }
 
         public override JobData? GetJobData([NotNull] string jobId)
@@ -223,7 +220,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            var data = Dispatcher.QueryReadAndWait(new Queries.JobGetData<TKey>(key), static (q, s) => q.Execute(s));
+            var data = Dispatcher.QueryReadAndWait(new Queries.JobGetData<TKey>(key));
             if (data == null) return null;
 
             return new JobData
@@ -248,7 +245,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            var data = Dispatcher.QueryReadAndWait(new Queries.JobGetState<TKey>(key), static (q, s) => q.Execute(s));
+            var data = Dispatcher.QueryReadAndWait(new Queries.JobGetState<TKey>(key));
             if (data == null) return null;
 
             return new StateData
@@ -265,14 +262,14 @@ namespace Hangfire.InMemory
             if (context == null) throw new ArgumentNullException(nameof(context));
 
             var now = Dispatcher.GetMonotonicTime();
-            Dispatcher.QueryWriteAndWait(new Commands.ServerAnnounce<TKey>(serverId, context, now), static (q, s) => q.Execute(s));
+            Dispatcher.QueryWriteAndWait(new Commands.ServerAnnounce<TKey>(serverId, context, now));
         }
 
         public override void RemoveServer([NotNull] string serverId)
         {
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
-            Dispatcher.QueryWriteAndWait(new Commands.ServerDelete<TKey>(serverId), static (q, s) => q.Execute(s));
+            Dispatcher.QueryWriteAndWait(new Commands.ServerDelete<TKey>(serverId));
         }
 
         public override void Heartbeat([NotNull] string serverId)
@@ -280,7 +277,7 @@ namespace Hangfire.InMemory
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
             var now = Dispatcher.GetMonotonicTime();
-            var result = Dispatcher.QueryWriteAndWait(new Commands.ServerHeartbeat<TKey>(serverId, now), static (q, s) => q.Execute(s));
+            var result = Dispatcher.QueryWriteAndWait(new Commands.ServerHeartbeat<TKey>(serverId, now));
 
             if (!result)
             {
@@ -296,10 +293,7 @@ namespace Hangfire.InMemory
             }
 
             var now = Dispatcher.GetMonotonicTime();
-
-            return Dispatcher.QueryWriteAndWait(
-                new Commands.ServerDeleteInactive<TKey>(timeOut, now),
-                static (q, s) => q.Execute(s));
+            return Dispatcher.QueryWriteAndWait(new Commands.ServerDeleteInactive<TKey>(timeOut, now));
         }
 
 #if !HANGFIRE_170
@@ -313,7 +307,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new Queries.SortedSetGetAll<TKey>(key), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.SortedSetGetAll<TKey>(key));
         }
 
         public override string? GetFirstByLowestScoreFromSet([NotNull] string key, double fromScore, double toScore)
@@ -321,9 +315,10 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be greater or equal to the `fromScore` value.", nameof(toScore));
 
-            return Dispatcher.QueryReadAndWait(
-                new Queries.SortedSetFirstByLowestScore<TKey>(key, fromScore, toScore),
-                static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.SortedSetFirstByLowestScore<TKey>(
+                key,
+                fromScore,
+                toScore));
         }
 
         public override List<string> GetFirstByLowestScoreFromSet([NotNull] string key, double fromScore, double toScore, int count)
@@ -332,9 +327,11 @@ namespace Hangfire.InMemory
             if (toScore < fromScore) throw new ArgumentException("The `toScore` value must be greater or equal to the `fromScore` value.", nameof(toScore));
             if (count <= 0) throw new ArgumentException("The value must be a positive number", nameof(count));
 
-            return Dispatcher.QueryReadAndWait(
-                new Queries.SortedSetFirstByLowestScoreMultiple<TKey>(key, fromScore, toScore, count),
-                static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.SortedSetFirstByLowestScoreMultiple<TKey>(
+                key,
+                fromScore,
+                toScore,
+                count));
         }
 
 #if !HANGFIRE_170
@@ -343,7 +340,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            return Dispatcher.QueryReadAndWait(new Queries.SortedSetContains<TKey>(key, value), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.SortedSetContains<TKey>(key, value));
         }
 #endif
 
@@ -351,7 +348,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new Queries.SortedSetCount<TKey>(key), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.SortedSetCount<TKey>(key));
         }
 
 #if !HANGFIRE_170
@@ -360,9 +357,9 @@ namespace Hangfire.InMemory
             if (keys == null) throw new ArgumentNullException(nameof(keys));
             if (limit < 0) throw new ArgumentOutOfRangeException(nameof(limit), "Value must be greater or equal to 0.");
 
-            return Dispatcher.QueryReadAndWait(
-                new Queries.SortedSetCountMultiple<TKey>(keys, limit),
-                static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.SortedSetCountMultiple<TKey>(
+                keys,
+                limit));
         }
 #endif
 
@@ -370,28 +367,28 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new Queries.ListCount<TKey>(key), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.ListCount<TKey>(key));
         }
 
         public override long GetCounter([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new Queries.CounterGet<TKey>(key), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.CounterGet<TKey>(key));
         }
 
         public override long GetHashCount([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new Queries.HashFieldCount<TKey>(key), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.HashFieldCount<TKey>(key));
         }
 
         public override TimeSpan GetHashTtl([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryReadAndWait(new Queries.HashTimeToLive<TKey>(key), static (q, s) => q.Execute(s));
+            var expireAt = Dispatcher.QueryReadAndWait(new Queries.HashTimeToLive<TKey>(key));
 
             if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
 
@@ -404,7 +401,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryReadAndWait(new Queries.ListTimeToLive<TKey>(key), static (q, s) => q.Execute(s));
+            var expireAt = Dispatcher.QueryReadAndWait(new Queries.ListTimeToLive<TKey>(key));
 
             if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
 
@@ -417,7 +414,7 @@ namespace Hangfire.InMemory
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            var expireAt = Dispatcher.QueryReadAndWait(new Queries.SortedSetTimeToLive<TKey>(key), static (q, s) => q.Execute(s));
+            var expireAt = Dispatcher.QueryReadAndWait(new Queries.SortedSetTimeToLive<TKey>(key));
             
             if (!expireAt.HasValue) return Timeout.InfiniteTimeSpan;
 
@@ -431,14 +428,14 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (keyValuePairs == null) throw new ArgumentNullException(nameof(keyValuePairs));
 
-            Dispatcher.QueryWriteAndWait(new Commands.HashSetRange<TKey>(key, keyValuePairs), static (q, s) => q.Execute(s));
+            Dispatcher.QueryWriteAndWait(new Commands.HashSetRange<TKey>(key, keyValuePairs));
         }
 
         public override Dictionary<string, string>? GetAllEntriesFromHash([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new Queries.HashGetAll<TKey>(key), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.HashGetAll<TKey>(key));
         }
 
         public override string? GetValueFromHash([NotNull] string key, [NotNull] string name)
@@ -446,14 +443,14 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            return Dispatcher.QueryReadAndWait(new Queries.HashGet<TKey>(key, name), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.HashGet<TKey>(key, name));
         }
 
         public override List<string> GetAllItemsFromList([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            return Dispatcher.QueryReadAndWait(new Queries.ListGetAll<TKey>(key), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.ListGetAll<TKey>(key));
         }
 
         public override List<string> GetRangeFromList([NotNull] string key, int startingFrom, int endingAt)
@@ -462,7 +459,7 @@ namespace Hangfire.InMemory
             if (startingFrom < 0) throw new ArgumentException("The value must be greater than or equal to zero.", nameof(startingFrom));
             if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater than the `{nameof(startingFrom)}` value.", nameof(endingAt));
 
-            return Dispatcher.QueryReadAndWait(new Queries.ListRange<TKey>(key, startingFrom, endingAt), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.ListRange<TKey>(key, startingFrom, endingAt));
         }
 
         public override List<string> GetRangeFromSet([NotNull] string key, int startingFrom, int endingAt)
@@ -471,7 +468,7 @@ namespace Hangfire.InMemory
             if (startingFrom < 0) throw new ArgumentException("The value must be greater than or equal to zero.", nameof(startingFrom));
             if (endingAt < startingFrom) throw new ArgumentException($"The `{nameof(endingAt)}` value must be greater or equal to the `{nameof(startingFrom)}` value.", nameof(endingAt));
 
-            return Dispatcher.QueryReadAndWait(new Queries.SortedSetRange<TKey>(key, startingFrom, endingAt), static (q, s) => q.Execute(s));
+            return Dispatcher.QueryReadAndWait(new Queries.SortedSetRange<TKey>(key, startingFrom, endingAt));
         }
 
         private sealed class LockDisposable : IDisposable

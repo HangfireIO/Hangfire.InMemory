@@ -62,7 +62,7 @@ namespace Hangfire.InMemory
 
         public override IList<QueueWithTopEnqueuedJobsDto> Queues()
         {
-            var queues = _dispatcher.QueryReadAndWait(new MonitoringQueries.QueuesGetAll<TKey>(), static (q, s) => MonitoringQueries.QueuesGetAll<TKey>.Execute(s));
+            var queues = _dispatcher.QueryReadAndWait(new MonitoringQueries.QueuesGetAll<TKey>());
 
             var jobKeys = new List<TKey>();
             foreach (var queue in queues)
@@ -70,7 +70,7 @@ namespace Hangfire.InMemory
                 jobKeys.AddRange(queue.First);
             }
 
-            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(jobKeys), static (q, s) => q.Execute(s));
+            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(jobKeys));
 
             return queues.Select(entry => new QueueWithTopEnqueuedJobsDto
             {
@@ -96,7 +96,7 @@ namespace Hangfire.InMemory
 
         public override IList<ServerDto> Servers()
         {
-            var servers = _dispatcher.QueryReadAndWait(new MonitoringQueries.ServersGetAll<TKey>(), static (q, s) => MonitoringQueries.ServersGetAll<TKey>.Execute(s));
+            var servers = _dispatcher.QueryReadAndWait(new MonitoringQueries.ServersGetAll<TKey>());
             return servers.Select(static entry => new ServerDto
             {
                 Name = entry.Name,
@@ -116,7 +116,7 @@ namespace Hangfire.InMemory
                 return null;
             }
 
-            var details = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetDetails<TKey>(jobKey), static (q, s) => q.Execute(s));
+            var details = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetDetails<TKey>(jobKey));
             if (details == null) return null;
 
             return new JobDetailsDto
@@ -141,9 +141,10 @@ namespace Hangfire.InMemory
 
         public override StatisticsDto GetStatistics()
         {
-            var statistics = _dispatcher.QueryReadAndWait(
-                new MonitoringQueries.StatisticsGetAll<TKey>(StatisticsStates, StatisticsCounters, StatisticsSets),
-                static (q, s) => q.Execute(s));
+            var statistics = _dispatcher.QueryReadAndWait(new MonitoringQueries.StatisticsGetAll<TKey>(
+                StatisticsStates,
+                StatisticsCounters,
+                StatisticsSets));
 
             return new StatisticsDto
             {
@@ -170,9 +171,9 @@ namespace Hangfire.InMemory
             if (queue == null) throw new ArgumentNullException(nameof(queue));
 
             var enqueued =
-                _dispatcher.QueryReadAndWait(new MonitoringQueries.QueueGetEnqueued<TKey>(queue, from, perPage), static (q, s) => q.Execute(s));
+                _dispatcher.QueryReadAndWait(new MonitoringQueries.QueueGetEnqueued<TKey>(queue, from, perPage));
 
-            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(enqueued), static (q, s) => q.Execute(s));
+            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(enqueued));
 
             return new JobList<EnqueuedJobDto>(enqueued.Select(key => new KeyValuePair<string, EnqueuedJobDto>(
                 _keyProvider.ToString(key),
@@ -198,11 +199,12 @@ namespace Hangfire.InMemory
 
         public override JobList<ProcessingJobDto> ProcessingJobs(int from, int count)
         {
-            var processing = _dispatcher.QueryReadAndWait(
-                new MonitoringQueries.JobsGetByState<TKey>(ProcessingState.StateName, from, count),
-                static (q, s) => q.Execute(s));
+            var processing = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
+                ProcessingState.StateName,
+                from,
+                count));
 
-            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(processing), static (q, s) => q.Execute(s));
+            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(processing));
 
             return new JobList<ProcessingJobDto>(processing.Select(key => new KeyValuePair<string, ProcessingJobDto>(
                 _keyProvider.ToString(key),
@@ -224,11 +226,12 @@ namespace Hangfire.InMemory
 
         public override JobList<ScheduledJobDto> ScheduledJobs(int from, int count)
         {
-            var scheduled = _dispatcher.QueryReadAndWait(
-                new MonitoringQueries.JobsGetByState<TKey>(ScheduledState.StateName, from, count),
-                static (q, s) => q.Execute(s));
+            var scheduled = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
+                ScheduledState.StateName,
+                from,
+                count));
 
-            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(scheduled), static (q, s) => q.Execute(s));
+            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(scheduled));
 
             return new JobList<ScheduledJobDto>(scheduled.Select(key => new KeyValuePair<string, ScheduledJobDto>(
                 _keyProvider.ToString(key),
@@ -250,11 +253,13 @@ namespace Hangfire.InMemory
 
         public override JobList<SucceededJobDto> SucceededJobs(int from, int count)
         {
-            var succeeded = _dispatcher.QueryReadAndWait(
-                new MonitoringQueries.JobsGetByState<TKey>(SucceededState.StateName, from, count, reversed: true),
-                static (q, s) => q.Execute(s));
+            var succeeded = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
+                SucceededState.StateName,
+                from,
+                count,
+                reversed: true));
 
-            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(succeeded), static (q, s) => q.Execute(s));
+            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(succeeded));
 
             return new JobList<SucceededJobDto>(succeeded.Select(key => new KeyValuePair<string, SucceededJobDto>(
                 _keyProvider.ToString(key),
@@ -280,11 +285,13 @@ namespace Hangfire.InMemory
 
         public override JobList<FailedJobDto> FailedJobs(int from, int count)
         {
-            var failed = _dispatcher.QueryReadAndWait(
-                new MonitoringQueries.JobsGetByState<TKey>(FailedState.StateName, from, count, reversed: true),
-                static (q, s) => q.Execute(s));
+            var failed = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
+                FailedState.StateName,
+                from,
+                count,
+                reversed: true));
 
-            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(failed), static (q, s) => q.Execute(s));
+            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(failed));
 
             return new JobList<FailedJobDto>(failed.Select(key => new KeyValuePair<string, FailedJobDto>(
                 _keyProvider.ToString(key),
@@ -313,11 +320,13 @@ namespace Hangfire.InMemory
 
         public override JobList<DeletedJobDto> DeletedJobs(int from, int count)
         {
-            var deleted = _dispatcher.QueryReadAndWait(
-                new MonitoringQueries.JobsGetByState<TKey>(DeletedState.StateName, from, count, reversed: true),
-                static (q, s) => q.Execute(s));
+            var deleted = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
+                DeletedState.StateName,
+                from,
+                count,
+                reversed: true));
 
-            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(deleted), static (q, s) => q.Execute(s));
+            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(deleted));
 
             return new JobList<DeletedJobDto>(deleted.Select(key => new KeyValuePair<string, DeletedJobDto>(
                 _keyProvider.ToString(key),
@@ -337,11 +346,12 @@ namespace Hangfire.InMemory
 #if !HANGFIRE_170
         public override JobList<AwaitingJobDto> AwaitingJobs(int from, int count)
         {
-            var awaiting = _dispatcher.QueryReadAndWait(
-                new MonitoringQueries.JobsGetByState<TKey>(AwaitingState.StateName, from, count),
-                static (q, s) => q.Execute(s));
+            var awaiting = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByState<TKey>(
+                AwaitingState.StateName,
+                from,
+                count));
 
-            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(awaiting), static (q, s) => q.Execute(s));
+            var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(awaiting));
 
             var parentKeys = new List<TKey>();
             foreach (var job in jobs)
@@ -354,7 +364,7 @@ namespace Hangfire.InMemory
                 }
             }
 
-            var parentJobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(parentKeys), static (q, s) => q.Execute(s));
+            var parentJobs = _dispatcher.QueryReadAndWait(new MonitoringQueries.JobsGetByKey<TKey>(parentKeys));
 
             return new JobList<AwaitingJobDto>(awaiting.Select(key => new KeyValuePair<string, AwaitingJobDto>(
                 _keyProvider.ToString(key),
@@ -383,7 +393,7 @@ namespace Hangfire.InMemory
         public override long EnqueuedCount([NotNull] string queue)
         {
             if (queue == null) throw new ArgumentNullException(nameof(queue));
-            return _dispatcher.QueryReadAndWait(new MonitoringQueries.QueueGetCount<TKey>(queue), static (q, s) => q.Execute(s));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.QueueGetCount<TKey>(queue));
         }
 
         public override long FetchedCount([NotNull] string queue)
@@ -422,46 +432,46 @@ namespace Hangfire.InMemory
         public override IDictionary<DateTime, long> SucceededByDatesCount()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetDailyTimeline<TKey>(now, "succeeded"), static (q, s) => q.Execute(s));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetDailyTimeline<TKey>(now, "succeeded"));
         }
 
         public override IDictionary<DateTime, long> FailedByDatesCount()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetDailyTimeline<TKey>(now, "failed"), static (q, s) => q.Execute(s));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetDailyTimeline<TKey>(now, "failed"));
         }
 
 #if !HANGFIRE_170
         public override IDictionary<DateTime, long> DeletedByDatesCount()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetDailyTimeline<TKey>(now, "deleted"), static (q, s) => q.Execute(s));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetDailyTimeline<TKey>(now, "deleted"));
         }
 #endif
 
         public override IDictionary<DateTime, long> HourlySucceededJobs()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetHourlyTimeline<TKey>(now, "succeeded"), static (q, s) => q.Execute(s));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetHourlyTimeline<TKey>(now, "succeeded"));
         }
 
         public override IDictionary<DateTime, long> HourlyFailedJobs()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetHourlyTimeline<TKey>(now, "failed"), static (q, s) => q.Execute(s));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetHourlyTimeline<TKey>(now, "failed"));
         }
 
 #if !HANGFIRE_170
         public override IDictionary<DateTime, long> HourlyDeletedJobs()
         {
             var now = _dispatcher.GetMonotonicTime();
-            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetHourlyTimeline<TKey>(now, "deleted"), static (q, s) => q.Execute(s));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.CounterGetHourlyTimeline<TKey>(now, "deleted"));
         }
 #endif
 
         private long GetCountByStateName(string stateName)
         {
-            return _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetCountByState<TKey>(stateName), static (q, s) => q.Execute(s));
+            return _dispatcher.QueryReadAndWait(new MonitoringQueries.JobGetCountByState<TKey>(stateName));
         }
 
         private static bool TryGetJobRecord(
