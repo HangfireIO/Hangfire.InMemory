@@ -63,7 +63,7 @@ namespace Hangfire.InMemory.State
             _cts.Dispose();
         }
 
-        protected override object QueryWriteAndWait(ICommand<TKey, object> query)
+        public override T QueryWriteAndWait<TCommand, T>(TCommand query)
         {
             if (_disposed) ThrowObjectDisposedException();
 
@@ -87,11 +87,11 @@ namespace Hangfire.InMemory.State
                     throw new InvalidOperationException("Dispatcher stopped due to an unhandled exception, storage state is corrupted.", (Exception?)callback.Result);
                 }
 
-                return callback.Result!;
+                return (T)callback.Result!;
             }
         }
 
-        protected override object QueryReadAndWait(ICommand<TKey, object> query)
+        public override T QueryReadAndWait<TCommand, T>(TCommand query)
         {
             if (_disposed) ThrowObjectDisposedException();
 
@@ -115,7 +115,7 @@ namespace Hangfire.InMemory.State
                     throw new InvalidOperationException("An exception occurred while executing a read query. Please see inner exception for details.", (Exception?)callback.Result);
                 }
 
-                return callback.Result!;
+                return (T)callback.Result!;
             }
         }
 
