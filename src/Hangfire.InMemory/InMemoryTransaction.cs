@@ -27,13 +27,14 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction
         where TKey : IComparable<TKey>
     {
+        private readonly InMemoryConnection<TKey> _connection;
+
         private const int MaxCommandsInList = 4096;
         private readonly List<ICommand<TKey>> _commands = new List<ICommand<TKey>>();
         private LinkedList<ICommand<TKey>>? _additionalCommands;
 
-        private readonly HashSet<string> _enqueued = new HashSet<string>();
-        private readonly InMemoryConnection<TKey> _connection;
-        private readonly List<IDisposable> _acquiredLocks = new List<IDisposable>();
+        private List<IDisposable>? _acquiredLocks;
+        private HashSet<string>? _enqueued;
 
         public InMemoryTransaction([NotNull] InMemoryConnection<TKey> connection)
         {
@@ -42,9 +43,12 @@ namespace Hangfire.InMemory
 
         public override void Dispose()
         {
-            foreach (var acquiredLock in _acquiredLocks)
+            if (_acquiredLocks != null)
             {
-                acquiredLock.Dispose();
+                foreach (var acquiredLock in _acquiredLocks)
+                {
+                    acquiredLock.Dispose();
+                }
             }
 
             base.Dispose();
@@ -59,6 +63,8 @@ namespace Hangfire.InMemory
         public override void AcquireDistributedLock(string resource, TimeSpan timeout)
         {
             var disposableLock = _connection.AcquireDistributedLock(resource, timeout);
+
+            _acquiredLocks ??= new List<IDisposable>();
             _acquiredLocks.Add(disposableLock);
         }
 #endif
@@ -175,6 +181,8 @@ namespace Hangfire.InMemory
             }
 
             AddCommand(new Commands.QueueEnqueue<TKey>(queue, key));
+
+            _enqueued ??= new HashSet<string>();
             _enqueued.Add(queue);
         }
 
@@ -382,15 +390,21 @@ namespace Hangfire.InMemory
             }
             finally
             {
-                foreach (var acquiredLock in _acquiredLocks)
+                if (_acquiredLocks != null)
                 {
-                    acquiredLock.Dispose();
+                    foreach (var acquiredLock in _acquiredLocks)
+                    {
+                        acquiredLock.Dispose();
+                    }
                 }
             }
 
-            foreach (var queue in _enqueued)
+            if (_enqueued != null)
             {
-                state.QueueGetOrAdd(queue).SignalOneWaitNode();
+                foreach (var queue in _enqueued)
+                {
+                    state.QueueGetOrAdd(queue).SignalOneWaitNode();
+                }
             }
 
             return true;
