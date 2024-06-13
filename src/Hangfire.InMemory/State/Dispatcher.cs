@@ -26,7 +26,6 @@ namespace Hangfire.InMemory.State
         private const uint DefaultEvictionIntervalMs = 5000U;
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
-        private readonly ConcurrentQueue<IDispatcherCallback<TKey>> _readQueries = new ConcurrentQueue<IDispatcherCallback<TKey>>();
 
         // ConcurrentBag for writes give much better throughput, but less stable, since some items are processed
         // with a heavy delay when new ones are constantly arriving.
@@ -95,27 +94,9 @@ namespace Hangfire.InMemory.State
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, func, rethrowExceptions: false))
+            lock (_queries)
             {
-                _readQueries.Enqueue(callback);
-
-                if (Volatile.Read(ref _outstandingRequests.Value) == 0 &&
-                    Interlocked.Exchange(ref _outstandingRequests.Value, 1) == 0)
-                {
-                    _semaphore.Release();
-                }
-
-                if (!callback.Wait(_commandTimeout, _cts.Token))
-                {
-                    throw new TimeoutException();
-                }
-
-                if (callback.IsFaulted)
-                {
-                    throw new InvalidOperationException("An exception occurred while executing a read query. Please see inner exception for details.", callback.Exception);
-                }
-
-                return callback.Result!;
+                return func(query, State);
             }
         }
 
@@ -131,9 +112,12 @@ namespace Hangfire.InMemory.State
                     {
                         Interlocked.Exchange(ref _outstandingRequests.Value, 0);
 
-                        while (_readQueries.TryDequeue(out var next) || _queries.TryDequeue(out next))
+                        while (_queries.TryDequeue(out var next))
                         {
-                            next.Execute(State);
+                            lock (_queries)
+                            {
+                                next.Execute(State);
+                            }
 
                             EvictExpiredEntriesIfNeeded(ref lastEviction);
                         }
@@ -160,7 +144,11 @@ namespace Hangfire.InMemory.State
         {
             if (Environment.TickCount - lastEviction >= DefaultEvictionIntervalMs)
             {
-                EvictExpiredEntries();
+                lock (_queries)
+                {
+                    EvictExpiredEntries();
+                }
+
                 lastEviction = Environment.TickCount;
             }
         }
