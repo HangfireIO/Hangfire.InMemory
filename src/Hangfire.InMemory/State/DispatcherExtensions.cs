@@ -22,13 +22,13 @@ namespace Hangfire.InMemory.State
         public static T QueryWriteAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, T> query)
             where TKey : IComparable<TKey>
         {
-            return dispatcher.QueryWriteAndWait<ICommand<TKey, T>, T>(query);
+            return dispatcher.QueryWriteAndWait(query, static (q, s) => q.Execute(s));
         }
 
         public static T QueryReadAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, T> query)
             where TKey : IComparable<TKey>
         {
-            return dispatcher.QueryReadAndWait<ICommand<TKey, T>, T>(query);
+            return dispatcher.QueryReadAndWait<ICommand<TKey, T>, T>(query, static (q, s) => q.Execute(s));
         }
     }
 }

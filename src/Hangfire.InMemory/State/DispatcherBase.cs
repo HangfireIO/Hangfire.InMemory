@@ -150,16 +150,14 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public virtual T QueryWriteAndWait<TCommand, T>(TCommand query)
-            where TCommand : ICommand<TKey, T>
+        public virtual T QueryWriteAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
         {
-            return query.Execute(_state);
+            return func(query, _state);
         }
 
-        public virtual T QueryReadAndWait<TCommand, T>(TCommand query)
-            where TCommand : ICommand<TKey, T>
+        public virtual T QueryReadAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
         {
-            return QueryWriteAndWait<TCommand, T>(query);
+            return QueryWriteAndWait(query, func);
         }
 
         protected void EvictExpiredEntries()

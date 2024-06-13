@@ -63,11 +63,11 @@ namespace Hangfire.InMemory.State
             _cts.Dispose();
         }
 
-        public override T QueryWriteAndWait<TCommand, T>(TCommand query)
+        public override T QueryWriteAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, rethrowExceptions: true))
+            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, func, rethrowExceptions: true))
             {
                 _queries.Enqueue(callback);
 
@@ -91,11 +91,11 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public override T QueryReadAndWait<TCommand, T>(TCommand query)
+        public override T QueryReadAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, rethrowExceptions: false))
+            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, func, rethrowExceptions: false))
             {
                 _readQueries.Enqueue(callback);
 

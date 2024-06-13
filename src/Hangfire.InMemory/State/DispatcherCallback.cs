@@ -25,21 +25,22 @@ namespace Hangfire.InMemory.State
     }
 
     internal sealed class DispatcherCallback<TKey, TCommand, TResult> : IDispatcherCallback<TKey>, IDisposable
-        where TCommand : ICommand<TKey, TResult>
         where TKey : IComparable<TKey>
     {
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
         private readonly TCommand _command;
+        private readonly Func<TCommand, MemoryState<TKey>, TResult> _func;
         private readonly bool _rethrowExceptions;
 
         private bool _isFaulted;
         private TResult? _result;
         private Exception? _exception;
 
-        public DispatcherCallback(TCommand command, bool rethrowExceptions)
+        public DispatcherCallback(TCommand command, Func<TCommand, MemoryState<TKey>, TResult> func, bool rethrowExceptions)
         {
-            _rethrowExceptions = rethrowExceptions;
             _command = command ?? throw new ArgumentNullException(nameof(command));
+            _func = func ?? throw new ArgumentNullException(nameof(func));
+            _rethrowExceptions = rethrowExceptions;
         }
 
         public bool IsFaulted { get { lock (_ready) { return _isFaulted; } } }
@@ -50,7 +51,7 @@ namespace Hangfire.InMemory.State
         {
             try
             {
-                var result =_command.Execute(state);
+                var result = _func(_command, state);
 
                 lock (_ready)
                 {
