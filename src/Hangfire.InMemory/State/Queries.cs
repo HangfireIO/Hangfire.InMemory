@@ -31,26 +31,23 @@ namespace Hangfire.InMemory.State
                     return null;
                 }
 
-                return new Data(
-                    entry.InvocationData,
-                    entry.State?.Name,
-                    entry.CreatedAt,
-                    entry.GetParameters(),
-                    state.StringComparer);
+                return new Data
+                {
+                    InvocationData = entry.InvocationData,
+                    State = entry.State?.Name,
+                    CreatedAt = entry.CreatedAt,
+                    Parameters = entry.GetParameters(),
+                    StringComparer = state.StringComparer 
+                };
             }
 
-            public sealed class Data(
-                InvocationData invocationData,
-                string? state,
-                MonotonicTime createdAt,
-                KeyValuePair<string, string>[] parameters,
-                StringComparer stringComparer)
+            public readonly struct Data
             {
-                public InvocationData InvocationData { get; } = invocationData;
-                public string? State { get; } = state;
-                public MonotonicTime CreatedAt { get; } = createdAt;
-                public KeyValuePair<string, string>[] Parameters { get; } = parameters;
-                public StringComparer StringComparer { get; } = stringComparer;
+                public required InvocationData InvocationData { get; init; }
+                public required string? State { get; init; }
+                public required MonotonicTime CreatedAt { get; init; }
+                public required KeyValuePair<string, string>[] Parameters { get; init; }
+                public required StringComparer StringComparer { get; init; }
             }
         }
 
@@ -63,19 +60,21 @@ namespace Hangfire.InMemory.State
                     return null;
                 }
 
-                return new Data(entry.State.Name, entry.State.Reason, entry.State.Data, state.StringComparer);
+                return new Data
+                {
+                    Name = entry.State.Name,
+                    Reason = entry.State.Reason,
+                    StateData = entry.State.Data,
+                    StringComparer = state.StringComparer
+                };
             }
             
-            public sealed class Data(
-                string name,
-                string reason,
-                KeyValuePair<string, string>[] stateData,
-                StringComparer stringComparer)
+            public readonly struct Data
             {
-                public string Name { get; } = name;
-                public string Reason { get; } = reason;
-                public KeyValuePair<string, string>[] StateData { get; } = stateData;
-                public StringComparer StringComparer { get; } = stringComparer;
+                public required string Name { get; init; }
+                public required string Reason { get; init; }
+                public required KeyValuePair<string, string>[] StateData { get; init; }
+                public required StringComparer StringComparer { get; init; }
             }
         }
 

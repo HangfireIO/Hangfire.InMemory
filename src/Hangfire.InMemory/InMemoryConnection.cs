@@ -225,14 +225,14 @@ namespace Hangfire.InMemory
 
             return new JobData
             {
-                Job = data.InvocationData.TryGetJob(out var loadException),
+                Job = data.Value.InvocationData.TryGetJob(out var loadException),
                 LoadException = loadException,
 #if !HANGFIRE_170
-                InvocationData = data.InvocationData,
-                ParametersSnapshot = data.Parameters.ToDictionary(static x => x.Key, static x => x.Value, data.StringComparer),
+                InvocationData = data.Value.InvocationData,
+                ParametersSnapshot = data.Value.Parameters.ToDictionary(static x => x.Key, static x => x.Value, data.Value.StringComparer),
 #endif
-                CreatedAt = data.CreatedAt.ToUtcDateTime(),
-                State = data.State,
+                CreatedAt = data.Value.CreatedAt.ToUtcDateTime(),
+                State = data.Value.State,
             };
         }
 
@@ -250,9 +250,9 @@ namespace Hangfire.InMemory
 
             return new StateData
             {
-                Name = data.Name,
-                Reason = data.Reason,
-                Data = data.StateData.ToDictionary(static x => x.Key, static x => x.Value, data.StringComparer)
+                Name = data.Value.Name,
+                Reason = data.Value.Reason,
+                Data = data.Value.StateData.ToDictionary(static x => x.Key, static x => x.Value, data.Value.StringComparer)
             };
         }
 
