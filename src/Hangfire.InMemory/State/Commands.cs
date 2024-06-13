@@ -24,7 +24,7 @@ namespace Hangfire.InMemory.State
 {
     internal static class Commands
     {
-        public sealed class JobCreate<TKey>(TKey key, InvocationData data, KeyValuePair<string, string>[] parameters, MonotonicTime now, TimeSpan expireIn) : ICommand<TKey, object?>
+        public sealed class JobCreate<TKey>(TKey key, InvocationData data, KeyValuePair<string, string>[] parameters, MonotonicTime now, TimeSpan expireIn)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -34,7 +34,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobSetParameter<TKey>(TKey key, string name, string value) : ICommand<TKey, object?>
+        public sealed class JobSetParameter<TKey>(TKey key, string name, string value)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -47,7 +47,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobExpire<TKey>(TKey key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey, object?>
+        public sealed class JobExpire<TKey>(TKey key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -62,7 +62,7 @@ namespace Hangfire.InMemory.State
         }
 
         public sealed class JobAddState<TKey>(
-            TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory, bool setAsCurrent) : ICommand<TKey, object?>
+            TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory, bool setAsCurrent)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -82,7 +82,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class QueueEnqueue<TKey>(string queue, TKey key) : ICommand<TKey, QueueEntry<TKey>>
+        public sealed class QueueEnqueue<TKey>(string queue, TKey key)
             where TKey : IComparable<TKey>
         {
             public QueueEntry<TKey> Execute(MemoryState<TKey> state)
@@ -94,7 +94,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class CounterIncrement<TKey>(string key, long value, MonotonicTime? now, TimeSpan? expireIn) : ICommand<TKey, object?>
+        public sealed class CounterIncrement<TKey>(string key, long value, MonotonicTime? now, TimeSpan? expireIn)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -118,7 +118,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetAdd<TKey>(string key, string value, double score) : ICommand<TKey, object?>
+        public sealed class SortedSetAdd<TKey>(string key, string value, double score)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -128,7 +128,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetAddRange<TKey>(string key, IEnumerable<string> items) : ICommand<TKey, object?>
+        public sealed class SortedSetAddRange<TKey>(string key, IEnumerable<string> items)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -144,7 +144,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetRemove<TKey>(string key, string value) : ICommand<TKey, object?>
+        public sealed class SortedSetRemove<TKey>(string key, string value)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -159,7 +159,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetDelete<TKey>(string key) : ICommand<TKey, object?>
+        public sealed class SortedSetDelete<TKey>(string key)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -169,7 +169,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey, object?>
+        public sealed class SortedSetExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -179,7 +179,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListInsert<TKey>(string key, string value) : ICommand<TKey, object?>
+        public sealed class ListInsert<TKey>(string key, string value)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -189,7 +189,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListRemoveAll<TKey>(string key, string value) : ICommand<TKey, object?>
+        public sealed class ListRemoveAll<TKey>(string key, string value)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -204,7 +204,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListTrim<TKey>(string key, int keepStartingFrom, int keepEndingAt) : ICommand<TKey, object?>
+        public sealed class ListTrim<TKey>(string key, int keepStartingFrom, int keepEndingAt)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -218,7 +218,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey, object?>
+        public sealed class ListExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -228,7 +228,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashSetRange<TKey>(string key, IEnumerable<KeyValuePair<string, string>> items) : ICommand<TKey, object?>
+        public sealed class HashSetRange<TKey>(string key, IEnumerable<KeyValuePair<string, string>> items)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -249,7 +249,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn,  TimeSpan? maxExpiration) : ICommand<TKey, object?>
+        public sealed class HashExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn,  TimeSpan? maxExpiration)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -259,7 +259,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashRemove<TKey>(string key) : ICommand<TKey, object?>
+        public sealed class HashRemove<TKey>(string key)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -269,7 +269,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ServerAnnounce<TKey>(string serverId, ServerContext context, MonotonicTime now) : ICommand<TKey, object?>
+        public sealed class ServerAnnounce<TKey>(string serverId, ServerContext context, MonotonicTime now)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -285,7 +285,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ServerHeartbeat<TKey>(string serverId, MonotonicTime now) : ICommand<TKey, bool>
+        public sealed class ServerHeartbeat<TKey>(string serverId, MonotonicTime now)
             where TKey : IComparable<TKey>
         {
             public bool Execute(MemoryState<TKey> state)
@@ -300,7 +300,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ServerDelete<TKey>(string serverId) : ICommand<TKey, object?>
+        public sealed class ServerDelete<TKey>(string serverId)
             where TKey : IComparable<TKey>
         {
             public object? Execute(MemoryState<TKey> state)
@@ -310,7 +310,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ServerDeleteInactive<TKey>(TimeSpan timeout, MonotonicTime now) : ICommand<TKey, int>
+        public sealed class ServerDeleteInactive<TKey>(TimeSpan timeout, MonotonicTime now)
             where TKey : IComparable<TKey>
         {
             public int Execute(MemoryState<TKey> state)

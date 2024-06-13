@@ -47,7 +47,7 @@ namespace Hangfire.InMemory
             }
 
             var entry = _connection.Dispatcher.QueryWriteAndWait(
-                new Commands.QueueEnqueue<TKey>(QueueName, key));
+                new Commands.QueueEnqueue<TKey>(QueueName, key), static (q, s) => q.Execute(s));
 
             entry.SignalOneWaitNode();
         }
