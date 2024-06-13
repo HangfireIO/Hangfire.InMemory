@@ -28,15 +28,5 @@ namespace Hangfire.InMemory.State
                 return true;
             });
         }
-
-        public static void QueryReadAndWait<TKey>(this DispatcherBase<TKey> dispatcher, ICommand<TKey> query)
-            where TKey : IComparable<TKey>
-        {
-            dispatcher.QueryReadAndWait(query, static (q, s) =>
-            {
-                q.Execute(s);
-                return true;
-            });
-        }
     }
 }
