@@ -24,10 +24,10 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction, ICommand<TKey, object?>
+    internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction
         where TKey : IComparable<TKey>
     {
-        private readonly LinkedList<ICommand<TKey, object?>> _commands = new LinkedList<ICommand<TKey, object?>>();
+        private readonly LinkedList<ICommand<TKey>> _commands = new LinkedList<ICommand<TKey>>();
         private readonly HashSet<string> _enqueued = new HashSet<string>();
         private readonly InMemoryConnection<TKey> _connection;
         private readonly List<IDisposable> _acquiredLocks = new List<IDisposable>();
@@ -49,7 +49,7 @@ namespace Hangfire.InMemory
 
         public override void Commit()
         {
-            _connection.Dispatcher.QueryWriteAndWait(this);
+            _connection.Dispatcher.QueryWriteAndWait(this, static (t, s) => t.CommitCore(s));
         }
 
 #if !HANGFIRE_170
@@ -336,12 +336,12 @@ namespace Hangfire.InMemory
             AddCommand(new Commands.SortedSetExpire<TKey>(key, now: null, expireIn: null, maxExpiration: null));
         }
 
-        private void AddCommand(ICommand<TKey, object?> action)
+        private void AddCommand(ICommand<TKey> action)
         {
             _commands.AddLast(action);
         }
 
-        object? ICommand<TKey, object?>.Execute(MemoryState<TKey> state)
+        private bool CommitCore(MemoryState<TKey> state)
         {
             try
             {
@@ -374,7 +374,7 @@ namespace Hangfire.InMemory
                 state.QueueGetOrAdd(queue).SignalOneWaitNode();
             }
 
-            return null;
+            return true;
         }
     }
 }

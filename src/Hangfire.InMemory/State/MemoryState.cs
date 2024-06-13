@@ -232,9 +232,9 @@ namespace Hangfire.InMemory.State
             Servers.Add(serverId, entry);
         }
 
-        public void ServerRemove(string serverId)
+        public bool ServerRemove(string serverId)
         {
-            Servers.Remove(serverId);
+            return Servers.Remove(serverId);
         }
 
         public void EvictExpiredEntries(MonotonicTime now)

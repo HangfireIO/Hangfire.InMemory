@@ -262,14 +262,14 @@ namespace Hangfire.InMemory
             if (context == null) throw new ArgumentNullException(nameof(context));
 
             var now = Dispatcher.GetMonotonicTime();
-            Dispatcher.QueryWriteAndWait(new Commands.ServerAnnounce<TKey>(serverId, context, now));
+            Dispatcher.QueryWriteAndWait(new Commands.ServerAnnounce<TKey>(serverId, context, now), static (c, s) => c.Execute(s));
         }
 
         public override void RemoveServer([NotNull] string serverId)
         {
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
-            Dispatcher.QueryWriteAndWait(new Commands.ServerDelete<TKey>(serverId));
+            Dispatcher.QueryWriteAndWait(new Commands.ServerDelete<TKey>(serverId), static (c, s) => c.Execute(s));
         }
 
         public override void Heartbeat([NotNull] string serverId)
@@ -277,7 +277,7 @@ namespace Hangfire.InMemory
             if (serverId == null) throw new ArgumentNullException(nameof(serverId));
 
             var now = Dispatcher.GetMonotonicTime();
-            var result = Dispatcher.QueryWriteAndWait(new Commands.ServerHeartbeat<TKey>(serverId, now));
+            var result = Dispatcher.QueryWriteAndWait(new Commands.ServerHeartbeat<TKey>(serverId, now), static (c, s) => c.Execute(s));
 
             if (!result)
             {
@@ -293,7 +293,7 @@ namespace Hangfire.InMemory
             }
 
             var now = Dispatcher.GetMonotonicTime();
-            return Dispatcher.QueryWriteAndWait(new Commands.ServerDeleteInactive<TKey>(timeOut, now));
+            return Dispatcher.QueryWriteAndWait(new Commands.ServerDeleteInactive<TKey>(timeOut, now), static (c, s) => c.Execute(s));
         }
 
 #if !HANGFIRE_170

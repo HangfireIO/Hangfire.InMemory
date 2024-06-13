@@ -17,9 +17,8 @@ using System;
 
 namespace Hangfire.InMemory.State
 {
-    internal interface ICommand<TKey, out T>
-        where TKey : IComparable<TKey>
+    internal interface ICommand<TKey> where TKey : IComparable<TKey>
     {
-        T Execute(MemoryState<TKey> state);
+        void Execute(MemoryState<TKey> state);
     }
 }

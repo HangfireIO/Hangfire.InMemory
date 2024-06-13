@@ -19,16 +19,24 @@ namespace Hangfire.InMemory.State
 {
     internal static class DispatcherExtensions
     {
-        public static T QueryWriteAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, T> query)
+        public static void QueryWriteAndWait<TKey>(this DispatcherBase<TKey> dispatcher, ICommand<TKey> query)
             where TKey : IComparable<TKey>
         {
-            return dispatcher.QueryWriteAndWait(query, static (q, s) => q.Execute(s));
+            dispatcher.QueryWriteAndWait(query, static (q, s) =>
+            {
+                q.Execute(s);
+                return true;
+            });
         }
 
-        public static T QueryReadAndWait<TKey, T>(this DispatcherBase<TKey> dispatcher, ICommand<TKey, T> query)
+        public static void QueryReadAndWait<TKey>(this DispatcherBase<TKey> dispatcher, ICommand<TKey> query)
             where TKey : IComparable<TKey>
         {
-            return dispatcher.QueryReadAndWait<ICommand<TKey, T>, T>(query, static (q, s) => q.Execute(s));
+            dispatcher.QueryReadAndWait(query, static (q, s) =>
+            {
+                q.Execute(s);
+                return true;
+            });
         }
     }
 }
