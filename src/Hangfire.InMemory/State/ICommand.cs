@@ -27,15 +27,4 @@ namespace Hangfire.InMemory.State
         where TKey : IComparable<TKey>
     {
     }
-
-    internal abstract class Command<TKey, T> : ICommand<TKey, T>
-        where TKey : IComparable<TKey>
-    {
-        protected abstract T Execute(MemoryState<TKey> state);
-        
-        T ICommand<TKey, T>.Execute(MemoryState<TKey> state)
-        {
-            return Execute(state);
-        }
-    }
 }
