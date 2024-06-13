@@ -27,7 +27,10 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction
         where TKey : IComparable<TKey>
     {
-        private readonly LinkedList<ICommand<TKey>> _commands = new LinkedList<ICommand<TKey>>();
+        private const int MaxCommandsInList = 4096;
+        private readonly List<ICommand<TKey>> _commands = new List<ICommand<TKey>>();
+        private LinkedList<ICommand<TKey>>? _additionalCommands;
+
         private readonly HashSet<string> _enqueued = new HashSet<string>();
         private readonly InMemoryConnection<TKey> _connection;
         private readonly List<IDisposable> _acquiredLocks = new List<IDisposable>();
@@ -338,7 +341,15 @@ namespace Hangfire.InMemory
 
         private void AddCommand(ICommand<TKey> action)
         {
-            _commands.AddLast(action);
+            if (_commands.Count < MaxCommandsInList)
+            {
+                _commands.Add(action);
+            }
+            else
+            {
+                _additionalCommands ??= new LinkedList<ICommand<TKey>>();
+                _additionalCommands.AddLast(action);
+            }
         }
 
         private bool CommitCore(MemoryState<TKey> state)
@@ -359,6 +370,14 @@ namespace Hangfire.InMemory
                 foreach (var command in _commands)
                 {
                     command.Execute(state);
+                }
+
+                if (_additionalCommands != null)
+                {
+                    foreach (var command in _additionalCommands)
+                    {
+                        command.Execute(state);
+                    }
                 }
             }
             finally
