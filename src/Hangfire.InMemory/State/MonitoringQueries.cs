@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using Hangfire.InMemory.Entities;
@@ -24,8 +25,8 @@ namespace Hangfire.InMemory.State
 {
     internal static class MonitoringQueries
     {
-        public sealed class StatisticsGetAll<TKey>(IReadOnlyCollection<string> states, IReadOnlyDictionary<string, string> counters, IReadOnlyDictionary<string, string> sets)
-            : ICommand<TKey, StatisticsGetAll<TKey>.Data>
+        public readonly struct StatisticsGetAll<TKey>(
+            IReadOnlyCollection<string> states, IReadOnlyDictionary<string, string> counters, IReadOnlyDictionary<string, string> sets)
             where TKey : IComparable<TKey>
         {
             public Data Execute(MemoryState<TKey> state)
@@ -74,9 +75,9 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class QueuesGetAll<TKey> : ICommand<TKey, IReadOnlyList<QueuesGetAll<TKey>.QueueRecord>>
-            where TKey : IComparable<TKey>
+        public readonly struct QueuesGetAll<TKey> where TKey : IComparable<TKey>
         {
+            [SuppressMessage("Performance", "CA1822:Mark members as static")]
             public IReadOnlyList<QueueRecord> Execute(MemoryState<TKey> state)
             {
                 var result = new List<QueueRecord>();
@@ -110,8 +111,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class QueueGetCount<TKey>(string queueName) : ICommand<TKey, long>
-            where TKey : IComparable<TKey>
+        public readonly struct QueueGetCount<TKey>(string queueName) where TKey : IComparable<TKey>
         {
             public long Execute(MemoryState<TKey> state)
             {
@@ -121,8 +121,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class QueueGetEnqueued<TKey>(string queueName, int from, int count) : ICommand<TKey, IReadOnlyList<TKey>>
-            where TKey : IComparable<TKey>
+        public readonly struct QueueGetEnqueued<TKey>(string queueName, int from, int count) where TKey : IComparable<TKey>
         {
             public IReadOnlyList<TKey> Execute(MemoryState<TKey> state)
             {
@@ -146,8 +145,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobGetDetails<TKey>(TKey key) : ICommand<TKey, JobGetDetails<TKey>.Data?>
-            where TKey : IComparable<TKey>
+        public readonly struct JobGetDetails<TKey>(TKey key) where TKey : IComparable<TKey>
         {
             public Data? Execute(MemoryState<TKey> state)
             {
@@ -182,8 +180,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobsGetByKey<TKey>(IEnumerable<TKey> keys) : ICommand<TKey, IReadOnlyDictionary<TKey, JobsGetByKey<TKey>.Record?>>
-            where TKey : IComparable<TKey>
+        public readonly struct JobsGetByKey<TKey>(IEnumerable<TKey> keys) where TKey : IComparable<TKey>
         {
             public IReadOnlyDictionary<TKey, Record?> Execute(MemoryState<TKey> state)
             {
@@ -227,7 +224,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobsGetByState<TKey>(string stateName, int from, int count, bool reversed = false) : ICommand<TKey, IReadOnlyList<TKey>>
+        public readonly struct JobsGetByState<TKey>(string stateName, int from, int count, bool reversed = false)
             where TKey : IComparable<TKey>
         {
             public IReadOnlyList<TKey> Execute(MemoryState<TKey> state)
@@ -253,8 +250,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobGetCountByState<TKey>(string stateName) : ICommand<TKey, long>
-            where TKey : IComparable<TKey>
+        public readonly struct JobGetCountByState<TKey>(string stateName) where TKey : IComparable<TKey>
         {
             public long Execute(MemoryState<TKey> state)
             {
@@ -267,9 +263,9 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ServersGetAll<TKey> : ICommand<TKey, IReadOnlyList<ServersGetAll<TKey>.Record>>
-            where TKey : IComparable<TKey>
+        public readonly struct ServersGetAll<TKey> where TKey : IComparable<TKey>
         {
+            [SuppressMessage("Performance", "CA1822:Mark members as static")]
             public IReadOnlyList<Record> Execute(MemoryState<TKey> state)
             {
                 var result = new List<Record>(state.Servers.Count);
@@ -302,8 +298,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class CounterGetDailyTimeline<TKey>(MonotonicTime now, string type) : ICommand<TKey, IDictionary<DateTime, long>>
-            where TKey : IComparable<TKey>
+        public readonly struct CounterGetDailyTimeline<TKey>(MonotonicTime now, string type) where TKey : IComparable<TKey>
         {
             public IDictionary<DateTime, long> Execute(MemoryState<TKey> state)
             {
@@ -318,7 +313,8 @@ namespace Hangfire.InMemory.State
                 }
 
                 var stringDates = dates.Select(static x => x.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).ToList();
-                var keys = stringDates.Select(x => $"stats:{type}:{x}").ToArray();
+                var statsType = type;
+                var keys = stringDates.Select(x => $"stats:{statsType}:{x}").ToArray();
                 var valuesMap = keys.Select(key => state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
 
                 var result = new Dictionary<DateTime, long>();
@@ -331,8 +327,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class CounterGetHourlyTimeline<TKey>(MonotonicTime now, string type) : ICommand<TKey, IDictionary<DateTime, long>>
-            where TKey : IComparable<TKey>
+        public readonly struct CounterGetHourlyTimeline<TKey>(MonotonicTime now, string type) where TKey : IComparable<TKey>
         {
             public IDictionary<DateTime, long> Execute(MemoryState<TKey> state)
             {
@@ -344,7 +339,9 @@ namespace Hangfire.InMemory.State
                     endDate = endDate.AddHours(-1);
                 }
 
-                var keys = dates.Select(x => $"stats:{type}:{x:yyyy-MM-dd-HH}").ToArray();
+                var statsType = type;
+
+                var keys = dates.Select(x => $"stats:{statsType}:{x:yyyy-MM-dd-HH}").ToArray();
                 var valuesMap = keys.Select(key => state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
 
                 var result = new Dictionary<DateTime, long>();

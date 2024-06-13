@@ -22,8 +22,7 @@ namespace Hangfire.InMemory.State
 {
     internal static class Queries
     {
-        public sealed class JobGetData<TKey>(TKey key) : ICommand<TKey, JobGetData<TKey>.Data?>
-            where TKey : IComparable<TKey>
+        public readonly struct JobGetData<TKey>(TKey key) where TKey : IComparable<TKey>
         {
             public Data? Execute(MemoryState<TKey> state)
             {
@@ -55,8 +54,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobGetState<TKey>(TKey key) : ICommand<TKey, JobGetState<TKey>.Data?>
-            where TKey : IComparable<TKey>
+        public readonly struct JobGetState<TKey>(TKey key) where TKey : IComparable<TKey>
         {
             public Data? Execute(MemoryState<TKey> state)
             {
@@ -81,8 +79,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobGetParameter<TKey>(TKey key, string name) : ICommand<TKey, string?>
-            where TKey : IComparable<TKey>
+        public readonly struct JobGetParameter<TKey>(TKey key, string name) where TKey : IComparable<TKey>
         {
             public string? Execute(MemoryState<TKey> state)
             {
@@ -92,8 +89,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetGetAll<TKey>(string key) : ICommand<TKey, HashSet<string>>
-            where TKey : IComparable<TKey>
+        public readonly struct SortedSetGetAll<TKey>(string key) where TKey : IComparable<TKey>
         {
             public HashSet<string> Execute(MemoryState<TKey> state)
             {
@@ -111,8 +107,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetFirstByLowestScore<TKey>(string key, double fromScore, double toScore) 
-            : ICommand<TKey, string?>
+        public readonly struct SortedSetFirstByLowestScore<TKey>(string key, double fromScore, double toScore)
             where TKey : IComparable<TKey>
         {
             public string? Execute(MemoryState<TKey> state)
@@ -126,8 +121,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetFirstByLowestScoreMultiple<TKey>(string key, double fromScore, double toScore, int count) 
-            : ICommand<TKey, List<string>>
+        public readonly struct SortedSetFirstByLowestScoreMultiple<TKey>(string key, double fromScore, double toScore, int count)
             where TKey : IComparable<TKey>
         {
             public List<string> Execute(MemoryState<TKey> state)
@@ -141,8 +135,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetRange<TKey>(string key, int startingFrom, int endingAt) : ICommand<TKey, List<string>>
-            where TKey : IComparable<TKey>
+        public readonly struct SortedSetRange<TKey>(string key, int startingFrom, int endingAt) where TKey : IComparable<TKey>
         {
             public List<string> Execute(MemoryState<TKey> state)
             {
@@ -167,8 +160,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetContains<TKey>(string key, string value) : ICommand<TKey, bool>
-            where TKey : IComparable<TKey>
+        public readonly struct SortedSetContains<TKey>(string key, string value) where TKey : IComparable<TKey>
         {
             public bool Execute(MemoryState<TKey> state)
             {
@@ -176,8 +168,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetCount<TKey>(string key) : ICommand<TKey, int>
-            where TKey : IComparable<TKey>
+        public readonly struct SortedSetCount<TKey>(string key) where TKey : IComparable<TKey>
         {
             public int Execute(MemoryState<TKey> state)
             {
@@ -185,8 +176,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetCountMultiple<TKey>(IEnumerable<string> keys, int limit) : ICommand<TKey, int>
-            where TKey : IComparable<TKey>
+        public readonly struct SortedSetCountMultiple<TKey>(IEnumerable<string> keys, int limit) where TKey : IComparable<TKey>
         {
             public int Execute(MemoryState<TKey> state)
             {
@@ -202,8 +192,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetTimeToLive<TKey>(string key) : ICommand<TKey, MonotonicTime?>
-            where TKey : IComparable<TKey>
+        public readonly struct SortedSetTimeToLive<TKey>(string key) where TKey : IComparable<TKey>
         {
             public MonotonicTime? Execute(MemoryState<TKey> state)
             {
@@ -216,8 +205,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashGetAll<TKey>(string key) : ICommand<TKey, Dictionary<string, string>?>
-            where TKey : IComparable<TKey>
+        public readonly struct HashGetAll<TKey>(string key) where TKey : IComparable<TKey>
         {
             public Dictionary<string, string>? Execute(MemoryState<TKey> state)
             {
@@ -230,8 +218,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashGet<TKey>(string key, string name) : ICommand<TKey, string?>
-            where TKey : IComparable<TKey>
+        public readonly struct HashGet<TKey>(string key, string name) where TKey : IComparable<TKey>
         {
             public string? Execute(MemoryState<TKey> state)
             {
@@ -244,8 +231,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashFieldCount<TKey>(string key) : ICommand<TKey, int>
-            where TKey : IComparable<TKey>
+        public readonly struct HashFieldCount<TKey>(string key) where TKey : IComparable<TKey>
         {
             public int Execute(MemoryState<TKey> state)
             {
@@ -253,8 +239,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashTimeToLive<TKey>(string key) : ICommand<TKey, MonotonicTime?>
-            where TKey : IComparable<TKey>
+        public readonly struct HashTimeToLive<TKey>(string key) where TKey : IComparable<TKey>
         {
             public MonotonicTime? Execute(MemoryState<TKey> state)
             {
@@ -267,8 +252,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListGetAll<TKey>(string key) : ICommand<TKey, List<string>>
-            where TKey : IComparable<TKey>
+        public readonly struct ListGetAll<TKey>(string key) where TKey : IComparable<TKey>
         {
             public List<string> Execute(MemoryState<TKey> state)
             {
@@ -281,8 +265,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListRange<TKey>(string key, int startingFrom, int endingAt) : ICommand<TKey, List<string>>
-            where TKey : IComparable<TKey>
+        public readonly struct ListRange<TKey>(string key, int startingFrom, int endingAt) where TKey : IComparable<TKey>
         {
             public List<string> Execute(MemoryState<TKey> state)
             {
@@ -291,9 +274,10 @@ namespace Hangfire.InMemory.State
                 if (state.Lists.TryGetValue(key, out var entry))
                 {
                     var count = endingAt - startingFrom + 1;
+                    var skip = startingFrom;
                     foreach (var item in entry)
                     {
-                        if (startingFrom-- > 0) continue;
+                        if (skip-- > 0) continue;
                         if (count-- == 0) break;
 
                         result.Add(item);
@@ -304,8 +288,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListCount<TKey>(string key) : ICommand<TKey, int>
-            where TKey : IComparable<TKey>
+        public readonly struct ListCount<TKey>(string key) where TKey : IComparable<TKey>
         {
             public int Execute(MemoryState<TKey> state)
             {
@@ -313,8 +296,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListTimeToLive<TKey>(string key) : ICommand<TKey, MonotonicTime?>
-            where TKey : IComparable<TKey>
+        public readonly struct ListTimeToLive<TKey>(string key) where TKey : IComparable<TKey>
         {
             public MonotonicTime? Execute(MemoryState<TKey> state)
             {
@@ -327,8 +309,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class CounterGet<TKey>(string key) : ICommand<TKey, long>
-            where TKey : IComparable<TKey>
+        public readonly struct CounterGet<TKey>(string key) where TKey : IComparable<TKey>
         {
             public long Execute(MemoryState<TKey> state)
             {
