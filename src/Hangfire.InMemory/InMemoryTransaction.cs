@@ -24,7 +24,7 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction, ICommand<TKey>
+    internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction, ICommand<TKey, object?>
         where TKey : IComparable<TKey>
     {
         private readonly LinkedList<ICommand<TKey, object?>> _commands = new LinkedList<ICommand<TKey, object?>>();

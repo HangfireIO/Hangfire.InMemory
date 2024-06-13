@@ -22,9 +22,4 @@ namespace Hangfire.InMemory.State
     {
         T Execute(MemoryState<TKey> state);
     }
-
-    internal interface ICommand<TKey> : ICommand<TKey, object?>
-        where TKey : IComparable<TKey>
-    {
-    }
 }
