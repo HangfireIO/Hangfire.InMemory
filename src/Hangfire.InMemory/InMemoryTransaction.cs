@@ -27,7 +27,7 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction
         where TKey : IComparable<TKey>
     {
-        private readonly LinkedList<KeyValuePair<Action<object, MemoryState<TKey>>, object>> _commands = new ();
+        private readonly LinkedList<ITransactionCommand> _commands = new ();
         private readonly HashSet<string> _enqueued = new HashSet<string>();
         private readonly InMemoryConnection<TKey> _connection;
         private readonly List<IDisposable> _acquiredLocks = new List<IDisposable>();
@@ -339,9 +339,7 @@ namespace Hangfire.InMemory
         private void AddCommand<TCommand>(TCommand command, Action<TCommand, MemoryState<TKey>> action)
             where TCommand : class
         {
-            _commands.AddLast(new KeyValuePair<Action<object, MemoryState<TKey>>, object>(
-                (c, s) => action((TCommand)c, s),
-                command));
+            _commands.AddLast(new TransactionCommand<TCommand>(command, action));
         }
 
         private object? CommitCore(MemoryState<TKey> state)
@@ -361,7 +359,7 @@ namespace Hangfire.InMemory
                 // lock collection) when un-freeze method is called to avoid having abandoned locks.
                 foreach (var command in _commands)
                 {
-                    command.Key(command.Value, state);
+                    command.Execute(state);
                 }
             }
             finally
@@ -378,6 +376,23 @@ namespace Hangfire.InMemory
             }
 
             return null;
+        }
+
+        private interface ITransactionCommand
+        {
+            void Execute(MemoryState<TKey> state);
+        }
+
+        private sealed class TransactionCommand<TCommand>(TCommand command, Action<TCommand, MemoryState<TKey>> action)
+            : ITransactionCommand
+        {
+            private readonly TCommand _command = command;
+            private readonly Action<TCommand, MemoryState<TKey>> _action = action;
+
+            public void Execute(MemoryState<TKey> state)
+            {
+                _action(_command, state);
+            }
         }
     }
 }
