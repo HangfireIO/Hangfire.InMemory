@@ -67,9 +67,27 @@ namespace Hangfire.InMemory.State
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            lock (_queries)
+            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, func, rethrowExceptions: true))
             {
-                return base.QueryWriteAndWait(query, func);
+                _queries.Enqueue(callback);
+
+                if (Volatile.Read(ref _outstandingRequests.Value) == 0 &&
+                    Interlocked.Exchange(ref _outstandingRequests.Value, 1) == 0)
+                {
+                    _semaphore.Release();
+                }
+
+                if (!callback.Wait(_commandTimeout, _cts.Token))
+                {
+                    throw new TimeoutException();
+                }
+
+                if (callback.IsFaulted)
+                {
+                    throw new InvalidOperationException("Dispatcher stopped due to an unhandled exception, storage state is corrupted.", callback.Exception);
+                }
+
+                return callback.Result!;
             }
         }
 
@@ -77,9 +95,27 @@ namespace Hangfire.InMemory.State
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            lock (_queries)
+            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, func, rethrowExceptions: false))
             {
-                return base.QueryReadAndWait(query, func);
+                _readQueries.Enqueue(callback);
+
+                if (Volatile.Read(ref _outstandingRequests.Value) == 0 &&
+                    Interlocked.Exchange(ref _outstandingRequests.Value, 1) == 0)
+                {
+                    _semaphore.Release();
+                }
+
+                if (!callback.Wait(_commandTimeout, _cts.Token))
+                {
+                    throw new TimeoutException();
+                }
+
+                if (callback.IsFaulted)
+                {
+                    throw new InvalidOperationException("An exception occurred while executing a read query. Please see inner exception for details.", callback.Exception);
+                }
+
+                return callback.Result!;
             }
         }
 
@@ -124,11 +160,7 @@ namespace Hangfire.InMemory.State
         {
             if (Environment.TickCount - lastEviction >= DefaultEvictionIntervalMs)
             {
-                lock (_queries)
-                {
-                    EvictExpiredEntries();
-                }
-
+                EvictExpiredEntries();
                 lastEviction = Environment.TickCount;
             }
         }
