@@ -191,8 +191,10 @@ namespace Hangfire.InMemory.State
 
                 foreach (var key in keys)
                 {
+                    if (result.ContainsKey(key)) continue;
+
                     Record? record = null;
-                    
+
                     if (state.Jobs.TryGetValue(key, out var entry))
                     {
                         record = new Record(

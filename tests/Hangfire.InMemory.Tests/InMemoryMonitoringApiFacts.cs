@@ -1134,6 +1134,28 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void AwaitingJobs_DoesNotFailWhenSeveralJobs_PointToTheSameParentJob()
+        {
+            // Arrange
+            var processingId = SimpleProcessingJob("server-1", "worker-1");
+            var jobId1 = SimpleAwaitingJob(processingId);
+            var jobId2 = SimpleAwaitingJob(processingId);
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var result = monitoring.AwaitingJobs(0, 10);
+
+            // Assert
+            var awaiting = result.ToArray();
+
+            Assert.Equal(jobId1, awaiting[0].Key);
+            Assert.Equal(jobId2, awaiting[1].Key);
+            Assert.Equal("Processing", awaiting[0].Value.ParentStateName);
+            Assert.Equal("Processing", awaiting[1].Value.ParentStateName);
+        }
+
+        [Fact]
         public void AwaitingJobs_ReturnsJobs_InTheAscendingOrder()
         {
             // Arrange
