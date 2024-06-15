@@ -64,36 +64,12 @@ namespace Hangfire.InMemory
         {
             if (resource == null) throw new ArgumentNullException(nameof(resource));
 
-            if (Dispatcher.TryAcquireLockEntry(this, resource, timeout, out var entry))
-            {
-                if (entry == null)
-                {
-                    throw new InvalidOperationException(
-                        $"Got null lock entry while trying to acquire resource '{resource}'");
-                }
-
-                return new LockDisposable(this, resource, entry);
-            }
-
-            if (entry == null)
+            if (!Dispatcher.TryAcquireLockEntry(this, resource, timeout, out var entry))
             {
                 throw new DistributedLockTimeoutException(resource);
             }
 
-            try
-            {
-                if (!entry.WaitUntilAcquired(this, timeout))
-                {
-                    throw new DistributedLockTimeoutException(resource);
-                }
-
-                return new LockDisposable(this, resource, entry);
-            }
-            catch (DistributedLockTimeoutException)
-            {
-                Dispatcher.CancelLockEntry(resource, entry);
-                throw;
-            }
+            return new LockDisposable(this, resource, entry!);
         }
 
         public override string CreateExpiredJob(

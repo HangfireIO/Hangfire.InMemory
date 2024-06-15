@@ -60,62 +60,31 @@ namespace Hangfire.InMemory.State
             if (owner == null) throw new ArgumentNullException(nameof(owner));
             if (resource == null) throw new ArgumentNullException(nameof(resource));
 
-            var acquired = false;
-            var spinWait = new SpinWait();
-            var started = Environment.TickCount;
+            bool retry;
+            bool cleanUp;
 
-            entry = null;
+            var spinWait = new SpinWait();
 
             do
             {
-                // It is possible to get a lock that has already been finalized, since there's a time gap
-                // between finalization and removal from the collection to avoid additional synchronization.
-                // So we'll just wait for a few moments and retry once again, since finalized locks should
-                // be removed soon.
                 entry = _state.Locks.GetOrAdd(resource, static _ => new LockEntry<JobStorageConnection>());
-                entry.TryAcquire(owner, ref acquired, out var finalized);
-
-                if (!finalized)
+                if (entry.TryAcquire(owner, timeout, out retry, out cleanUp))
                 {
-                    break;
+                    return true;
                 }
 
-                entry = null;
-                spinWait.SpinOnce();
-            } while (Environment.TickCount - started < timeout.TotalMilliseconds);
+                if (retry) spinWait.SpinOnce();
+            } while (retry);
 
-            return acquired;
-        }
-
-        public void CancelLockEntry(string resource, LockEntry<JobStorageConnection> entry)
-        {
-            if (resource == null) throw new ArgumentNullException(nameof(resource));
-            if (entry == null) throw new ArgumentNullException(nameof(entry));
-
-            if (_state.Locks.TryGetValue(resource, out var current))
+            if (cleanUp)
             {
-                if (!ReferenceEquals(current, entry)) throw new InvalidOperationException("Does not contain a correct lock entry");
-
-                entry.Cancel(out var finalized);
-
-                if (finalized)
-                {
-                    // Our lock entry has finalized, we should remove the entry to clean up things.
-                    if (!_state.Locks.TryRemove(resource, out var removed))
-                    {
-                        throw new InvalidOperationException("Wasn't able to remove a lock entry");
-                    }
-
-                    if (!ReferenceEquals(entry, removed))
-                    {
-                        throw new InvalidOperationException("Removed entry isn't the same as the requested one");
-                    }
-                }
+                _state.Locks.TryRemove(resource, out var removed);
+                if (!ReferenceEquals(entry, removed))
+                    throw new InvalidOperationException("Wrong entry was removed");
             }
-            else
-            {
-                throw new InvalidOperationException("Does not contain a lock");
-            }
+
+            entry = null;
+            return false;
         }
 
         public void ReleaseLockEntry(JobStorageConnection owner, string resource, LockEntry<JobStorageConnection> entry)

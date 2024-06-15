@@ -22,84 +22,63 @@ namespace Hangfire.InMemory.Entities
     {
         private readonly object _syncRoot = new object();
         private T? _owner;
-        private int _referenceCount = 1;
-        private int _level = 1;
+        private int _referenceCount;
+        private int _level;
         private bool _finalized;
 
-        public void TryAcquire(T owner, ref bool acquired, out bool finalized)
+        public bool TryAcquire(T owner, TimeSpan timeout, out bool retry, out bool cleanUp)
         {
             if (owner == null) throw new ArgumentNullException(nameof(owner));
 
-            finalized = false;
+            retry = false;
+            cleanUp = false;
 
             lock (_syncRoot)
             {
                 if (_finalized)
                 {
-                    finalized = true;
-                    return;
+                    // Our entry was finalized by someone else, so we should retry
+                    // with a completely new entry.
+                    retry = true;
+                    return false;
                 }
-
-                if (_owner == null)
-                {
-                    _owner = owner;
-                    acquired = true;
-                }
-                else if (ReferenceEquals(_owner, owner))
-                {
-                    _level++;
-                    acquired = true;
-                }
-                else
-                {
-                    _referenceCount++;
-                }
-            }
-        }
-
-        public bool WaitUntilAcquired(T owner, TimeSpan timeout)
-        {
-            if (owner == null) throw new ArgumentNullException(nameof(owner));
-
-            lock (_syncRoot)
-            {
-                if (_finalized) ThrowFinalizedException();
 
                 var timeoutMs = (int)timeout.TotalMilliseconds;
                 var started = Environment.TickCount;
+                
+                if (ReferenceEquals(_owner, owner))
+                {
+                    // Entry is currently owned by the same owner, so our lock has been
+                    // already acquired.
+                    _level++;
+                    return true;
+                }
+
+                // Whether it's already owned or not, we should increase
+                // the number of references to avoid finalizing it too early and
+                // allow waiting for it.
+                _referenceCount++;
 
                 while (_owner != null)
                 {
                     var remaining = timeoutMs - unchecked(Environment.TickCount - started);
                     if (remaining < 0)
                     {
+                        _referenceCount--;
+
+                        // Finalize if there are no other references and request to clean up
+                        // in this case. No retry is needed, just give up.
+                        cleanUp = _finalized = _referenceCount == 0;
                         return false;
                     }
 
                     Monitor.Wait(_syncRoot, remaining);
                 }
 
+                // New ownership has been successfully acquired.
                 _owner = owner;
                 _level = 1;
-            }
-
-            return true;
-        }
-
-        public void Cancel(out bool finalized)
-        {
-            lock (_syncRoot)
-            {
-                if (_finalized) ThrowFinalizedException();
-
-                _referenceCount--;
-
-                if (_referenceCount == 0)
-                {
-                    _finalized = true;
-                }
-
-                finalized = _finalized;
+                return true;
             }
         }
 
@@ -112,6 +91,7 @@ namespace Hangfire.InMemory.Entities
                 if (_finalized) ThrowFinalizedException();
                 if (!ReferenceEquals(_owner, owner)) throw new InvalidOperationException("Wrong entry owner");
                 if (_level <= 0) throw new InvalidOperationException("Wrong level");
+                if (_referenceCount <= 0) throw new InvalidOperationException("Wrong reference count");
 
                 _level--;
 
