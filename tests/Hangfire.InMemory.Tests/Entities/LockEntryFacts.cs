@@ -108,7 +108,7 @@ namespace Hangfire.InMemory.Tests.Entities
             });
 
             Assert.True(ready.Wait(TimeSpan.FromSeconds(1)));
-            Thread.Sleep(2000); // Ensure second TryAcquire call is made
+            Thread.Sleep(1000); // Ensure second TryAcquire call is made
 
             entry.Release(another, out var anotherCleanUp);
 
