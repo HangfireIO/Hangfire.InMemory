@@ -99,7 +99,7 @@ namespace Hangfire.InMemory.Tests.Entities
                 }
                 catch (Exception ex)
                 {
-                    exception = ExceptionDispatchInfo.Capture(ex);
+                    Volatile.Write(ref exception, ExceptionDispatchInfo.Capture(ex));
                 }
                 finally
                 {
@@ -115,7 +115,8 @@ namespace Hangfire.InMemory.Tests.Entities
             Assert.False(anotherCleanUp);
             completed.Wait();
 
-            exception?.Throw();
+            var ex = Volatile.Read(ref exception);
+            ex?.Throw();
         }
 
         [Fact]
