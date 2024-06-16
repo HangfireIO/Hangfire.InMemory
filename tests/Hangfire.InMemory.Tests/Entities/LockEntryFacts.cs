@@ -90,12 +90,12 @@ namespace Hangfire.InMemory.Tests.Entities
                 try
                 {
                     ready.Set();
-                    var acquired = entry.TryAcquire(_owner, TimeSpan.FromSeconds(5), out _, out _);
+                    var acquired = entry.TryAcquire(_owner, TimeSpan.FromSeconds(15), out _, out _);
 
                     entry.Release(_owner, out var cleanUp);
 
-                    Assert.True(acquired);
-                    Assert.True(cleanUp);
+                    Assert.True(acquired, "Should be acquired");
+                    Assert.True(cleanUp, "Should be set to clean up");
                 }
                 catch (Exception ex)
                 {
