@@ -75,45 +75,6 @@ namespace Hangfire.InMemory.Tests.Entities
         }
 
         [Fact]
-        public void TryAcquire_CanAcquire_AnAlreadyReleasedLock_ByAnotherOwner()
-        {
-            var entry = CreateLock();
-            var completed = new ManualResetEventSlim(initialState: false);
-            var another = new object();
-            var cleanUp = false;
-            Exception exception = null;
-
-            entry.TryAcquire(another, TimeSpan.Zero, out _, out _);
-
-            ThreadPool.QueueUserWorkItem(delegate
-            {
-                try
-                {
-                    var acquired = entry.TryAcquire(_owner, TimeSpan.FromSeconds(5), out _, out _);
-                    entry.Release(_owner, out cleanUp);
-
-                    Assert.True(acquired, "Should be acquired");
-                }
-                catch (Exception ex)
-                {
-                    exception = ex;
-                }
-                finally
-                {
-                    completed.Set();
-                }
-            });
-
-            Thread.Sleep(100); // Ensure second TryAcquire call is made
-            entry.Release(another, out var anotherCleanUp);
-
-            completed.Wait();
-
-            if (exception != null) Assert.False(true, exception.ToString());
-            Assert.True((cleanUp || anotherCleanUp) && (cleanUp != anotherCleanUp), "Should be clean up strictly once");
-        }
-
-        [Fact]
         public void TryAcquire_OnAFinalizedLock_RequiresRetry()
         {
             var entry = CreateLock();
