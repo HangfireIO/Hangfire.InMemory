@@ -91,7 +91,7 @@ namespace Hangfire.InMemory.Tests.Entities
                 Assert.True(cleanUp);
             });
 
-            Thread.Sleep(300);
+            Thread.Sleep(1000);
             entry.Release(another, out var anotherCleanUp);
 
             Assert.False(anotherCleanUp);
