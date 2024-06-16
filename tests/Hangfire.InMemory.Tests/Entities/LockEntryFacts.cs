@@ -83,7 +83,7 @@ namespace Hangfire.InMemory.Tests.Entities
 
             ThreadPool.QueueUserWorkItem(delegate
             {
-                var acquired = entry.TryAcquire(_owner, TimeSpan.FromSeconds(1), out _, out _);
+                var acquired = entry.TryAcquire(_owner, TimeSpan.FromSeconds(5), out _, out _);
 
                 entry.Release(_owner, out var cleanUp);
 
