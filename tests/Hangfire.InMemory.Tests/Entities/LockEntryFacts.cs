@@ -14,6 +14,7 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using Hangfire.InMemory.Entities;
 using Xunit;
@@ -78,26 +79,43 @@ namespace Hangfire.InMemory.Tests.Entities
         {
             var entry = CreateLock();
             var ready = new ManualResetEventSlim(initialState: false);
+            var completed = new ManualResetEventSlim(initialState: false);
             var another = new object();
+            ExceptionDispatchInfo exception = null;
 
             entry.TryAcquire(another, TimeSpan.Zero, out _, out _);
 
             ThreadPool.QueueUserWorkItem(delegate
             {
-                ready.Set();
-                var acquired = entry.TryAcquire(_owner, TimeSpan.FromSeconds(5), out _, out _);
+                try
+                {
+                    ready.Set();
+                    var acquired = entry.TryAcquire(_owner, TimeSpan.FromSeconds(5), out _, out _);
 
-                entry.Release(_owner, out var cleanUp);
+                    entry.Release(_owner, out var cleanUp);
 
-                Assert.True(acquired);
-                Assert.True(cleanUp);
+                    Assert.True(acquired);
+                    Assert.True(cleanUp);
+                }
+                catch (Exception ex)
+                {
+                    exception = ExceptionDispatchInfo.Capture(ex);
+                }
+                finally
+                {
+                    completed.Set();
+                }
             });
 
             Assert.True(ready.Wait(TimeSpan.FromSeconds(1)));
-            Thread.Sleep(2000);
+            Thread.Sleep(2000); // Ensure second TryAcquire call is made
+
             entry.Release(another, out var anotherCleanUp);
 
             Assert.False(anotherCleanUp);
+            completed.Wait();
+
+            exception?.Throw();
         }
 
         [Fact]
