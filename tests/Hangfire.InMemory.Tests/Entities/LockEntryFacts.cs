@@ -81,7 +81,7 @@ namespace Hangfire.InMemory.Tests.Entities
 
             entry.TryAcquire(another, TimeSpan.Zero, out _, out _);
 
-            ThreadPool.QueueUserWorkItem(delegate
+            var thread = new Thread(() =>
             {
                 var acquired = entry.TryAcquire(_owner, TimeSpan.FromSeconds(5), out _, out _);
 
@@ -91,10 +91,13 @@ namespace Hangfire.InMemory.Tests.Entities
                 Assert.True(cleanUp);
             });
 
+            thread.Start();
+
             Thread.Sleep(1000);
             entry.Release(another, out var anotherCleanUp);
 
             Assert.False(anotherCleanUp);
+            thread.Join();
         }
 
         [Fact]
