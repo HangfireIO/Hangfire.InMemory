@@ -98,6 +98,8 @@ namespace Hangfire.InMemory.Tests
                     }
                 });
             }
+
+            Assert.Empty(_state.Locks);
         }
 
         [Fact]
@@ -111,9 +113,15 @@ namespace Hangfire.InMemory.Tests
                 transaction1.AcquireDistributedLock("resource1", TimeSpan.FromSeconds(1));
                 transaction2.AcquireDistributedLock("resource2", TimeSpan.FromSeconds(1));
 
+                Assert.Equal(2, _state.Locks.Count);
+
                 transaction1.Commit();
                 transaction2.Commit();
+
+                Assert.Empty(_state.Locks);
             }
+
+            Assert.Empty(_state.Locks);
         }
 
         [Fact]
@@ -123,7 +131,11 @@ namespace Hangfire.InMemory.Tests
             {
                 transaction.AcquireDistributedLock("resource", TimeSpan.FromSeconds(5));
                 transaction.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
+
+                Assert.Single(_state.Locks);
             });
+
+            Assert.Empty(_state.Locks);
         }
 
         [Fact]
@@ -135,9 +147,14 @@ namespace Hangfire.InMemory.Tests
                 using (connection.AcquireDistributedLock("resource", TimeSpan.FromSeconds(5)))
                 {
                     transaction.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
+                    Assert.Single(_state.Locks);
+
                     transaction.Commit();
+                    Assert.Single(_state.Locks);
                 }
             }
+            
+            Assert.Empty(_state.Locks);
         }
 
         [Fact]
@@ -155,6 +172,8 @@ namespace Hangfire.InMemory.Tests
                 transaction2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(15));
                 transaction2.Commit();
             }
+
+            Assert.Empty(_state.Locks);
         }
 
         [Fact]
@@ -172,6 +191,8 @@ namespace Hangfire.InMemory.Tests
                 transaction2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(15));
                 transaction2.Commit();
             }
+
+            Assert.Empty(_state.Locks);
         }
 #endif
 

@@ -18,9 +18,9 @@ using System.Threading;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class LockEntry<T> where T : class
+    internal sealed class LockEntry<T> : IDisposable where T : class
     {
-        private readonly object _syncRoot = new object();
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(initialCount: 1, maxCount: 1);
         private T? _owner;
         private int _referenceCount;
         private int _level;
@@ -33,7 +33,7 @@ namespace Hangfire.InMemory.Entities
             retry = false;
             cleanUp = false;
 
-            lock (_syncRoot)
+            lock (_semaphore)
             {
                 if (_finalized)
                 {
@@ -43,9 +43,6 @@ namespace Hangfire.InMemory.Entities
                     return false;
                 }
 
-                var timeoutMs = (int)timeout.TotalMilliseconds;
-                var started = Environment.TickCount;
-                
                 if (ReferenceEquals(_owner, owner))
                 {
                     // Entry is currently owned by the same owner, so our lock has been
@@ -58,38 +55,39 @@ namespace Hangfire.InMemory.Entities
                 // the number of references to avoid finalizing it too early and
                 // allow waiting for it.
                 _referenceCount++;
+            }
 
-                while (_owner != null)
+            var waitResult = _semaphore.Wait(timeout);
+
+            lock (_semaphore)
+            {
+                if (!waitResult)
                 {
-                    var remaining = timeoutMs - unchecked(Environment.TickCount - started);
-                    if (remaining < 0)
-                    {
-                        _referenceCount--;
+                    _referenceCount--;
 
-                        // Finalize if there are no other references and request to clean up
-                        // in this case. No retry is needed, just give up.
-                        cleanUp = _finalized = _referenceCount == 0;
-                        return false;
-                    }
-
-                    Monitor.Wait(_syncRoot, remaining);
+                    // Finalize if there are no other references and request to clean up
+                    // in this case. No retry is needed, just give up.
+                    cleanUp = _finalized = _referenceCount == 0;
+                    return false;
                 }
 
-                // New ownership has been successfully acquired.
                 _owner = owner;
                 _level = 1;
                 return true;
             }
         }
 
-        public void Release(T owner, out bool finalized)
+        public void Release(T owner, out bool cleanUp)
         {
             if (owner == null) throw new ArgumentNullException(nameof(owner));
 
-            lock (_syncRoot)
+            cleanUp = false;
+            var release = false;
+
+            lock (_semaphore)
             {
                 if (_finalized) ThrowFinalizedException();
-                if (!ReferenceEquals(_owner, owner)) throw new InvalidOperationException("Wrong entry owner");
+                if (!ReferenceEquals(_owner, owner)) throw new ArgumentException("Wrong entry owner", nameof(owner));
                 if (_level <= 0) throw new InvalidOperationException("Wrong level");
                 if (_referenceCount <= 0) throw new InvalidOperationException("Wrong reference count");
 
@@ -98,20 +96,25 @@ namespace Hangfire.InMemory.Entities
                 if (_level == 0)
                 {
                     _owner = null;
-                    _referenceCount--;
-
-                    if (_referenceCount == 0)
-                    {
-                        _finalized = true;
-                    }
-                    else
-                    {
-                        Monitor.Pulse(_syncRoot);
-                    }
+                    release = true;
                 }
-
-                finalized = _finalized;
             }
+
+            if (release)
+            {
+                _semaphore.Release();
+
+                lock (_semaphore)
+                {
+                    _referenceCount--;
+                    cleanUp = _finalized = _referenceCount == 0;
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            _semaphore.Dispose();
         }
 
         private static void ThrowFinalizedException()

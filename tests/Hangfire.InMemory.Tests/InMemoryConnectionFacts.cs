@@ -2286,6 +2286,8 @@ namespace Hangfire.InMemory.Tests
                     }
                 });
             }
+
+            Assert.Empty(_state.Locks);
         }
 
         [Fact]
@@ -2297,8 +2299,11 @@ namespace Hangfire.InMemory.Tests
                 using (connection1.AcquireDistributedLock("resource1", TimeSpan.FromSeconds(1)))
                 using (connection2.AcquireDistributedLock("resource2", TimeSpan.FromSeconds(1)))
                 {
+                    Assert.Equal(2, _state.Locks.Count);
                 }
             }
+
+            Assert.Empty(_state.Locks);
         }
 
         [Fact]
@@ -2310,11 +2315,12 @@ namespace Hangfire.InMemory.Tests
             }
 
             using (var connection2 = CreateConnection())
+            using (connection2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1)))
             {
-                using (connection2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1)))
-                {
-                }
+                Assert.Single(_state.Locks);
             }
+
+            Assert.Empty(_state.Locks);
         }
 
         [Fact]
@@ -2325,8 +2331,11 @@ namespace Hangfire.InMemory.Tests
                 using (connection.AcquireDistributedLock("resource", TimeSpan.FromSeconds(5)))
                 using (connection.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1)))
                 {
+                    Assert.Single(_state.Locks);
                 }
             });
+
+            Assert.Empty(_state.Locks);
         }
 
         [Fact]
@@ -2341,8 +2350,11 @@ namespace Hangfire.InMemory.Tests
 
                 using (connection2.AcquireDistributedLock("resource", TimeSpan.FromSeconds(15)))
                 {
+                    Assert.Single(_state.Locks);
                 }
             }
+
+            Assert.Empty(_state.Locks);
         }
 
         [Fact]
@@ -2352,8 +2364,11 @@ namespace Hangfire.InMemory.Tests
             {
                 using (connection.AcquireDistributedLock("resource", TimeSpan.Zero))
                 {
+                    Assert.Single(_state.Locks);
                 }
             });
+
+            Assert.Empty(_state.Locks);
         }
 
         private void UseConnection(Action<InMemoryConnection<string>> action)
