@@ -16,6 +16,12 @@
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
 
+0.10.2
+• Changed – Refactor command dispatching to make it more simple and less allocating.
+• Changed – Straightforward locking implementation with more unit tests.
+• Fixed – `InvalidOperationException` "Wrong level" when trying to release a lock (regression from 0.10.1).
+• Fixed – "An item with the same key has already been added" on the Awaiting Jobs page (regression from 0.10.0).
+
 0.10.1
 • Changed – Roll back a breaking change in 0.10.0 for the `InMemoryStorageOptions` class.
 • Changed – Increase the default eviction interval to 5 seconds.
