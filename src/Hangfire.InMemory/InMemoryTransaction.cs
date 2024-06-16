@@ -24,13 +24,17 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction, ICommand<TKey>
+    internal sealed class InMemoryTransaction<TKey> : JobStorageTransaction
         where TKey : IComparable<TKey>
     {
-        private readonly LinkedList<ICommand<TKey, object?>> _commands = new LinkedList<ICommand<TKey, object?>>();
-        private readonly HashSet<string> _enqueued = new HashSet<string>();
         private readonly InMemoryConnection<TKey> _connection;
-        private readonly List<IDisposable> _acquiredLocks = new List<IDisposable>();
+
+        private const int MaxCommandsInList = 4096;
+        private readonly List<ICommand<TKey>> _commands = new List<ICommand<TKey>>();
+        private LinkedList<ICommand<TKey>>? _additionalCommands;
+
+        private List<IDisposable>? _acquiredLocks;
+        private HashSet<string>? _enqueued;
 
         public InMemoryTransaction([NotNull] InMemoryConnection<TKey> connection)
         {
@@ -39,9 +43,12 @@ namespace Hangfire.InMemory
 
         public override void Dispose()
         {
-            foreach (var acquiredLock in _acquiredLocks)
+            if (_acquiredLocks != null)
             {
-                acquiredLock.Dispose();
+                foreach (var acquiredLock in _acquiredLocks)
+                {
+                    acquiredLock.Dispose();
+                }
             }
 
             base.Dispose();
@@ -49,13 +56,15 @@ namespace Hangfire.InMemory
 
         public override void Commit()
         {
-            _connection.Dispatcher.QueryWriteAndWait(this);
+            _connection.Dispatcher.QueryWriteAndWait(this, static (t, s) => t.CommitCore(s));
         }
 
 #if !HANGFIRE_170
         public override void AcquireDistributedLock(string resource, TimeSpan timeout)
         {
             var disposableLock = _connection.AcquireDistributedLock(resource, timeout);
+
+            _acquiredLocks ??= new List<IDisposable>();
             _acquiredLocks.Add(disposableLock);
         }
 #endif
@@ -172,6 +181,8 @@ namespace Hangfire.InMemory
             }
 
             AddCommand(new Commands.QueueEnqueue<TKey>(queue, key));
+
+            _enqueued ??= new HashSet<string>();
             _enqueued.Add(queue);
         }
 
@@ -336,12 +347,20 @@ namespace Hangfire.InMemory
             AddCommand(new Commands.SortedSetExpire<TKey>(key, now: null, expireIn: null, maxExpiration: null));
         }
 
-        private void AddCommand(ICommand<TKey, object?> action)
+        private void AddCommand(ICommand<TKey> action)
         {
-            _commands.AddLast(action);
+            if (_commands.Count < MaxCommandsInList)
+            {
+                _commands.Add(action);
+            }
+            else
+            {
+                _additionalCommands ??= new LinkedList<ICommand<TKey>>();
+                _additionalCommands.AddLast(action);
+            }
         }
 
-        object? ICommand<TKey, object?>.Execute(MemoryState<TKey> state)
+        private bool CommitCore(MemoryState<TKey> state)
         {
             try
             {
@@ -360,21 +379,35 @@ namespace Hangfire.InMemory
                 {
                     command.Execute(state);
                 }
+
+                if (_additionalCommands != null)
+                {
+                    foreach (var command in _additionalCommands)
+                    {
+                        command.Execute(state);
+                    }
+                }
             }
             finally
             {
-                foreach (var acquiredLock in _acquiredLocks)
+                if (_acquiredLocks != null)
                 {
-                    acquiredLock.Dispose();
+                    foreach (var acquiredLock in _acquiredLocks)
+                    {
+                        acquiredLock.Dispose();
+                    }
                 }
             }
 
-            foreach (var queue in _enqueued)
+            if (_enqueued != null)
             {
-                state.QueueGetOrAdd(queue).SignalOneWaitNode();
+                foreach (var queue in _enqueued)
+                {
+                    state.QueueGetOrAdd(queue).SignalOneWaitNode();
+                }
             }
 
-            return null;
+            return true;
         }
     }
 }

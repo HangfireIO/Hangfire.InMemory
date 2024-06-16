@@ -26,11 +26,10 @@ namespace Hangfire.InMemory.State
         private const uint DefaultEvictionIntervalMs = 5000U;
 
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(0, 1);
-        private readonly ConcurrentQueue<DispatcherCallback<TKey>> _readQueries = new ConcurrentQueue<DispatcherCallback<TKey>>();
 
         // ConcurrentBag for writes give much better throughput, but less stable, since some items are processed
         // with a heavy delay when new ones are constantly arriving.
-        private readonly ConcurrentQueue<DispatcherCallback<TKey>> _queries = new ConcurrentQueue<DispatcherCallback<TKey>>();
+        private readonly ConcurrentQueue<IDispatcherCallback<TKey>> _queries = new ConcurrentQueue<IDispatcherCallback<TKey>>();
         private readonly TimeSpan _commandTimeout;
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
@@ -63,11 +62,11 @@ namespace Hangfire.InMemory.State
             _cts.Dispose();
         }
 
-        protected override object QueryWriteAndWait(ICommand<TKey, object> query)
+        public override T QueryWriteAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new DispatcherCallback<TKey>(query, rethrowExceptions: true))
+            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, func, rethrowExceptions: true))
             {
                 _queries.Enqueue(callback);
 
@@ -84,38 +83,20 @@ namespace Hangfire.InMemory.State
 
                 if (callback.IsFaulted)
                 {
-                    throw new InvalidOperationException("Dispatcher stopped due to an unhandled exception, storage state is corrupted.", (Exception?)callback.Result);
+                    throw new InvalidOperationException("Dispatcher stopped due to an unhandled exception, storage state is corrupted.", callback.Exception);
                 }
 
                 return callback.Result!;
             }
         }
 
-        protected override object QueryReadAndWait(ICommand<TKey, object> query)
+        public override T QueryReadAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new DispatcherCallback<TKey>(query, rethrowExceptions: false))
+            lock (_queries)
             {
-                _readQueries.Enqueue(callback);
-
-                if (Volatile.Read(ref _outstandingRequests.Value) == 0 &&
-                    Interlocked.Exchange(ref _outstandingRequests.Value, 1) == 0)
-                {
-                    _semaphore.Release();
-                }
-
-                if (!callback.Wait(_commandTimeout, _cts.Token))
-                {
-                    throw new TimeoutException();
-                }
-
-                if (callback.IsFaulted)
-                {
-                    throw new InvalidOperationException("An exception occurred while executing a read query. Please see inner exception for details.", (Exception?)callback.Result);
-                }
-
-                return callback.Result!;
+                return func(query, State);
             }
         }
 
@@ -131,9 +112,12 @@ namespace Hangfire.InMemory.State
                     {
                         Interlocked.Exchange(ref _outstandingRequests.Value, 0);
 
-                        while (_readQueries.TryDequeue(out var next) || _queries.TryDequeue(out next))
+                        while (_queries.TryDequeue(out var next))
                         {
-                            next.Execute(State);
+                            lock (_queries)
+                            {
+                                next.Execute(State);
+                            }
 
                             EvictExpiredEntriesIfNeeded(ref lastEviction);
                         }
@@ -160,7 +144,11 @@ namespace Hangfire.InMemory.State
         {
             if (Environment.TickCount - lastEviction >= DefaultEvictionIntervalMs)
             {
-                EvictExpiredEntries();
+                lock (_queries)
+                {
+                    EvictExpiredEntries();
+                }
+
                 lastEviction = Environment.TickCount;
             }
         }

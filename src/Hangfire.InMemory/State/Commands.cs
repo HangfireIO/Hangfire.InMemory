@@ -27,37 +27,33 @@ namespace Hangfire.InMemory.State
         public sealed class JobCreate<TKey>(TKey key, InvocationData data, KeyValuePair<string, string>[] parameters, MonotonicTime now, TimeSpan expireIn) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 state.JobCreate(new JobEntry<TKey>(key, data, parameters, now), expireIn);
-                return null;
             }
         }
 
         public sealed class JobSetParameter<TKey>(TKey key, string name, string value) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 if (state.Jobs.TryGetValue(key, out var entry))
                 {
                     entry.SetParameter(name, value, state.StringComparer);
                 }
-                return null;
             }
         }
 
         public sealed class JobExpire<TKey>(TKey key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 if (state.Jobs.TryGetValue(key, out var entry))
                 {
                     state.JobExpire(entry, now, expireIn, maxExpiration);
                 }
-
-                return null;
             }
         }
 
@@ -65,7 +61,7 @@ namespace Hangfire.InMemory.State
             TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory, bool setAsCurrent) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 var record = new StateRecord(name, reason, data, now);
 
@@ -77,12 +73,10 @@ namespace Hangfire.InMemory.State
                         state.JobSetState(entry, record);
                     }
                 }
-
-                return null;
             }
         }
 
-        public sealed class QueueEnqueue<TKey>(string queue, TKey key) : ICommand<TKey, QueueEntry<TKey>>
+        public sealed class QueueEnqueue<TKey>(string queue, TKey key) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public QueueEntry<TKey> Execute(MemoryState<TKey> state)
@@ -92,12 +86,14 @@ namespace Hangfire.InMemory.State
 
                 return entry;
             }
+
+            void ICommand<TKey>.Execute(MemoryState<TKey> state) => Execute(state);
         }
 
         public sealed class CounterIncrement<TKey>(string key, long value, MonotonicTime? now, TimeSpan? expireIn) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 var entry = state.CounterGetOrAdd(key);
                 entry.Value += value;
@@ -113,25 +109,22 @@ namespace Hangfire.InMemory.State
                 {
                     state.CounterDelete(entry);
                 }
-
-                return null;
             }
         }
 
         public sealed class SortedSetAdd<TKey>(string key, string value, double score) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 state.SetGetOrAdd(key).Add(value, score);
-                return null;
             }
         }
 
         public sealed class SortedSetAddRange<TKey>(string key, IEnumerable<string> items) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 var entry = state.SetGetOrAdd(key);
 
@@ -139,99 +132,87 @@ namespace Hangfire.InMemory.State
                 {
                     entry.Add(item, 0.0D);
                 }
-
-                return null;
             }
         }
 
         public sealed class SortedSetRemove<TKey>(string key, string value) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var entry))
                 {
                     entry.Remove(value);
                     if (entry.Count == 0) state.SetDelete(entry);
                 }
-
-                return null;
             }
         }
 
         public sealed class SortedSetDelete<TKey>(string key) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var entry)) state.SetDelete(entry);
-                return null;
             }
         }
 
         public sealed class SortedSetExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var entry)) state.SetExpire(entry, now, expireIn, maxExpiration);
-                return null;
             }
         }
 
         public sealed class ListInsert<TKey>(string key, string value) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 state.ListGetOrAdd(key).Add(value);
-                return null;
             }
         }
 
         public sealed class ListRemoveAll<TKey>(string key, string value) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 var entry = state.ListGetOrAdd(key);
                 if (entry.RemoveAll(value, state.StringComparer) == 0)
                 {
                     state.ListDelete(entry);
                 }
-
-                return null;
             }
         }
 
         public sealed class ListTrim<TKey>(string key, int keepStartingFrom, int keepEndingAt) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var entry) && entry.Trim(keepStartingFrom, keepEndingAt) == 0)
                 {
                     state.ListDelete(entry);
                 }
-
-                return null;
             }
         }
 
         public sealed class ListExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var entry)) state.ListExpire(entry, now, expireIn, maxExpiration);
-                return null;
             }
         }
 
         public sealed class HashSetRange<TKey>(string key, IEnumerable<KeyValuePair<string, string>> items) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 var entry = state.HashGetOrAdd(key);
 
@@ -244,51 +225,49 @@ namespace Hangfire.InMemory.State
                 {
                     state.HashDelete(entry);
                 }
-
-                return null;
             }
         }
 
         public sealed class HashExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn,  TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var entry)) state.HashExpire(entry, now, expireIn, maxExpiration);
-                return null;
             }
         }
 
         public sealed class HashRemove<TKey>(string key) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public void Execute(MemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var entry)) state.HashDelete(entry);
-                return null;
             }
         }
 
-        public sealed class ServerAnnounce<TKey>(string serverId, ServerContext context, MonotonicTime now) : ICommand<TKey>
+        public sealed class ServerAnnounce<TKey>(string serverId, ServerContext context, MonotonicTime now)
             where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public bool Execute(MemoryState<TKey> state)
             {
                 if (!state.Servers.ContainsKey(serverId))
                 {
                     state.ServerAdd(serverId, new ServerEntry(
                         new ServerContext { Queues = context.Queues?.ToArray(), WorkerCount = context.WorkerCount },
                         now));
+
+                    return true;
                 }
 
-                return null;
+                return false;
             }
         }
 
-        public sealed class ServerHeartbeat<TKey>(string serverId, MonotonicTime now) : ValueCommand<TKey, bool>
+        public sealed class ServerHeartbeat<TKey>(string serverId, MonotonicTime now)
             where TKey : IComparable<TKey>
         {
-            protected override bool Execute(MemoryState<TKey> state)
+            public bool Execute(MemoryState<TKey> state)
             {
                 if (state.Servers.TryGetValue(serverId, out var entry))
                 {
@@ -300,20 +279,18 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ServerDelete<TKey>(string serverId) : ICommand<TKey>
-            where TKey : IComparable<TKey>
+        public sealed class ServerDelete<TKey>(string serverId) where TKey : IComparable<TKey>
         {
-            public object? Execute(MemoryState<TKey> state)
+            public bool Execute(MemoryState<TKey> state)
             {
-                state.ServerRemove(serverId);
-                return null;
+                return state.ServerRemove(serverId);
             }
         }
 
-        public sealed class ServerDeleteInactive<TKey>(TimeSpan timeout, MonotonicTime now) : ValueCommand<TKey, int>
+        public sealed class ServerDeleteInactive<TKey>(TimeSpan timeout, MonotonicTime now)
             where TKey : IComparable<TKey>
         {
-            protected override int Execute(MemoryState<TKey> state)
+            public int Execute(MemoryState<TKey> state)
             {
                 var serversToRemove = new List<string>();
 

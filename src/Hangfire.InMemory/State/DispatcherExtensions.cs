@@ -17,8 +17,16 @@ using System;
 
 namespace Hangfire.InMemory.State
 {
-    internal interface ICommand<TKey> where TKey : IComparable<TKey>
+    internal static class DispatcherExtensions
     {
-        void Execute(MemoryState<TKey> state);
+        public static void QueryWriteAndWait<TKey>(this DispatcherBase<TKey> dispatcher, ICommand<TKey> query)
+            where TKey : IComparable<TKey>
+        {
+            dispatcher.QueryWriteAndWait(query, static (q, s) =>
+            {
+                q.Execute(s);
+                return true;
+            });
+        }
     }
 }

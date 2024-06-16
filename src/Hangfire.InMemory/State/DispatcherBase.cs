@@ -112,50 +112,14 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public T? QueryWriteAndWait<T>(ICommand<TKey, ValueCommand<TKey, T?>> query)
-            where T : struct
+        public virtual T QueryWriteAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
         {
-            return QueryWriteAndWait<ValueCommand<TKey, T?>>(query).Result;
+            return func(query, _state);
         }
 
-        public T QueryWriteAndWait<T>(ICommand<TKey, ValueCommand<TKey, T>> query)
-            where T : struct
+        public virtual T QueryReadAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
         {
-            return QueryWriteAndWait<ValueCommand<TKey, T>>(query).Result;
-        }
-
-        public T QueryWriteAndWait<T>(ICommand<TKey, T> query)
-            where T : class?
-        {
-            return (T)QueryWriteAndWait(query as ICommand<TKey, object>);
-        }
-
-        protected virtual object QueryWriteAndWait(ICommand<TKey, object> query)
-        {
-            return query.Execute(_state);
-        }
-
-        public T? QueryReadAndWait<T>(ICommand<TKey, ValueCommand<TKey, T?>> query)
-            where T : struct
-        {
-            return QueryReadAndWait<ValueCommand<TKey, T?>>(query).Result;
-        }
-
-        public T QueryReadAndWait<T>(ICommand<TKey, ValueCommand<TKey, T>> query)
-            where T : struct
-        {
-            return QueryReadAndWait<ValueCommand<TKey, T>>(query).Result;
-        }
-
-        public T QueryReadAndWait<T>(ICommand<TKey, T> query)
-            where T : class?
-        {
-            return (T)QueryReadAndWait(query as ICommand<TKey, object>);
-        }
-
-        protected virtual object QueryReadAndWait(ICommand<TKey, object> query)
-        {
-            return QueryWriteAndWait(query);
+            return QueryWriteAndWait(query, func);
         }
 
         protected void EvictExpiredEntries()

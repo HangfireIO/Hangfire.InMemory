@@ -18,36 +18,56 @@ using System.Threading;
 
 namespace Hangfire.InMemory.State
 {
-    internal sealed class DispatcherCallback<TKey> : IDisposable
+    internal interface IDispatcherCallback<TKey>
+        where TKey : IComparable<TKey>
+    {
+        void Execute(MemoryState<TKey> state);
+    }
+
+    internal sealed class DispatcherCallback<TKey, TCommand, TResult> : IDispatcherCallback<TKey>, IDisposable
         where TKey : IComparable<TKey>
     {
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
-        private readonly ICommand<TKey, object> _command;
+        private readonly TCommand _command;
+        private readonly Func<TCommand, MemoryState<TKey>, TResult> _func;
         private readonly bool _rethrowExceptions;
-        private volatile object? _result;
 
-        public DispatcherCallback(ICommand<TKey, object> command, bool rethrowExceptions)
+        private bool _isFaulted;
+        private TResult? _result;
+        private Exception? _exception;
+
+        public DispatcherCallback(TCommand command, Func<TCommand, MemoryState<TKey>, TResult> func, bool rethrowExceptions)
         {
-            _rethrowExceptions = rethrowExceptions;
             _command = command ?? throw new ArgumentNullException(nameof(command));
+            _func = func ?? throw new ArgumentNullException(nameof(func));
+            _rethrowExceptions = rethrowExceptions;
         }
 
-        public bool IsFaulted { get; private set; }
-        public object? Result => _result;
+        public bool IsFaulted { get { lock (_ready) { return _isFaulted; } } }
+        public TResult? Result { get { lock (_ready) { return _result; } } }
+        public Exception? Exception { get { lock (_ready) { return _exception; } } }
 
         public void Execute(MemoryState<TKey> state)
         {
             try
             {
-                _result = _command.Execute(state);
-                IsFaulted = false;
+                var result = _func(_command, state);
+
+                lock (_ready)
+                {
+                    _isFaulted = false;
+                    _result = result;
+                }
 
                 TrySetReady();
             }
             catch (Exception ex) when (ExceptionHelper.IsCatchableExceptionType(ex))
             {
-                _result = ex;
-                IsFaulted = true;
+                lock (_ready)
+                {
+                    _isFaulted = true;
+                    _exception = ex;
+                }
 
                 TrySetReady();
 
