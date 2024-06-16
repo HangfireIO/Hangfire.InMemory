@@ -112,11 +112,12 @@ namespace Hangfire.InMemory.Tests.Entities
 
             entry.Release(another, out var anotherCleanUp);
 
-            Assert.False(anotherCleanUp);
             completed.Wait();
 
             var ex = Volatile.Read(ref exception);
             ex?.Throw();
+
+            Assert.False(anotherCleanUp);
         }
 
         [Fact]
