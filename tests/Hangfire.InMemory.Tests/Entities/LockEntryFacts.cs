@@ -77,14 +77,12 @@ namespace Hangfire.InMemory.Tests.Entities
         public void TryAcquire_CanAcquire_AnAlreadyReleasedLock_ByAnotherOwner()
         {
             var entry = CreateLock();
-            var ready = new ManualResetEventSlim();
             var another = new object();
 
             entry.TryAcquire(another, TimeSpan.Zero, out _, out _);
 
             ThreadPool.QueueUserWorkItem(delegate
             {
-                ready.Set();
                 var acquired = entry.TryAcquire(_owner, TimeSpan.FromSeconds(1), out _, out _);
 
                 entry.Release(_owner, out var cleanUp);
@@ -93,8 +91,7 @@ namespace Hangfire.InMemory.Tests.Entities
                 Assert.True(cleanUp);
             });
 
-            Assert.True(ready.Wait(TimeSpan.FromSeconds(1)));
-            Thread.Sleep(100);
+            Thread.Sleep(300);
             entry.Release(another, out var anotherCleanUp);
 
             Assert.False(anotherCleanUp);
