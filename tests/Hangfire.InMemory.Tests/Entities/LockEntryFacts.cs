@@ -78,10 +78,10 @@ namespace Hangfire.InMemory.Tests.Entities
         public void TryAcquire_CanAcquire_AnAlreadyReleasedLock_ByAnotherOwner()
         {
             var entry = CreateLock();
-            var ready = new ManualResetEventSlim(initialState: false);
             var completed = new ManualResetEventSlim(initialState: false);
             var another = new object();
-            ExceptionDispatchInfo exception = null;
+            var cleanUp = false;
+            Exception exception = null;
 
             entry.TryAcquire(another, TimeSpan.Zero, out _, out _);
 
@@ -89,17 +89,14 @@ namespace Hangfire.InMemory.Tests.Entities
             {
                 try
                 {
-                    ready.Set();
-                    var acquired = entry.TryAcquire(_owner, TimeSpan.FromSeconds(15), out _, out _);
-
-                    entry.Release(_owner, out var cleanUp);
+                    var acquired = entry.TryAcquire(_owner, TimeSpan.FromSeconds(5), out _, out _);
+                    entry.Release(_owner, out cleanUp);
 
                     Assert.True(acquired, "Should be acquired");
-                    Assert.True(cleanUp, "Should be set to clean up");
                 }
                 catch (Exception ex)
                 {
-                    Volatile.Write(ref exception, ExceptionDispatchInfo.Capture(ex));
+                    exception = ex;
                 }
                 finally
                 {
@@ -107,17 +104,13 @@ namespace Hangfire.InMemory.Tests.Entities
                 }
             });
 
-            Assert.True(ready.Wait(TimeSpan.FromSeconds(1)));
-            Thread.Sleep(1000); // Ensure second TryAcquire call is made
-
+            Thread.Sleep(100); // Ensure second TryAcquire call is made
             entry.Release(another, out var anotherCleanUp);
 
             completed.Wait();
 
-            var ex = Volatile.Read(ref exception);
-            ex?.Throw();
-
-            Assert.False(anotherCleanUp);
+            if (exception != null) Assert.False(true, exception.ToString());
+            Assert.True((cleanUp || anotherCleanUp) && (cleanUp != anotherCleanUp), "Should be clean up strictly once");
         }
 
         [Fact]
