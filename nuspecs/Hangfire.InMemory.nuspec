@@ -16,6 +16,9 @@
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
 
+0.10.3
+• Changed – Significantly optimize `GetFirstByLowestScoreFromSet` method overloads.
+
 0.10.2
 • Changed – Refactor command dispatching to make it more simple and less allocating.
 • Changed – Straightforward locking implementation with more unit tests.
