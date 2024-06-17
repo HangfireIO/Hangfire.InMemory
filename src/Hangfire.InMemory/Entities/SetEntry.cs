@@ -74,14 +74,20 @@ namespace Hangfire.InMemory.Entities
 
             return result;
         }
-        
+
         public string? GetFirstBetween(double from, double to)
         {
-            var view = _value.GetViewBetween(
-                new SortedSetItem(String.Empty, from),
-                new SortedSetItem(String.Empty, to));
+            foreach (var item in _value)
+            {
+                if (item.Score > to) break;
 
-            return view.Count > 0 ? view.Min.Value : null;
+                if (item.Score >= from)
+                {
+                    return item.Value;
+                }
+            }
+
+            return null;
         }
 
         public void Remove(string value)
