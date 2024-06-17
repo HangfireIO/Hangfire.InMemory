@@ -75,8 +75,8 @@ namespace Hangfire.InMemory.Entities
             {
                 // Slow path - find the item first
                 var view = _value.GetViewBetween(
-                    new SortedSetItem(String.Empty, from),
-                    new SortedSetItem(String.Empty, to));
+                    new SortedSetItem(null!, from),
+                    new SortedSetItem(null!, to));
 
                 // Don't query view.Count here as it leads to VersionCheck(updateCount: true) call,
                 // which is very expensive when there are a huge number of entries.
@@ -103,8 +103,8 @@ namespace Hangfire.InMemory.Entities
 
             // Slow path - find the item first
             var view = _value.GetViewBetween(
-                new SortedSetItem(String.Empty, from),
-                new SortedSetItem(String.Empty, to));
+                new SortedSetItem(null!, from),
+                new SortedSetItem(null!, to));
 
             return view.Min.Value;
         }
