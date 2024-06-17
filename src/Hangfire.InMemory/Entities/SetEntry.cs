@@ -58,18 +58,33 @@ namespace Hangfire.InMemory.Entities
 
         public List<string> GetViewBetween(double from, double to, int count)
         {
-            var view = _value.GetViewBetween(
-                new SortedSetItem(String.Empty, from),
-                new SortedSetItem(String.Empty, to));
+            if (_value.Count == 0) return new List<string>();
 
-            // Don't query view.Count here as it leads to VersionCheck(updateCount: true) call,
-            // which is very expensive when there are a huge number of entries.
-            var result = new List<string>();
+            var result = new List<string>(count);
 
-            foreach (var entry in view)
+            if (_value.Min.Score >= from)
             {
-                if (count-- == 0) break;
-                result.Add(entry.Value);
+                // Fast path - item is found, no need to traverse the tree, just iterating
+                foreach (var item in _value)
+                {
+                    if (item.Score > to || count-- == 0) break;
+                    result.Add(item.Value);
+                }
+            }
+            else
+            {
+                // Slow path - find the item first
+                var view = _value.GetViewBetween(
+                    new SortedSetItem(String.Empty, from),
+                    new SortedSetItem(String.Empty, to));
+
+                // Don't query view.Count here as it leads to VersionCheck(updateCount: true) call,
+                // which is very expensive when there are a huge number of entries.
+                foreach (var item in view)
+                {
+                    if (count-- == 0) break;
+                    result.Add(item.Value);
+                }
             }
 
             return result;
@@ -77,17 +92,21 @@ namespace Hangfire.InMemory.Entities
 
         public string? GetFirstBetween(double from, double to)
         {
-            foreach (var item in _value)
-            {
-                if (item.Score > to) break;
+            if (_value.Count == 0) return null;
 
-                if (item.Score >= from)
-                {
-                    return item.Value;
-                }
+            var minItem = _value.Min;
+            if (minItem.Score >= from)
+            {
+                // Fast path - item is found, no need to traverse
+                return minItem.Score <= to ? minItem.Value : null;
             }
 
-            return null;
+            // Slow path - find the item first
+            var view = _value.GetViewBetween(
+                new SortedSetItem(String.Empty, from),
+                new SortedSetItem(String.Empty, to));
+
+            return view.Min.Value;
         }
 
         public void Remove(string value)

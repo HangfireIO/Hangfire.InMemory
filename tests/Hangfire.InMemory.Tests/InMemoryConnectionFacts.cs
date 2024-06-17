@@ -1974,6 +1974,25 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void GetFirstByLowestScoreFromSet_WithCount_ReturnsTheGivenRange_FromTheGivenSet_WhenStartingAtAlreadySatisfiesFirstElement()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "3", 3.0D);
+                    x.AddToSet("key", "1", 1.0D);
+                    x.AddToSet("key", "4", 4.0D);
+                    x.AddToSet("key", "2", 2.0D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", 0.0D, 10.0D, 2);
+
+                Assert.Equal(new[] { "1", "2" }, result);
+            });
+        }
+
+        [Fact]
         public void GetFirstByLowestScoreFromSet_WithCount_ReturnsEmptyRange_WhenStartingAt_GreaterThanTheNumberOfElements()
         {
             UseConnection(connection =>
@@ -2007,6 +2026,25 @@ namespace Hangfire.InMemory.Tests
                 var result = connection.GetFirstByLowestScoreFromSet("key", 3.0D, 10.0D, 10);
 
                 Assert.Equal(new[] { "3", "4" }, result);
+            });
+        }
+
+        [Fact]
+        public void GetFirstByLowestScoreFromSet_WithCount_ReadsToEnd_WhenFirstElementAlreadySatisfiesStartingAt_WhenEndingAt_IsGreaterThanTheNumberOfElements()
+        {
+            UseConnection(connection =>
+            {
+                Commit(connection, x =>
+                {
+                    x.AddToSet("key", "3", 3.0D);
+                    x.AddToSet("key", "1", 1.0D);
+                    x.AddToSet("key", "4", 4.0D);
+                    x.AddToSet("key", "2", 2.0D);
+                });
+
+                var result = connection.GetFirstByLowestScoreFromSet("key", 0.0D, 10.0D, 10);
+
+                Assert.Equal(new[] { "1", "2", "3", "4" }, result);
             });
         }
 
