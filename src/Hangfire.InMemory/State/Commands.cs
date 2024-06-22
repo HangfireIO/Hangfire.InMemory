@@ -45,7 +45,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobExpire<TKey>(TKey key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
+        public sealed class JobExpire<TKey>(TKey key, MonotonicTime now, TimeSpan expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public void Execute(MemoryState<TKey> state)
@@ -57,8 +57,20 @@ namespace Hangfire.InMemory.State
             }
         }
 
+        public sealed class JobPersist<TKey>(TKey key) : ICommand<TKey>
+            where TKey : IComparable<TKey>
+        {
+            public void Execute(MemoryState<TKey> state)
+            {
+                if (state.Jobs.TryGetValue(key, out var entry))
+                {
+                    state.JobExpire(entry, now: null, expireIn: null, maxExpiration: null);
+                }
+            }
+        }
+
         public sealed class JobAddState<TKey>(
-            TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory, bool setAsCurrent) : ICommand<TKey>
+            TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public void Execute(MemoryState<TKey> state)
@@ -68,10 +80,22 @@ namespace Hangfire.InMemory.State
                 if (state.Jobs.TryGetValue(key, out var entry))
                 {
                     entry.AddHistoryEntry(record, maxHistory);
-                    if (setAsCurrent)
-                    {
-                        state.JobSetState(entry, record);
-                    }
+                }
+            }
+        }
+
+        public sealed class JobSetState<TKey>(
+            TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
+            where TKey : IComparable<TKey>
+        {
+            public void Execute(MemoryState<TKey> state)
+            {
+                var record = new StateRecord(name, reason, data, now);
+
+                if (state.Jobs.TryGetValue(key, out var entry))
+                {
+                    entry.AddHistoryEntry(record, maxHistory);
+                    state.JobSetState(entry, record);
                 }
             }
         }
@@ -90,7 +114,22 @@ namespace Hangfire.InMemory.State
             void ICommand<TKey>.Execute(MemoryState<TKey> state) => Execute(state);
         }
 
-        public sealed class CounterIncrement<TKey>(string key, long value, MonotonicTime? now, TimeSpan? expireIn) : ICommand<TKey>
+        public sealed class CounterIncrement<TKey>(string key, long value) : ICommand<TKey>
+            where TKey : IComparable<TKey>
+        {
+            public void Execute(MemoryState<TKey> state)
+            {
+                var entry = state.CounterGetOrAdd(key);
+                entry.Value += value;
+
+                if (entry.Value == 0)
+                {
+                    state.CounterDelete(entry);
+                }
+            }
+        }
+
+        public sealed class CounterIncrementAndExpire<TKey>(string key, long value, MonotonicTime now, TimeSpan expireIn) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public void Execute(MemoryState<TKey> state)
@@ -100,10 +139,7 @@ namespace Hangfire.InMemory.State
 
                 if (entry.Value != 0)
                 {
-                    if (expireIn.HasValue)
-                    {
-                        state.CounterExpire(entry, now, expireIn);
-                    }
+                    state.CounterExpire(entry, now, expireIn);
                 }
                 else
                 {
@@ -157,12 +193,21 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class SortedSetExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
+        public sealed class SortedSetExpire<TKey>(string key, MonotonicTime now, TimeSpan expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public void Execute(MemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var entry)) state.SetExpire(entry, now, expireIn, maxExpiration);
+            }
+        }
+
+        public sealed class SortedSetPersist<TKey>(string key) : ICommand<TKey>
+            where TKey : IComparable<TKey>
+        {
+            public void Execute(MemoryState<TKey> state)
+            {
+                if (state.Sets.TryGetValue(key, out var entry)) state.SetExpire(entry, now: null, expireIn: null, maxExpiration: null);
             }
         }
 
@@ -200,12 +245,21 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class ListExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
+        public sealed class ListExpire<TKey>(string key, MonotonicTime now, TimeSpan expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public void Execute(MemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var entry)) state.ListExpire(entry, now, expireIn, maxExpiration);
+            }
+        }
+
+        public sealed class ListPersist<TKey>(string key) : ICommand<TKey>
+            where TKey : IComparable<TKey>
+        {
+            public void Execute(MemoryState<TKey> state)
+            {
+                if (state.Lists.TryGetValue(key, out var entry)) state.ListExpire(entry, now: null, expireIn: null, maxExpiration: null);
             }
         }
 
@@ -228,12 +282,21 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class HashExpire<TKey>(string key, MonotonicTime? now, TimeSpan? expireIn,  TimeSpan? maxExpiration) : ICommand<TKey>
+        public sealed class HashExpire<TKey>(string key, MonotonicTime now, TimeSpan expireIn,  TimeSpan? maxExpiration) : ICommand<TKey>
             where TKey : IComparable<TKey>
         {
             public void Execute(MemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var entry)) state.HashExpire(entry, now, expireIn, maxExpiration);
+            }
+        }
+
+        public sealed class HashPersist<TKey>(string key) : ICommand<TKey>
+            where TKey : IComparable<TKey>
+        {
+            public void Execute(MemoryState<TKey> state)
+            {
+                if (state.Hashes.TryGetValue(key, out var entry)) state.HashExpire(entry, now: null, expireIn: null, maxExpiration: null);
             }
         }
 
