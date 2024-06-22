@@ -30,20 +30,16 @@ namespace Hangfire.InMemory.State
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
         private readonly TCommand _command;
         private readonly Func<TCommand, MemoryState<TKey>, TResult> _func;
-        private readonly bool _rethrowExceptions;
 
-        private bool _isFaulted;
         private TResult? _result;
         private Exception? _exception;
 
-        public DispatcherCallback(TCommand command, Func<TCommand, MemoryState<TKey>, TResult> func, bool rethrowExceptions)
+        public DispatcherCallback(TCommand command, Func<TCommand, MemoryState<TKey>, TResult> func)
         {
             _command = command ?? throw new ArgumentNullException(nameof(command));
             _func = func ?? throw new ArgumentNullException(nameof(func));
-            _rethrowExceptions = rethrowExceptions;
         }
 
-        public bool IsFaulted { get { lock (_ready) { return _isFaulted; } } }
         public TResult? Result { get { lock (_ready) { return _result; } } }
         public Exception? Exception { get { lock (_ready) { return _exception; } } }
 
@@ -55,8 +51,8 @@ namespace Hangfire.InMemory.State
 
                 lock (_ready)
                 {
-                    _isFaulted = false;
                     _result = result;
+                    _exception = null;
                 }
 
                 TrySetReady();
@@ -65,16 +61,13 @@ namespace Hangfire.InMemory.State
             {
                 lock (_ready)
                 {
-                    _isFaulted = true;
+                    _result = default;
                     _exception = ex;
                 }
 
                 TrySetReady();
 
-                if (_rethrowExceptions)
-                {
-                    throw;
-                }
+                throw;
             }
         }
 

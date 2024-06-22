@@ -66,7 +66,7 @@ namespace Hangfire.InMemory.State
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, func, rethrowExceptions: true))
+            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, func))
             {
                 _queries.Enqueue(callback);
 
@@ -81,7 +81,7 @@ namespace Hangfire.InMemory.State
                     throw new TimeoutException();
                 }
 
-                if (callback.IsFaulted)
+                if (callback.Exception != null)
                 {
                     throw new InvalidOperationException("Dispatcher stopped due to an unhandled exception, storage state is corrupted.", callback.Exception);
                 }
