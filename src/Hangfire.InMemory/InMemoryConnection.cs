@@ -29,7 +29,7 @@ namespace Hangfire.InMemory
     internal sealed class InMemoryConnection<TKey> : JobStorageConnection
         where TKey : IComparable<TKey>
     {
-        private readonly HashSet<LockDisposable> _acquiredLocks = new HashSet<LockDisposable>();
+        private readonly List<LockDisposable> _acquiredLocks = new();
 
         public InMemoryConnection([NotNull] InMemoryStorageOptions options, [NotNull] DispatcherBase<TKey> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
         {
@@ -44,12 +44,9 @@ namespace Hangfire.InMemory
 
         public override void Dispose()
         {
-            if (_acquiredLocks.Count > 0)
+            for (var i = _acquiredLocks.Count - 1; i >= 0; i--)
             {
-                foreach (var acquiredLock in _acquiredLocks.ToArray())
-                {
-                    acquiredLock.Dispose();
-                }
+                _acquiredLocks[i].Dispose();
             }
 
             base.Dispose();
