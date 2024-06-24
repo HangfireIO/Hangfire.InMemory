@@ -20,7 +20,7 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory
 {
-    internal class InMemoryFetchedJob<TKey> : IFetchedJob
+    internal sealed class InMemoryFetchedJob<TKey> : IFetchedJob
         where TKey : IComparable<TKey>
     {
         private readonly InMemoryConnection<TKey> _connection;
