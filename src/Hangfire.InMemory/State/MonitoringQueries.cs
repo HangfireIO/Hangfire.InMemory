@@ -23,11 +23,10 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory.State
 {
-    internal static class MonitoringQueries
+    internal static class MonitoringQueries<TKey> where TKey : IComparable<TKey>
     {
-        public readonly struct StatisticsGetAll<TKey>(
+        public readonly struct StatisticsGetAll(
             IReadOnlyCollection<string> states, IReadOnlyDictionary<string, string> counters, IReadOnlyDictionary<string, string> sets)
-            where TKey : IComparable<TKey>
         {
             public Data Execute(MemoryState<TKey> state)
             {
@@ -75,7 +74,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public readonly struct QueuesGetAll<TKey> where TKey : IComparable<TKey>
+        public readonly struct QueuesGetAll
         {
             [SuppressMessage("Performance", "CA1822:Mark members as static")]
             public IReadOnlyList<QueueRecord> Execute(MemoryState<TKey> state)
@@ -108,7 +107,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public readonly struct QueueGetCount<TKey>(string queueName) where TKey : IComparable<TKey>
+        public readonly struct QueueGetCount(string queueName)
         {
             public long Execute(MemoryState<TKey> state)
             {
@@ -118,7 +117,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public readonly struct QueueGetEnqueued<TKey>(string queueName, int from, int count) where TKey : IComparable<TKey>
+        public readonly struct QueueGetEnqueued(string queueName, int from, int count)
         {
             public IReadOnlyList<TKey> Execute(MemoryState<TKey> state)
             {
@@ -142,7 +141,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public readonly struct JobGetDetails<TKey>(TKey key) where TKey : IComparable<TKey>
+        public readonly struct JobGetDetails(TKey key)
         {
             public Data? Execute(MemoryState<TKey> state)
             {
@@ -173,7 +172,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public readonly struct JobsGetByKey<TKey>(IEnumerable<TKey> keys) where TKey : IComparable<TKey>
+        public readonly struct JobsGetByKey(IEnumerable<TKey> keys)
         {
             public IReadOnlyDictionary<TKey, Record?> Execute(MemoryState<TKey> state)
             {
@@ -216,8 +215,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public readonly struct JobsGetByState<TKey>(string stateName, int from, int count, bool reversed = false)
-            where TKey : IComparable<TKey>
+        public readonly struct JobsGetByState(string stateName, int from, int count, bool reversed = false)
         {
             public IReadOnlyList<TKey> Execute(MemoryState<TKey> state)
             {
@@ -242,7 +240,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public readonly struct JobGetCountByState<TKey>(string stateName) where TKey : IComparable<TKey>
+        public readonly struct JobGetCountByState(string stateName)
         {
             public long Execute(MemoryState<TKey> state)
             {
@@ -255,7 +253,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public readonly struct ServersGetAll<TKey> where TKey : IComparable<TKey>
+        public readonly struct ServersGetAll
         {
             [SuppressMessage("Performance", "CA1822:Mark members as static")]
             public IReadOnlyList<Record> Execute(MemoryState<TKey> state)
@@ -287,7 +285,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public readonly struct CounterGetDailyTimeline<TKey>(MonotonicTime now, string type) where TKey : IComparable<TKey>
+        public readonly struct CounterGetDailyTimeline(MonotonicTime now, string type)
         {
             public IDictionary<DateTime, long> Execute(MemoryState<TKey> state)
             {
@@ -316,7 +314,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public readonly struct CounterGetHourlyTimeline<TKey>(MonotonicTime now, string type) where TKey : IComparable<TKey>
+        public readonly struct CounterGetHourlyTimeline(MonotonicTime now, string type)
         {
             public IDictionary<DateTime, long> Execute(MemoryState<TKey> state)
             {

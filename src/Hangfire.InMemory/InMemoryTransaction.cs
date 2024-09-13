@@ -79,7 +79,7 @@ namespace Hangfire.InMemory
             var data = InvocationData.SerializeJob(job);
             var now = _connection.Dispatcher.GetMonotonicTime();
 
-            AddCommand(new Commands.JobCreate<TKey>(key, data, parameters.ToArray(), now, expireIn));
+            AddCommand(new Commands<TKey>.JobCreate(key, data, parameters.ToArray(), now, expireIn));
             return _connection.KeyProvider.ToString(key);
         }
 #endif
@@ -98,7 +98,7 @@ namespace Hangfire.InMemory
                 return;
             }
 
-            AddCommand(new Commands.JobSetParameter<TKey>(key, name, value));
+            AddCommand(new Commands<TKey>.JobSetParameter(key, name, value));
         }
 #endif
 
@@ -112,7 +112,7 @@ namespace Hangfire.InMemory
             }
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new Commands.JobExpire<TKey>(key, now, expireIn, _connection.Options.MaxExpirationTime));
+            AddCommand(new Commands<TKey>.JobExpire(key, now, expireIn, _connection.Options.MaxExpirationTime));
         }
 
         public override void PersistJob([NotNull] string jobId)
@@ -124,7 +124,7 @@ namespace Hangfire.InMemory
                 return;
             }
 
-            AddCommand(new Commands.JobPersist<TKey>(key));
+            AddCommand(new Commands<TKey>.JobPersist(key));
         }
 
         public override void SetJobState([NotNull] string jobId, [NotNull] IState state)
@@ -145,7 +145,7 @@ namespace Hangfire.InMemory
             var data = state.SerializeData()?.ToArray() ?? [];
             var now = _connection.Dispatcher.GetMonotonicTime();
 
-            AddCommand(new Commands.JobSetState<TKey>(
+            AddCommand(new Commands<TKey>.JobSetState(
                 key, name, reason, data, now, _connection.Options.MaxStateHistoryLength));
         }
 
@@ -166,7 +166,7 @@ namespace Hangfire.InMemory
             var data = state.SerializeData()?.ToArray() ?? [];
             var now = _connection.Dispatcher.GetMonotonicTime();
 
-            AddCommand(new Commands.JobAddState<TKey>(
+            AddCommand(new Commands<TKey>.JobAddState(
                 key, name, reason, data, now, _connection.Options.MaxStateHistoryLength));
         }
 
@@ -180,7 +180,7 @@ namespace Hangfire.InMemory
                 return;
             }
 
-            AddCommand(new Commands.QueueEnqueue<TKey>(queue, key));
+            AddCommand(new Commands<TKey>.QueueEnqueue(queue, key));
 
             _enqueued ??= new HashSet<string>();
             _enqueued.Add(queue);
@@ -196,7 +196,7 @@ namespace Hangfire.InMemory
         public override void IncrementCounter([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
-            AddCommand(new Commands.CounterIncrement<TKey>(key, value: 1));
+            AddCommand(new Commands<TKey>.CounterIncrement(key, value: 1));
         }
 
         public override void IncrementCounter([NotNull] string key, TimeSpan expireIn)
@@ -204,13 +204,13 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new Commands.CounterIncrementAndExpire<TKey>(key, value: 1, now, expireIn));
+            AddCommand(new Commands<TKey>.CounterIncrementAndExpire(key, value: 1, now, expireIn));
         }
 
         public override void DecrementCounter([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
-            AddCommand(new Commands.CounterIncrement<TKey>(key, value: -1));
+            AddCommand(new Commands<TKey>.CounterIncrement(key, value: -1));
         }
 
         public override void DecrementCounter([NotNull] string key, TimeSpan expireIn)
@@ -218,7 +218,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new Commands.CounterIncrementAndExpire<TKey>(key, value: -1, now, expireIn));
+            AddCommand(new Commands<TKey>.CounterIncrementAndExpire(key, value: -1, now, expireIn));
         }
 
         public override void AddToSet([NotNull] string key, [NotNull] string value)
@@ -231,7 +231,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            AddCommand(new Commands.SortedSetAdd<TKey>(key, value, score));
+            AddCommand(new Commands<TKey>.SortedSetAdd(key, value, score));
         }
 
         public override void RemoveFromSet([NotNull] string key, [NotNull] string value)
@@ -239,7 +239,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            AddCommand(new Commands.SortedSetRemove<TKey>(key, value));
+            AddCommand(new Commands<TKey>.SortedSetRemove(key, value));
         }
 
         public override void InsertToList([NotNull] string key, [NotNull] string value)
@@ -247,7 +247,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            AddCommand(new Commands.ListInsert<TKey>(key, value));
+            AddCommand(new Commands<TKey>.ListInsert(key, value));
         }
 
         public override void RemoveFromList([NotNull] string key, [NotNull] string value)
@@ -255,14 +255,14 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
-            AddCommand(new Commands.ListRemoveAll<TKey>(key, value));
+            AddCommand(new Commands<TKey>.ListRemoveAll(key, value));
         }
 
         public override void TrimList([NotNull] string key, int keepStartingFrom, int keepEndingAt)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new Commands.ListTrim<TKey>(key, keepStartingFrom, keepEndingAt));
+            AddCommand(new Commands<TKey>.ListTrim(key, keepStartingFrom, keepEndingAt));
         }
 
         public override void SetRangeInHash([NotNull] string key, [NotNull] IEnumerable<KeyValuePair<string, string>> keyValuePairs)
@@ -270,14 +270,14 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (keyValuePairs == null) throw new ArgumentNullException(nameof(keyValuePairs));
 
-            AddCommand(new Commands.HashSetRange<TKey>(key, keyValuePairs));
+            AddCommand(new Commands<TKey>.HashSetRange(key, keyValuePairs));
         }
 
         public override void RemoveHash([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new Commands.HashRemove<TKey>(key));
+            AddCommand(new Commands<TKey>.HashRemove(key));
         }
 
         public override void AddRangeToSet([NotNull] string key, [NotNull] IList<string> items)
@@ -292,14 +292,14 @@ namespace Hangfire.InMemory
 
             if (items.Count == 0) return;
 
-            AddCommand(new Commands.SortedSetAddRange<TKey>(key, items));
+            AddCommand(new Commands<TKey>.SortedSetAddRange(key, items));
         }
 
         public override void RemoveSet([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new Commands.SortedSetDelete<TKey>(key));
+            AddCommand(new Commands<TKey>.SortedSetDelete(key));
         }
 
         public override void ExpireHash([NotNull] string key, TimeSpan expireIn)
@@ -307,7 +307,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new Commands.HashExpire<TKey>(key, now, expireIn, _connection.Options.MaxExpirationTime));
+            AddCommand(new Commands<TKey>.HashExpire(key, now, expireIn, _connection.Options.MaxExpirationTime));
         }
 
         public override void ExpireList([NotNull] string key, TimeSpan expireIn)
@@ -315,7 +315,7 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new Commands.ListExpire<TKey>(key, now, expireIn, _connection.Options.MaxExpirationTime));
+            AddCommand(new Commands<TKey>.ListExpire(key, now, expireIn, _connection.Options.MaxExpirationTime));
         }
 
         public override void ExpireSet([NotNull] string key, TimeSpan expireIn)
@@ -323,28 +323,28 @@ namespace Hangfire.InMemory
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             var now = _connection.Dispatcher.GetMonotonicTime();
-            AddCommand(new Commands.SortedSetExpire<TKey>(key, now, expireIn, _connection.Options.MaxExpirationTime));
+            AddCommand(new Commands<TKey>.SortedSetExpire(key, now, expireIn, _connection.Options.MaxExpirationTime));
         }
 
         public override void PersistHash([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new Commands.HashPersist<TKey>(key));
+            AddCommand(new Commands<TKey>.HashPersist(key));
         }
 
         public override void PersistList([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new Commands.ListPersist<TKey>(key));
+            AddCommand(new Commands<TKey>.ListPersist(key));
         }
 
         public override void PersistSet([NotNull] string key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
-            AddCommand(new Commands.SortedSetPersist<TKey>(key));
+            AddCommand(new Commands<TKey>.SortedSetPersist(key));
         }
 
         private void AddCommand(ICommand<TKey> action)
