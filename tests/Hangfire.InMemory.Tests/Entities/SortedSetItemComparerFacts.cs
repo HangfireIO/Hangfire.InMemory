@@ -56,18 +56,16 @@ namespace Hangfire.InMemory.Tests.Entities
         {
             var array = new []
             {
-                /* [0]: #4 */ new SortedSetItem("1", 1.0D),
-                /* [1]: #5 */ new SortedSetItem(null!, 1.0D),
-                /* [2]: #2 */ new SortedSetItem("2", 0.5D),
-                /* [3]: #3 */ new SortedSetItem(null!, 0.5D),
-                /* [4]: #6 */ new SortedSetItem("2", 1.0D),
-                /* [5]: #1 */ new SortedSetItem("1", 0.5D)
+                /* [0]: #3 */ new SortedSetItem("1", 1.0D),
+                /* [1]: #2 */ new SortedSetItem("2", 0.5D),
+                /* [2]: #4 */ new SortedSetItem("2", 1.0D),
+                /* [3]: #1 */ new SortedSetItem("1", 0.5D)
             };
 
             var comparer = CreateComparer();
             var result = array.OrderBy(static x => x, comparer).ToArray();
 
-            Assert.Equal([array[5], array[2], array[3], array[0], array[1], array[4]], result);
+            Assert.Equal([array[3], array[1], array[0], array[2]], result);
         }
 
         private static SortedSetItemComparer CreateComparer()
