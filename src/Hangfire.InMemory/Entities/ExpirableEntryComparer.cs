@@ -28,16 +28,16 @@ namespace Hangfire.InMemory.Entities
             _comparer = comparer;
         }
 
-        public int Compare(IExpirableEntry<T> x, IExpirableEntry<T> y)
+        public int Compare(IExpirableEntry<T>? x, IExpirableEntry<T>? y)
         {
-            if (x == null) throw new ArgumentNullException(nameof(x));
-            if (y == null) throw new ArgumentNullException(nameof(y));
-
             if (ReferenceEquals(x, y)) return 0;
 
             // Place nulls last just in case, because they will prevent expiration
             // manager from correctly running and stopping earlier, since it works
             // from first value until is higher than the current time.
+            if (x == null) return +1;
+            if (y == null) return -1;
+
             if (x.ExpireAt.HasValue && y.ExpireAt.HasValue)
             {
                 var expirationCompare = x.ExpireAt.Value.CompareTo(y.ExpireAt.Value);

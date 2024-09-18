@@ -45,5 +45,10 @@ namespace Hangfire.InMemory.Entities
                 return ((Value != null ? Value.GetHashCode() : 0) * 397) ^ Score.GetHashCode();
             }
         }
+
+        public override string ToString()
+        {
+            return $"Value: {Value}, Score: {Score}]";
+        }
     }
 }

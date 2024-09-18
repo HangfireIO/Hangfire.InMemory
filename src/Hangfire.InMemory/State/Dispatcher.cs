@@ -30,7 +30,6 @@ namespace Hangfire.InMemory.State
         // ConcurrentBag for writes give much better throughput, but less stable, since some items are processed
         // with a heavy delay when new ones are constantly arriving.
         private readonly ConcurrentQueue<IDispatcherCallback<TKey>> _queries = new ConcurrentQueue<IDispatcherCallback<TKey>>();
-        private readonly TimeSpan _commandTimeout;
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
@@ -38,11 +37,10 @@ namespace Hangfire.InMemory.State
 
         private PaddedInt64 _outstandingRequests;
 
-        public Dispatcher(string threadName, TimeSpan commandTimeout, Func<MonotonicTime> timeResolver, MemoryState<TKey> state) : base(timeResolver, state)
+        public Dispatcher(string threadName, Func<MonotonicTime> timeResolver, MemoryState<TKey> state) : base(timeResolver, state)
         {
             if (threadName == null) throw new ArgumentNullException(nameof(threadName));
-            
-            _commandTimeout = commandTimeout;
+
             _thread = new Thread(DoWork)
             {
                 IsBackground = true,
@@ -50,6 +48,8 @@ namespace Hangfire.InMemory.State
             };
             _thread.Start();
         }
+
+        public TimeSpan CommandTimeout { get; init; } = Timeout.InfiniteTimeSpan; 
 
         public void Dispose()
         {
@@ -76,7 +76,7 @@ namespace Hangfire.InMemory.State
                     _semaphore.Release();
                 }
 
-                if (!callback.Wait(_commandTimeout, _cts.Token))
+                if (!callback.Wait(CommandTimeout, _cts.Token))
                 {
                     throw new TimeoutException();
                 }

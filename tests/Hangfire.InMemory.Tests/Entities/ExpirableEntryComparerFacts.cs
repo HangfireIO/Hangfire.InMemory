@@ -33,23 +33,35 @@ namespace Hangfire.InMemory.Tests.Entities
         }
 
         [Fact]
-        public void Compare_ThrowsAnException_WhenXIsNull()
+        public void Compare_ReturnsZero_WhenBothEntries_AreNull()
         {
             var comparer = CreateComparer();
-            var exception = Assert.Throws<ArgumentNullException>(
-                () => comparer.Compare(null, new ExpirableEntryStub<string>(null, null)));
 
-            Assert.Equal("x", exception.ParamName);
+            var result = comparer.Compare(null, null);
+            
+            Assert.Equal(0, result);
         }
 
         [Fact]
-        public void Compare_ThrowsAnException_WhenYIsNull()
+        public void Compare_ReturnsPlusOne_WhenXIsNull_AndYIsNotNull()
         {
             var comparer = CreateComparer();
-            var exception = Assert.Throws<ArgumentNullException>(
-                () => comparer.Compare(new ExpirableEntryStub<string>(null, null), null));
+            var entry = new ExpirableEntryStub<string>(null, null);
 
-            Assert.Equal("y", exception.ParamName);
+            var result = comparer.Compare(null, entry);
+
+            Assert.Equal(+1, result);
+        }
+
+        [Fact]
+        public void Compare_ReturnsMinusOne_WhenXIsNotNull_AndYIsNull()
+        {
+            var comparer = CreateComparer();
+            var entry = new ExpirableEntryStub<string>(null, null);
+
+            var result = comparer.Compare(entry, null);
+
+            Assert.Equal(-1, result);
         }
 
         [Fact]
@@ -241,13 +253,14 @@ namespace Hangfire.InMemory.Tests.Entities
             {
                 new ExpirableEntryStub<string>("key", null),
                 new ExpirableEntryStub<string>("key", now),
+                null,
                 new ExpirableEntryStub<string>("key", now.Add(TimeSpan.FromSeconds(1)))
             };
 
             var comparer = CreateComparer();
             var result = array.OrderBy(x => x, comparer).ToArray();
 
-            Assert.Equal(new [] { array[1], array[2], array[0] }, result);
+            Assert.Equal(new [] { array[1], array[3], array[0], array[2] }, result);
         }
 
         private ExpirableEntryComparer<string> CreateComparer()

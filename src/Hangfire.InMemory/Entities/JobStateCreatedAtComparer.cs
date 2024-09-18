@@ -28,11 +28,15 @@ namespace Hangfire.InMemory.Entities
             _comparer = comparer;
         }
 
-        public int Compare(JobEntry<T> x, JobEntry<T> y)
+        public int Compare(JobEntry<T>? x, JobEntry<T>? y)
         {
             if (ReferenceEquals(x, y)) return 0;
-            if (y?.State == null) return 1;
-            if (x?.State == null) return -1;
+            if (x == null) return -1;
+            if (y == null) return 1;
+
+            if (ReferenceEquals(x.State, y.State)) return 0;
+            if (x.State == null) return -1;
+            if (y.State == null) return 1;
 
             var stateCreatedAtComparison = x.State.CreatedAt.CompareTo(y.State.CreatedAt);
             if (stateCreatedAtComparison != 0) return stateCreatedAtComparison;

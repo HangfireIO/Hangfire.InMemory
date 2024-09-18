@@ -72,7 +72,7 @@ namespace Hangfire.InMemory.State
             public readonly struct Data
             {
                 public required string Name { get; init; }
-                public required string Reason { get; init; }
+                public required string? Reason { get; init; }
                 public required KeyValuePair<string, string>[] StateData { get; init; }
                 public required StringComparer StringComparer { get; init; }
             }

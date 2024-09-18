@@ -20,7 +20,7 @@ namespace Hangfire.InMemory.Entities
 {
     internal sealed class StateRecord
     {
-        public StateRecord(string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime createdAt)
+        public StateRecord(string name, string? reason, KeyValuePair<string, string>[] data, MonotonicTime createdAt)
         {
             Name = name;
             Reason = reason;
@@ -29,7 +29,7 @@ namespace Hangfire.InMemory.Entities
         }
 
         public string Name { get; }
-        public string Reason { get; }
+        public string? Reason { get; }
         public MonotonicTime CreatedAt { get; }
         public KeyValuePair<string, string>[] Data { get; }
     }
