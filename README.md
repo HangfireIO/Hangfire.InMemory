@@ -39,7 +39,7 @@ We can control this behavior or even turn it off with the `MaxExpirationTime` op
 ```csharp
 GlobalConfiguration.Configuration.UseInMemoryStorage(new InMemoryStorageOptions
 {
-  MaxExpirationTime = TimeSpan.FromHours(3) // Default value, we can also set it to `null` to disable.
+    MaxExpirationTime = TimeSpan.FromHours(3) // Default value, we can also set it to `null` to disable.
 });
 ```
 
@@ -52,6 +52,30 @@ Different storages use different rules for comparing keys. Some of them, like Re
 ```csharp
 GlobalConfiguration.Configuration.UseInMemoryStorage(new InMemoryStorageOptions
 {
-  StringComparer = StringComparer.Ordinal; // Default value, case-sensitive.
+    StringComparer = StringComparer.Ordinal // Default value, case-sensitive.
+});
+```
+
+### Setting Key Type Jobs
+
+Starting from version 1.0, Hangfire.InMemory uses `long`-based keys for background jobs, similar to the Hangfire.SqlServer package. However, you can change this to use `Guid`-based keys to match the Hangfire.Pro.Redis experience. To do so, simply configure the `InMemoryStorageOptions.IdType` property as follows:
+
+```csharp
+GlobalConfiguration.Configuration.UseInMemoryStorage(new InMemoryStorageOptions
+{
+    IdType = InMemoryStorageIdType.Guid
+});
+```
+
+### Setting the Maximum State History Length
+
+The `MaxStateHistoryLength` option in the `InMemoryStorageOptions` class sets the maximum number of state history entries to be retained for each background job. This is useful for controlling memory usage by limiting the number of state transitions stored in memory. 
+
+By default, Hangfire.InMemory retains `10` state history entries, but you can adjust this setting based on your application's requirements.
+
+```csharp
+GlobalConfiguration.Configuration.UseInMemoryStorage(new InMemoryStorageOptions
+{
+    MaxStateHistoryLength = 10 // default value
 });
 ```
