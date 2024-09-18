@@ -15,6 +15,10 @@
     <copyright>Copyright © 2020-2024 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
+1.0.0
+• Breaking – Remove the deprecated `DisableJobSerialization` option.
+• Breaking – Change default value for the `IdType` option to `long`.
+
 0.10.4
 • Fixed – Problem with locks implementation due to a regression in .NET 8.0.
 

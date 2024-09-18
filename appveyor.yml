@@ -11,7 +11,7 @@
 #---------------------------------#
 
 # Please don't edit it manually, use the `build.bat version` command instead.
-version: 0.10.4-build-0{build}
+version: 1.0.0-build-0{build}
 
 image:
   - Visual Studio 2022
