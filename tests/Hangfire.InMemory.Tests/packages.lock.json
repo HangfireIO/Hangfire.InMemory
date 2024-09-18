@@ -66,8 +66,8 @@
       },
       "Hangfire.Core": {
         "type": "Transitive",
-        "resolved": "1.8.0",
-        "contentHash": "YyQwi1iKCS4HsKnwUhY5dcyxOeJ0MqA/0gjeTJdMsCXufKl73I+y8mS5MbvQBIKMGcjv0FYzjLA+v31P6G+CRw==",
+        "resolved": "1.7.0",
+        "contentHash": "ZWfWcE+kOWjKy7l/rsVtZmxs5XdltJY5ndx+vy7enD85ZVgc0Z+nIOZ/PfBhQQ68vGOfwOudpQVHuwXlSn7/fQ==",
         "dependencies": {
           "Newtonsoft.Json": "11.0.1"
         }
@@ -1216,7 +1216,7 @@
       "hangfire.inmemory": {
         "type": "Project",
         "dependencies": {
-          "Hangfire.Core": "[1.8.0, )",
+          "Hangfire.Core": "[1.7.0, )",
           "Microsoft.CodeAnalysis.NetAnalyzers": "[8.0.0, )",
           "Microsoft.SourceLink.GitHub": "[8.0.0, )"
         }
@@ -1273,8 +1273,8 @@
       },
       "Hangfire.Core": {
         "type": "Transitive",
-        "resolved": "1.8.0",
-        "contentHash": "YyQwi1iKCS4HsKnwUhY5dcyxOeJ0MqA/0gjeTJdMsCXufKl73I+y8mS5MbvQBIKMGcjv0FYzjLA+v31P6G+CRw==",
+        "resolved": "1.7.0",
+        "contentHash": "ZWfWcE+kOWjKy7l/rsVtZmxs5XdltJY5ndx+vy7enD85ZVgc0Z+nIOZ/PfBhQQ68vGOfwOudpQVHuwXlSn7/fQ==",
         "dependencies": {
           "Newtonsoft.Json": "5.0.1",
           "Owin": "1.0.0"
@@ -1372,7 +1372,7 @@
       "hangfire.inmemory": {
         "type": "Project",
         "dependencies": {
-          "Hangfire.Core": "[1.8.0, )",
+          "Hangfire.Core": "[1.7.0, )",
           "Microsoft.CodeAnalysis.NetAnalyzers": "[8.0.0, )",
           "Microsoft.NETFramework.ReferenceAssemblies": "[1.0.3, )",
           "Microsoft.SourceLink.GitHub": "[8.0.0, )"
@@ -1444,8 +1444,8 @@
       },
       "Hangfire.Core": {
         "type": "Transitive",
-        "resolved": "1.8.0",
-        "contentHash": "YyQwi1iKCS4HsKnwUhY5dcyxOeJ0MqA/0gjeTJdMsCXufKl73I+y8mS5MbvQBIKMGcjv0FYzjLA+v31P6G+CRw==",
+        "resolved": "1.7.0",
+        "contentHash": "ZWfWcE+kOWjKy7l/rsVtZmxs5XdltJY5ndx+vy7enD85ZVgc0Z+nIOZ/PfBhQQ68vGOfwOudpQVHuwXlSn7/fQ==",
         "dependencies": {
           "Newtonsoft.Json": "11.0.1"
         }
@@ -2594,7 +2594,7 @@
       "hangfire.inmemory": {
         "type": "Project",
         "dependencies": {
-          "Hangfire.Core": "[1.8.0, )",
+          "Hangfire.Core": "[1.7.0, )",
           "Microsoft.CodeAnalysis.NetAnalyzers": "[8.0.0, )",
           "Microsoft.SourceLink.GitHub": "[8.0.0, )"
         }

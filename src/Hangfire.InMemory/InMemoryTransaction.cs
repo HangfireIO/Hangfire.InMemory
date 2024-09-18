@@ -33,7 +33,9 @@ namespace Hangfire.InMemory
         private readonly List<ICommand<TKey>> _commands = new List<ICommand<TKey>>();
         private LinkedList<ICommand<TKey>>? _additionalCommands;
 
+#if !HANGFIRE_170
         private List<IDisposable>? _acquiredLocks;
+#endif
         private HashSet<string>? _enqueued;
 
         public InMemoryTransaction([NotNull] InMemoryConnection<TKey> connection)
@@ -43,6 +45,7 @@ namespace Hangfire.InMemory
 
         public override void Dispose()
         {
+#if !HANGFIRE_170
             if (_acquiredLocks != null)
             {
                 foreach (var acquiredLock in _acquiredLocks)
@@ -50,6 +53,7 @@ namespace Hangfire.InMemory
                     acquiredLock.Dispose();
                 }
             }
+#endif
 
             base.Dispose();
         }
@@ -390,6 +394,7 @@ namespace Hangfire.InMemory
             }
             finally
             {
+#if !HANGFIRE_170
                 if (_acquiredLocks != null)
                 {
                     foreach (var acquiredLock in _acquiredLocks)
@@ -397,6 +402,7 @@ namespace Hangfire.InMemory
                         acquiredLock.Dispose();
                     }
                 }
+#endif
             }
 
             if (_enqueued != null)

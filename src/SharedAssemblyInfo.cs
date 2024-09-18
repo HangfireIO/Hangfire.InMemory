@@ -11,4 +11,4 @@ using System.Runtime.InteropServices;
 [assembly: CLSCompliant(true)]
 
 // Please don't edit it manually, use the `build.bat version` command instead.
-[assembly: AssemblyVersion("1.0.0")]
+[assembly: AssemblyVersion("0.11.0")]

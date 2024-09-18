@@ -15,7 +15,8 @@
     <copyright>Copyright © 2020-2024 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
-1.0.0
+0.11.0
+• Changed – This version targets Hangfire 1.7.0 and don't support some of the newest features.
 • Breaking – Remove the deprecated `DisableJobSerialization` option.
 • Breaking – Change default value for the `IdType` option to `long`.
 
@@ -157,10 +158,10 @@
 </releaseNotes>
     <dependencies>
       <group targetFramework="net451">
-        <dependency id="Hangfire.Core" version="1.8.0" />
+        <dependency id="Hangfire.Core" version="1.7.0" />
       </group>
       <group targetFramework="netstandard2.0">
-        <dependency id="Hangfire.Core" version="1.8.0" />
+        <dependency id="Hangfire.Core" version="1.7.0" />
       </group>
     </dependencies>
   </metadata>

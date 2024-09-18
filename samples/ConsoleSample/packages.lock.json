@@ -105,7 +105,7 @@
       "hangfire.inmemory": {
         "type": "Project",
         "dependencies": {
-          "Hangfire.Core": "[1.8.0, )",
+          "Hangfire.Core": "[1.7.0, )",
           "Microsoft.CodeAnalysis.NetAnalyzers": "[8.0.0, )",
           "Microsoft.SourceLink.GitHub": "[8.0.0, )"
         }

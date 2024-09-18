@@ -4,9 +4,9 @@
     ".NETFramework,Version=v4.5.1": {
       "Hangfire.Core": {
         "type": "Direct",
-        "requested": "[1.8.0, )",
-        "resolved": "1.8.0",
-        "contentHash": "YyQwi1iKCS4HsKnwUhY5dcyxOeJ0MqA/0gjeTJdMsCXufKl73I+y8mS5MbvQBIKMGcjv0FYzjLA+v31P6G+CRw==",
+        "requested": "[1.7.0, )",
+        "resolved": "1.7.0",
+        "contentHash": "ZWfWcE+kOWjKy7l/rsVtZmxs5XdltJY5ndx+vy7enD85ZVgc0Z+nIOZ/PfBhQQ68vGOfwOudpQVHuwXlSn7/fQ==",
         "dependencies": {
           "Newtonsoft.Json": "5.0.1",
           "Owin": "1.0.0"
@@ -66,9 +66,9 @@
     ".NETStandard,Version=v2.0": {
       "Hangfire.Core": {
         "type": "Direct",
-        "requested": "[1.8.0, )",
-        "resolved": "1.8.0",
-        "contentHash": "YyQwi1iKCS4HsKnwUhY5dcyxOeJ0MqA/0gjeTJdMsCXufKl73I+y8mS5MbvQBIKMGcjv0FYzjLA+v31P6G+CRw==",
+        "requested": "[1.7.0, )",
+        "resolved": "1.7.0",
+        "contentHash": "ZWfWcE+kOWjKy7l/rsVtZmxs5XdltJY5ndx+vy7enD85ZVgc0Z+nIOZ/PfBhQQ68vGOfwOudpQVHuwXlSn7/fQ==",
         "dependencies": {
           "Newtonsoft.Json": "11.0.1"
         }
