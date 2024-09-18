@@ -29,7 +29,7 @@ namespace Hangfire.InMemory
         /// Gets or sets the underlying key type for background jobs that can be useful
         /// to simulate different persistent storages.
         /// </summary>
-        public InMemoryStorageIdType IdType { get; set; } = InMemoryStorageIdType.Guid;
+        public InMemoryStorageIdType IdType { get; set; } = InMemoryStorageIdType.Long;
 
         /// <summary>
         /// Gets or sets the maximum expiration time for all the entries. When set, this
