@@ -76,17 +76,17 @@ namespace Hangfire.InMemory.State
                     _semaphore.Release();
                 }
 
-                if (!callback.Wait(CommandTimeout, _cts.Token))
+                if (!callback.Wait(out var result, out var exception, CommandTimeout, _cts.Token))
                 {
                     throw new TimeoutException();
                 }
 
-                if (callback.Exception != null)
+                if (exception != null)
                 {
-                    throw new InvalidOperationException("Dispatcher stopped due to an unhandled exception, storage state is corrupted.", callback.Exception);
+                    throw new InvalidOperationException("Dispatcher stopped due to an unhandled exception, storage state is corrupted.", exception);
                 }
 
-                return callback.Result!;
+                return result!;
             }
         }
 

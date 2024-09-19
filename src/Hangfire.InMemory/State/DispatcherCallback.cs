@@ -40,41 +40,40 @@ namespace Hangfire.InMemory.State
             _func = func ?? throw new ArgumentNullException(nameof(func));
         }
 
-        public TResult? Result { get { lock (_ready) { return _result; } } }
-        public Exception? Exception { get { lock (_ready) { return _exception; } } }
-
         public void Execute(MemoryState<TKey> state)
         {
             try
             {
                 var result = _func(_command, state);
 
-                lock (_ready)
-                {
-                    _result = result;
-                    _exception = null;
-                }
-
+                _result = result;
+                _exception = null;
                 TrySetReady();
             }
             catch (Exception ex) when (ExceptionHelper.IsCatchableExceptionType(ex))
             {
-                lock (_ready)
-                {
-                    _result = default;
-                    _exception = ex;
-                }
-
+                _result = default;
+                _exception = ex;
                 TrySetReady();
 
                 throw;
             }
         }
 
-        public bool Wait(TimeSpan timeout, CancellationToken token)
+        public bool Wait(out TResult? result, out Exception? exception, TimeSpan timeout, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
-            return _ready.Wait(timeout, token);
+
+            if (_ready.Wait(timeout, token))
+            {
+                result = _result;
+                exception = _exception;
+                return true;
+            }
+
+            result = default;
+            exception = null;
+            return false;
         }
 
         public void Dispose()
