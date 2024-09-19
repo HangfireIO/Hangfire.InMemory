@@ -18,12 +18,6 @@ using System.Threading;
 
 namespace Hangfire.InMemory.State
 {
-    internal interface IDispatcherCallback<TKey>
-        where TKey : IComparable<TKey>
-    {
-        void Execute(MemoryState<TKey> state);
-    }
-
     internal sealed class DispatcherCallback<TKey, TCommand, TResult> : IDispatcherCallback<TKey>, IDisposable
         where TKey : IComparable<TKey>
     {
