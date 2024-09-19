@@ -40,9 +40,9 @@ namespace Hangfire.InMemory.State
             return _timeResolver();
         }
 
-        public KeyValuePair<string, QueueEntry<TKey>>[] GetOrAddQueues(IReadOnlyCollection<string> queueNames)
+        public KeyValuePair<string, QueueEntry<TKey>>[] GetOrAddQueues(string[] queueNames)
         {
-            var entries = new KeyValuePair<string, QueueEntry<TKey>>[queueNames.Count];
+            var entries = new KeyValuePair<string, QueueEntry<TKey>>[queueNames.Length];
             var index = 0;
 
             foreach (var queueName in queueNames)
