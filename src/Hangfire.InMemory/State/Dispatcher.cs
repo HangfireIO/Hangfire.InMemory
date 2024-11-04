@@ -62,7 +62,7 @@ namespace Hangfire.InMemory.State
             _cts.Dispose();
         }
 
-        public override T QueryWriteAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
+        public override T QueryWriteAndWait<TCommand, T>(TCommand query, Func<TCommand, IMemoryState<TKey>, T> func)
         {
             if (_disposed) ThrowObjectDisposedException();
 
@@ -90,7 +90,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public override T QueryReadAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
+        public override T QueryReadAndWait<TCommand, T>(TCommand query, Func<TCommand, IMemoryState<TKey>, T> func)
         {
             if (_disposed) ThrowObjectDisposedException();
 

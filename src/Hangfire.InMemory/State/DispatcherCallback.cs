@@ -23,18 +23,18 @@ namespace Hangfire.InMemory.State
     {
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
         private readonly TCommand _command;
-        private readonly Func<TCommand, MemoryState<TKey>, TResult> _func;
+        private readonly Func<TCommand, IMemoryState<TKey>, TResult> _func;
 
         private TResult? _result;
         private Exception? _exception;
 
-        public DispatcherCallback(TCommand command, Func<TCommand, MemoryState<TKey>, TResult> func)
+        public DispatcherCallback(TCommand command, Func<TCommand, IMemoryState<TKey>, TResult> func)
         {
             _command = command ?? throw new ArgumentNullException(nameof(command));
             _func = func ?? throw new ArgumentNullException(nameof(func));
         }
 
-        public void Execute(MemoryState<TKey> state)
+        public void Execute(IMemoryState<TKey> state)
         {
             try
             {

@@ -20,6 +20,6 @@ namespace Hangfire.InMemory.State
     internal interface IDispatcherCallback<TKey>
         where TKey : IComparable<TKey>
     {
-        void Execute(MemoryState<TKey> state);
+        void Execute(IMemoryState<TKey> state);
     }
 }

@@ -24,7 +24,7 @@ namespace Hangfire.InMemory.State
     {
         public readonly struct JobGetData(TKey key)
         {
-            public Data? Execute(MemoryState<TKey> state)
+            public Data? Execute(IMemoryState<TKey> state)
             {
                 if (!state.Jobs.TryGetValue(key, out var entry))
                 {
@@ -53,7 +53,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct JobGetState(TKey key)
         {
-            public Data? Execute(MemoryState<TKey> state)
+            public Data? Execute(IMemoryState<TKey> state)
             {
                 if (!state.Jobs.TryGetValue(key, out var entry) || entry.State == null)
                 {
@@ -80,7 +80,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct JobGetParameter(TKey key, string name)
         {
-            public string? Execute(MemoryState<TKey> state)
+            public string? Execute(IMemoryState<TKey> state)
             {
                 return state.Jobs.TryGetValue(key, out var entry)
                     ? entry.GetParameter(name, state.StringComparer)
@@ -90,7 +90,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct SortedSetGetAll(string key)
         {
-            public HashSet<string> Execute(MemoryState<TKey> state)
+            public HashSet<string> Execute(IMemoryState<TKey> state)
             {
                 var result = new HashSet<string>(state.StringComparer);
 
@@ -108,7 +108,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct SortedSetFirstByLowestScore(string key, double fromScore, double toScore)
         {
-            public string? Execute(MemoryState<TKey> state)
+            public string? Execute(IMemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var entry))
                 {
@@ -121,7 +121,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct SortedSetFirstByLowestScoreMultiple(string key, double fromScore, double toScore, int count)
         {
-            public List<string> Execute(MemoryState<TKey> state)
+            public List<string> Execute(IMemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var entry))
                 {
@@ -134,7 +134,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct SortedSetRange(string key, int startingFrom, int endingAt)
         {
-            public List<string> Execute(MemoryState<TKey> state)
+            public List<string> Execute(IMemoryState<TKey> state)
             {
                 var result = new List<string>();
 
@@ -159,7 +159,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct SortedSetContains(string key, string value)
         {
-            public bool Execute(MemoryState<TKey> state)
+            public bool Execute(IMemoryState<TKey> state)
             {
                 return state.Sets.TryGetValue(key, out var entry) && entry.Contains(value);
             }
@@ -167,7 +167,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct SortedSetCount(string key)
         {
-            public int Execute(MemoryState<TKey> state)
+            public int Execute(IMemoryState<TKey> state)
             {
                 return state.Sets.TryGetValue(key, out var entry) ? entry.Count : 0;
             }
@@ -175,7 +175,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct SortedSetCountMultiple(IEnumerable<string> keys, int limit)
         {
-            public int Execute(MemoryState<TKey> state)
+            public int Execute(IMemoryState<TKey> state)
             {
                 var count = 0;
 
@@ -191,7 +191,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct SortedSetTimeToLive(string key)
         {
-            public MonotonicTime? Execute(MemoryState<TKey> state)
+            public MonotonicTime? Execute(IMemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var entry) && entry.ExpireAt.HasValue)
                 {
@@ -204,7 +204,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct HashGetAll(string key)
         {
-            public Dictionary<string, string>? Execute(MemoryState<TKey> state)
+            public Dictionary<string, string>? Execute(IMemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var entry))
                 {
@@ -217,7 +217,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct HashGet(string key, string name)
         {
-            public string? Execute(MemoryState<TKey> state)
+            public string? Execute(IMemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var entry) && entry.Value.TryGetValue(name, out var result))
                 {
@@ -230,7 +230,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct HashFieldCount(string key)
         {
-            public int Execute(MemoryState<TKey> state)
+            public int Execute(IMemoryState<TKey> state)
             {
                 return state.Hashes.TryGetValue(key, out var entry) ? entry.Value.Count : 0;
             }
@@ -238,7 +238,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct HashTimeToLive(string key)
         {
-            public MonotonicTime? Execute(MemoryState<TKey> state)
+            public MonotonicTime? Execute(IMemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var entry) && entry.ExpireAt.HasValue)
                 {
@@ -251,7 +251,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct ListGetAll(string key)
         {
-            public List<string> Execute(MemoryState<TKey> state)
+            public List<string> Execute(IMemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var entry))
                 {
@@ -264,7 +264,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct ListRange(string key, int startingFrom, int endingAt)
         {
-            public List<string> Execute(MemoryState<TKey> state)
+            public List<string> Execute(IMemoryState<TKey> state)
             {
                 var result = new List<string>();
 
@@ -287,7 +287,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct ListCount(string key)
         {
-            public int Execute(MemoryState<TKey> state)
+            public int Execute(IMemoryState<TKey> state)
             {
                 return state.Lists.TryGetValue(key, out var entry) ? entry.Count : 0;
             }
@@ -295,7 +295,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct ListTimeToLive(string key)
         {
-            public MonotonicTime? Execute(MemoryState<TKey> state)
+            public MonotonicTime? Execute(IMemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var entry) && entry.ExpireAt.HasValue)
                 {
@@ -308,7 +308,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct CounterGet(string key)
         {
-            public long Execute(MemoryState<TKey> state)
+            public long Execute(IMemoryState<TKey> state)
             {
                 return state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0;
             }

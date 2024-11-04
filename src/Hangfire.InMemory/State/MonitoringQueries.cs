@@ -28,7 +28,7 @@ namespace Hangfire.InMemory.State
         public readonly struct StatisticsGetAll(
             IReadOnlyCollection<string> states, IReadOnlyDictionary<string, string> counters, IReadOnlyDictionary<string, string> sets)
         {
-            public Data Execute(MemoryState<TKey> state)
+            public Data Execute(IMemoryState<TKey> state)
             {
                 var stateCounts = new Dictionary<string, long>(states.Count);
                 foreach (var stateName in states)
@@ -77,7 +77,7 @@ namespace Hangfire.InMemory.State
         public readonly struct QueuesGetAll
         {
             [SuppressMessage("Performance", "CA1822:Mark members as static")]
-            public IReadOnlyList<QueueRecord> Execute(MemoryState<TKey> state)
+            public IReadOnlyList<QueueRecord> Execute(IMemoryState<TKey> state)
             {
                 var result = new List<QueueRecord>();
 
@@ -109,7 +109,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct QueueGetCount(string queueName)
         {
-            public long Execute(MemoryState<TKey> state)
+            public long Execute(IMemoryState<TKey> state)
             {
                 return state.Queues.TryGetValue(queueName, out var entry)
                     ? entry.Queue.Count
@@ -119,7 +119,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct QueueGetEnqueued(string queueName, int from, int count)
         {
-            public IReadOnlyList<TKey> Execute(MemoryState<TKey> state)
+            public IReadOnlyList<TKey> Execute(IMemoryState<TKey> state)
             {
                 var result = new List<TKey>();
 
@@ -143,7 +143,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct JobGetDetails(TKey key)
         {
-            public Data? Execute(MemoryState<TKey> state)
+            public Data? Execute(IMemoryState<TKey> state)
             {
                 if (!state.Jobs.TryGetValue(key, out var entry))
                 {
@@ -174,7 +174,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct JobsGetByKey(IEnumerable<TKey> keys)
         {
-            public IReadOnlyDictionary<TKey, Record?> Execute(MemoryState<TKey> state)
+            public IReadOnlyDictionary<TKey, Record?> Execute(IMemoryState<TKey> state)
             {
                 var result = new Dictionary<TKey, Record?>();
 
@@ -217,7 +217,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct JobsGetByState(string stateName, int from, int count, bool reversed = false)
         {
-            public IReadOnlyList<TKey> Execute(MemoryState<TKey> state)
+            public IReadOnlyList<TKey> Execute(IMemoryState<TKey> state)
             {
                 var result = new List<TKey>();
 
@@ -242,7 +242,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct JobGetCountByState(string stateName)
         {
-            public long Execute(MemoryState<TKey> state)
+            public long Execute(IMemoryState<TKey> state)
             {
                 if (state.JobStateIndex.TryGetValue(stateName, out var indexEntry))
                 {
@@ -256,7 +256,7 @@ namespace Hangfire.InMemory.State
         public readonly struct ServersGetAll
         {
             [SuppressMessage("Performance", "CA1822:Mark members as static")]
-            public IReadOnlyList<Record> Execute(MemoryState<TKey> state)
+            public IReadOnlyList<Record> Execute(IMemoryState<TKey> state)
             {
                 var result = new List<Record>(state.Servers.Count);
 
@@ -287,7 +287,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct CounterGetDailyTimeline(MonotonicTime now, string type)
         {
-            public IDictionary<DateTime, long> Execute(MemoryState<TKey> state)
+            public IDictionary<DateTime, long> Execute(IMemoryState<TKey> state)
             {
                 var endDate = now.ToUtcDateTime().Date;
                 var startDate = endDate.AddDays(-7);
@@ -316,7 +316,7 @@ namespace Hangfire.InMemory.State
 
         public readonly struct CounterGetHourlyTimeline(MonotonicTime now, string type)
         {
-            public IDictionary<DateTime, long> Execute(MemoryState<TKey> state)
+            public IDictionary<DateTime, long> Execute(IMemoryState<TKey> state)
             {
                 var endDate = now.ToUtcDateTime();
                 var dates = new List<DateTime>();

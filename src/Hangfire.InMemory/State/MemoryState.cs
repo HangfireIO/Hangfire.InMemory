@@ -21,7 +21,7 @@ using Hangfire.Storage;
 
 namespace Hangfire.InMemory.State
 {
-    internal sealed class MemoryState<TKey>
+    internal sealed class MemoryState<TKey> : IMemoryState<TKey>
         where TKey : IComparable<TKey>
     {
         private readonly JobStateCreatedAtComparer<TKey> _jobEntryComparer;

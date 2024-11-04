@@ -25,15 +25,15 @@ namespace Hangfire.InMemory.State
         where TKey : IComparable<TKey>
     {
         private readonly Func<MonotonicTime> _timeResolver;
-        private readonly MemoryState<TKey> _state;
+        private readonly IMemoryState<TKey> _state;
 
-        protected DispatcherBase(Func<MonotonicTime> timeResolver, MemoryState<TKey> state)
+        protected DispatcherBase(Func<MonotonicTime> timeResolver, IMemoryState<TKey> state)
         {
             _timeResolver = timeResolver ?? throw new ArgumentNullException(nameof(timeResolver));
             _state = state ?? throw new ArgumentNullException(nameof(state));
         }
 
-        protected MemoryState<TKey> State => _state;
+        protected IMemoryState<TKey> State => _state;
 
         public MonotonicTime GetMonotonicTime()
         {
@@ -122,12 +122,12 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public virtual T QueryWriteAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
+        public virtual T QueryWriteAndWait<TCommand, T>(TCommand query, Func<TCommand, IMemoryState<TKey>, T> func)
         {
             return func(query, _state);
         }
 
-        public virtual T QueryReadAndWait<TCommand, T>(TCommand query, Func<TCommand, MemoryState<TKey>, T> func)
+        public virtual T QueryReadAndWait<TCommand, T>(TCommand query, Func<TCommand, IMemoryState<TKey>, T> func)
         {
             return QueryWriteAndWait(query, func);
         }

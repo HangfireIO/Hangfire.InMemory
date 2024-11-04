@@ -26,7 +26,7 @@ namespace Hangfire.InMemory.State
     {
         public sealed class JobCreate(TKey key, InvocationData data, KeyValuePair<string, string>[] parameters, MonotonicTime now, TimeSpan expireIn) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 state.JobCreate(new JobEntry<TKey>(key, data, parameters, now), expireIn);
             }
@@ -34,7 +34,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class JobSetParameter(TKey key, string name, string value) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Jobs.TryGetValue(key, out var entry))
                 {
@@ -45,7 +45,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class JobExpire(TKey key, MonotonicTime now, TimeSpan expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Jobs.TryGetValue(key, out var entry))
                 {
@@ -56,7 +56,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class JobPersist(TKey key) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Jobs.TryGetValue(key, out var entry))
                 {
@@ -68,7 +68,7 @@ namespace Hangfire.InMemory.State
         public sealed class JobAddState(
             TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 var record = new StateRecord(name, reason, data, now);
 
@@ -82,7 +82,7 @@ namespace Hangfire.InMemory.State
         public sealed class JobSetState(
             TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 var record = new StateRecord(name, reason, data, now);
 
@@ -96,7 +96,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class QueueEnqueue(string queue, TKey key) : ICommand<TKey>
         {
-            public QueueEntry<TKey> Execute(MemoryState<TKey> state)
+            public QueueEntry<TKey> Execute(IMemoryState<TKey> state)
             {
                 var entry = state.QueueGetOrAdd(queue);
                 entry.Queue.Enqueue(key);
@@ -104,12 +104,12 @@ namespace Hangfire.InMemory.State
                 return entry;
             }
 
-            void ICommand<TKey>.Execute(MemoryState<TKey> state) => Execute(state);
+            void ICommand<TKey>.Execute(IMemoryState<TKey> state) => Execute(state);
         }
 
         public sealed class CounterIncrement(string key, long value) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 var entry = state.CounterGetOrAdd(key);
                 entry.Value += value;
@@ -123,7 +123,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class CounterIncrementAndExpire(string key, long value, MonotonicTime now, TimeSpan expireIn) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 var entry = state.CounterGetOrAdd(key);
                 entry.Value += value;
@@ -141,7 +141,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class SortedSetAdd(string key, string value, double score) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 state.SetGetOrAdd(key).Add(value, score);
             }
@@ -149,7 +149,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class SortedSetAddRange(string key, IEnumerable<string> items) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 var entry = state.SetGetOrAdd(key);
 
@@ -162,7 +162,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class SortedSetRemove(string key, string value) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var entry))
                 {
@@ -174,7 +174,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class SortedSetDelete(string key) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var entry)) state.SetDelete(entry);
             }
@@ -182,7 +182,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class SortedSetExpire(string key, MonotonicTime now, TimeSpan expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var entry)) state.SetExpire(entry, now, expireIn, maxExpiration);
             }
@@ -190,7 +190,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class SortedSetPersist(string key) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Sets.TryGetValue(key, out var entry)) state.SetExpire(entry, now: null, expireIn: null, maxExpiration: null);
             }
@@ -198,7 +198,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class ListInsert(string key, string value) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 state.ListGetOrAdd(key).Add(value);
             }
@@ -206,7 +206,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class ListRemoveAll(string key, string value) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 var entry = state.ListGetOrAdd(key);
                 if (entry.RemoveAll(value, state.StringComparer) == 0)
@@ -218,7 +218,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class ListTrim(string key, int keepStartingFrom, int keepEndingAt) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var entry) && entry.Trim(keepStartingFrom, keepEndingAt) == 0)
                 {
@@ -229,7 +229,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class ListExpire(string key, MonotonicTime now, TimeSpan expireIn, TimeSpan? maxExpiration) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var entry)) state.ListExpire(entry, now, expireIn, maxExpiration);
             }
@@ -237,7 +237,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class ListPersist(string key) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Lists.TryGetValue(key, out var entry)) state.ListExpire(entry, now: null, expireIn: null, maxExpiration: null);
             }
@@ -245,7 +245,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class HashSetRange(string key, IEnumerable<KeyValuePair<string, string>> items) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 var entry = state.HashGetOrAdd(key);
 
@@ -263,7 +263,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class HashExpire(string key, MonotonicTime now, TimeSpan expireIn,  TimeSpan? maxExpiration) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var entry)) state.HashExpire(entry, now, expireIn, maxExpiration);
             }
@@ -271,7 +271,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class HashPersist(string key) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var entry)) state.HashExpire(entry, now: null, expireIn: null, maxExpiration: null);
             }
@@ -279,7 +279,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class HashRemove(string key) : ICommand<TKey>
         {
-            public void Execute(MemoryState<TKey> state)
+            public void Execute(IMemoryState<TKey> state)
             {
                 if (state.Hashes.TryGetValue(key, out var entry)) state.HashDelete(entry);
             }
@@ -287,7 +287,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class ServerAnnounce(string serverId, ServerContext context, MonotonicTime now)
         {
-            public bool Execute(MemoryState<TKey> state)
+            public bool Execute(IMemoryState<TKey> state)
             {
                 if (!state.Servers.ContainsKey(serverId))
                 {
@@ -304,7 +304,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class ServerHeartbeat(string serverId, MonotonicTime now)
         {
-            public bool Execute(MemoryState<TKey> state)
+            public bool Execute(IMemoryState<TKey> state)
             {
                 if (state.Servers.TryGetValue(serverId, out var entry))
                 {
@@ -318,7 +318,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class ServerDelete(string serverId)
         {
-            public bool Execute(MemoryState<TKey> state)
+            public bool Execute(IMemoryState<TKey> state)
             {
                 return state.ServerRemove(serverId);
             }
@@ -326,7 +326,7 @@ namespace Hangfire.InMemory.State
 
         public sealed class ServerDeleteInactive(TimeSpan timeout, MonotonicTime now)
         {
-            public int Execute(MemoryState<TKey> state)
+            public int Execute(IMemoryState<TKey> state)
             {
                 var serversToRemove = new List<string>();
 

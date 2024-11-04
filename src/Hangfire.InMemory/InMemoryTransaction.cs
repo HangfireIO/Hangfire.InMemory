@@ -360,7 +360,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        private bool CommitCore(MemoryState<TKey> state)
+        private bool CommitCore(IMemoryState<TKey> state)
         {
             try
             {
