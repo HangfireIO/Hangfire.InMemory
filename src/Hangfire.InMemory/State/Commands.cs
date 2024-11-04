@@ -36,7 +36,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Jobs.TryGetValue(key, out var entry))
+                if (state.JobTryGet(key, out var entry))
                 {
                     entry.SetParameter(name, value, state.StringComparer);
                 }
@@ -47,7 +47,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Jobs.TryGetValue(key, out var entry))
+                if (state.JobTryGet(key, out var entry))
                 {
                     state.JobExpire(entry, now, expireIn, maxExpiration);
                 }
@@ -58,7 +58,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Jobs.TryGetValue(key, out var entry))
+                if (state.JobTryGet(key, out var entry))
                 {
                     state.JobExpire(entry, now: null, expireIn: null, maxExpiration: null);
                 }
@@ -72,7 +72,7 @@ namespace Hangfire.InMemory.State
             {
                 var record = new StateRecord(name, reason, data, now);
 
-                if (state.Jobs.TryGetValue(key, out var entry))
+                if (state.JobTryGet(key, out var entry))
                 {
                     entry.AddHistoryEntry(record, maxHistory);
                 }
@@ -86,7 +86,7 @@ namespace Hangfire.InMemory.State
             {
                 var record = new StateRecord(name, reason, data, now);
 
-                if (state.Jobs.TryGetValue(key, out var entry))
+                if (state.JobTryGet(key, out var entry))
                 {
                     entry.AddHistoryEntry(record, maxHistory);
                     state.JobSetState(entry, record);

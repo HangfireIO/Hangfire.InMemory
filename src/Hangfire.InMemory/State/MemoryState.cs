@@ -79,6 +79,11 @@ namespace Hangfire.InMemory.State
             return Queues.GetOrAdd(name, static _ => new QueueEntry<TKey>());
         }
 
+        public bool JobTryGet(TKey key, out JobEntry<TKey> entry)
+        {
+            return Jobs.TryGetValue(key, out entry);
+        }
+
         public void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn)
         {
             Jobs[entry.Key] = entry;

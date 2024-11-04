@@ -26,7 +26,7 @@ namespace Hangfire.InMemory.State
         {
             public Data? Execute(IMemoryState<TKey> state)
             {
-                if (!state.Jobs.TryGetValue(key, out var entry))
+                if (!state.JobTryGet(key, out var entry))
                 {
                     return null;
                 }
@@ -55,7 +55,7 @@ namespace Hangfire.InMemory.State
         {
             public Data? Execute(IMemoryState<TKey> state)
             {
-                if (!state.Jobs.TryGetValue(key, out var entry) || entry.State == null)
+                if (!state.JobTryGet(key, out var entry) || entry.State == null)
                 {
                     return null;
                 }
@@ -82,7 +82,7 @@ namespace Hangfire.InMemory.State
         {
             public string? Execute(IMemoryState<TKey> state)
             {
-                return state.Jobs.TryGetValue(key, out var entry)
+                return state.JobTryGet(key, out var entry)
                     ? entry.GetParameter(name, state.StringComparer)
                     : null;
             }

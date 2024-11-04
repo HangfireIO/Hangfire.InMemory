@@ -145,7 +145,7 @@ namespace Hangfire.InMemory.State
         {
             public Data? Execute(IMemoryState<TKey> state)
             {
-                if (!state.Jobs.TryGetValue(key, out var entry))
+                if (!state.JobTryGet(key, out var entry))
                 {
                     return null;
                 }
@@ -184,7 +184,7 @@ namespace Hangfire.InMemory.State
 
                     Record? record = null;
 
-                    if (state.Jobs.TryGetValue(key, out var entry))
+                    if (state.JobTryGet(key, out var entry))
                     {
                         record = new Record
                         {
