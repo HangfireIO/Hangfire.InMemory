@@ -221,6 +221,11 @@ namespace Hangfire.InMemory.State
             EntryRemove(entry, Lists, ExpiringListsIndex);
         }
 
+        public bool CounterTryGet(string key, out CounterEntry entry)
+        {
+            return Counters.TryGetValue(key, out entry);
+        }
+
         public CounterEntry CounterGetOrAdd(string key)
         {
             if (!Counters.TryGetValue(key, out var entry))

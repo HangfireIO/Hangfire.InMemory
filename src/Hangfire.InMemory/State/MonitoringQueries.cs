@@ -43,7 +43,7 @@ namespace Hangfire.InMemory.State
                 {
                     counterCounts.Add(
                         counter.Key,
-                        state.Counters.TryGetValue(counter.Value, out var entry) ? entry.Value : 0);
+                        state.CounterTryGet(counter.Value, out var entry) ? entry.Value : 0);
                 }
 
                 var setCounts = new Dictionary<string, long>(sets.Count);
@@ -302,7 +302,7 @@ namespace Hangfire.InMemory.State
                 var stringDates = dates.Select(static x => x.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).ToList();
                 var statsType = type;
                 var keys = stringDates.Select(x => $"stats:{statsType}:{x}").ToArray();
-                var valuesMap = keys.Select(key => state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
+                var valuesMap = keys.Select(key => state.CounterTryGet(key, out var entry) ? entry.Value : 0).ToArray();
 
                 var result = new Dictionary<DateTime, long>();
                 for (var i = 0; i < stringDates.Count; i++)
@@ -329,7 +329,7 @@ namespace Hangfire.InMemory.State
                 var statsType = type;
 
                 var keys = dates.Select(x => $"stats:{statsType}:{x:yyyy-MM-dd-HH}").ToArray();
-                var valuesMap = keys.Select(key => state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0).ToArray();
+                var valuesMap = keys.Select(key => state.CounterTryGet(key, out var entry) ? entry.Value : 0).ToArray();
 
                 var result = new Dictionary<DateTime, long>();
                 for (var i = 0; i < dates.Count; i++)

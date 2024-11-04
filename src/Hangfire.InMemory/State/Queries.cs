@@ -310,7 +310,7 @@ namespace Hangfire.InMemory.State
         {
             public long Execute(IMemoryState<TKey> state)
             {
-                return state.Counters.TryGetValue(key, out var entry) ? entry.Value : 0;
+                return state.CounterTryGet(key, out var entry) ? entry.Value : 0;
             }
         }
     }
