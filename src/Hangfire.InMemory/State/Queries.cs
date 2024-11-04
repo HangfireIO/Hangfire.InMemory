@@ -253,7 +253,7 @@ namespace Hangfire.InMemory.State
         {
             public List<string> Execute(IMemoryState<TKey> state)
             {
-                if (state.Lists.TryGetValue(key, out var entry))
+                if (state.ListTryGet(key, out var entry))
                 {
                     return new List<string>(entry);
                 }
@@ -268,7 +268,7 @@ namespace Hangfire.InMemory.State
             {
                 var result = new List<string>();
 
-                if (state.Lists.TryGetValue(key, out var entry))
+                if (state.ListTryGet(key, out var entry))
                 {
                     var count = endingAt - startingFrom + 1;
                     var skip = startingFrom;
@@ -289,7 +289,7 @@ namespace Hangfire.InMemory.State
         {
             public int Execute(IMemoryState<TKey> state)
             {
-                return state.Lists.TryGetValue(key, out var entry) ? entry.Count : 0;
+                return state.ListTryGet(key, out var entry) ? entry.Count : 0;
             }
         }
 
@@ -297,7 +297,7 @@ namespace Hangfire.InMemory.State
         {
             public MonotonicTime? Execute(IMemoryState<TKey> state)
             {
-                if (state.Lists.TryGetValue(key, out var entry) && entry.ExpireAt.HasValue)
+                if (state.ListTryGet(key, out var entry) && entry.ExpireAt.HasValue)
                 {
                     return entry.ExpireAt;
                 }

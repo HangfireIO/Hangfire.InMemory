@@ -220,7 +220,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Lists.TryGetValue(key, out var entry) && entry.Trim(keepStartingFrom, keepEndingAt) == 0)
+                if (state.ListTryGet(key, out var entry) && entry.Trim(keepStartingFrom, keepEndingAt) == 0)
                 {
                     state.ListDelete(entry);
                 }
@@ -231,7 +231,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Lists.TryGetValue(key, out var entry)) state.ListExpire(entry, now, expireIn, maxExpiration);
+                if (state.ListTryGet(key, out var entry)) state.ListExpire(entry, now, expireIn, maxExpiration);
             }
         }
 
@@ -239,7 +239,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Lists.TryGetValue(key, out var entry)) state.ListExpire(entry, now: null, expireIn: null, maxExpiration: null);
+                if (state.ListTryGet(key, out var entry)) state.ListExpire(entry, now: null, expireIn: null, maxExpiration: null);
             }
         }
 

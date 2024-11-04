@@ -188,6 +188,11 @@ namespace Hangfire.InMemory.State
             EntryRemove(entry, Sets, ExpiringSetsIndex);
         }
 
+        public bool ListTryGet(string key, out ListEntry entry)
+        {
+            return Lists.TryGetValue(key, out entry);
+        }
+
         public ListEntry ListGetOrAdd(string key)
         {
             if (!Lists.TryGetValue(key, out var entry))
