@@ -265,7 +265,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Hashes.TryGetValue(key, out var entry)) state.HashExpire(entry, now, expireIn, maxExpiration);
+                if (state.HashTryGet(key, out var entry)) state.HashExpire(entry, now, expireIn, maxExpiration);
             }
         }
 
@@ -273,7 +273,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Hashes.TryGetValue(key, out var entry)) state.HashExpire(entry, now: null, expireIn: null, maxExpiration: null);
+                if (state.HashTryGet(key, out var entry)) state.HashExpire(entry, now: null, expireIn: null, maxExpiration: null);
             }
         }
 
@@ -281,7 +281,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Hashes.TryGetValue(key, out var entry)) state.HashDelete(entry);
+                if (state.HashTryGet(key, out var entry)) state.HashDelete(entry);
             }
         }
 

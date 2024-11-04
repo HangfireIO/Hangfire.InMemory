@@ -137,6 +137,11 @@ namespace Hangfire.InMemory.State
             }
         }
 
+        public bool HashTryGet(string key, out HashEntry entry)
+        {
+            return Hashes.TryGetValue(key, out entry);
+        }
+
         public HashEntry HashGetOrAdd(string key)
         {
             if (!Hashes.TryGetValue(key, out var entry))

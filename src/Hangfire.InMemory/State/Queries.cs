@@ -206,7 +206,7 @@ namespace Hangfire.InMemory.State
         {
             public Dictionary<string, string>? Execute(IMemoryState<TKey> state)
             {
-                if (state.Hashes.TryGetValue(key, out var entry))
+                if (state.HashTryGet(key, out var entry))
                 {
                     return entry.Value.ToDictionary(static x => x.Key, static x => x.Value, state.StringComparer);
                 }
@@ -219,7 +219,7 @@ namespace Hangfire.InMemory.State
         {
             public string? Execute(IMemoryState<TKey> state)
             {
-                if (state.Hashes.TryGetValue(key, out var entry) && entry.Value.TryGetValue(name, out var result))
+                if (state.HashTryGet(key, out var entry) && entry.Value.TryGetValue(name, out var result))
                 {
                     return result;
                 }
@@ -232,7 +232,7 @@ namespace Hangfire.InMemory.State
         {
             public int Execute(IMemoryState<TKey> state)
             {
-                return state.Hashes.TryGetValue(key, out var entry) ? entry.Value.Count : 0;
+                return state.HashTryGet(key, out var entry) ? entry.Value.Count : 0;
             }
         }
 
@@ -240,7 +240,7 @@ namespace Hangfire.InMemory.State
         {
             public MonotonicTime? Execute(IMemoryState<TKey> state)
             {
-                if (state.Hashes.TryGetValue(key, out var entry) && entry.ExpireAt.HasValue)
+                if (state.HashTryGet(key, out var entry) && entry.ExpireAt.HasValue)
                 {
                     return entry.ExpireAt;
                 }
