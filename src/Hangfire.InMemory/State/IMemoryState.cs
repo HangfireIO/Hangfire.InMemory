@@ -28,7 +28,6 @@ namespace Hangfire.InMemory.State
         ConcurrentDictionary<string, LockEntry<JobStorageConnection>> Locks { get; }
         ConcurrentDictionary<string, QueueEntry<TKey>> Queues { get; }
 
-        SortedDictionary<string, SetEntry> Sets { get; }
         SortedDictionary<string, CounterEntry> Counters { get; }
         SortedDictionary<string, ServerEntry> Servers { get; }
 
@@ -46,6 +45,7 @@ namespace Hangfire.InMemory.State
         void HashExpire(HashEntry entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration);
         void HashDelete(HashEntry entry);
 
+        bool SetTryGet(string key, out SetEntry entry);
         SetEntry SetGetOrAdd(string key);
         void SetExpire(SetEntry entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration);
         void SetDelete(SetEntry entry);

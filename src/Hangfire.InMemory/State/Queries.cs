@@ -94,7 +94,7 @@ namespace Hangfire.InMemory.State
             {
                 var result = new HashSet<string>(state.StringComparer);
 
-                if (state.Sets.TryGetValue(key, out var entry))
+                if (state.SetTryGet(key, out var entry))
                 {
                     foreach (var item in entry)
                     {
@@ -110,7 +110,7 @@ namespace Hangfire.InMemory.State
         {
             public string? Execute(IMemoryState<TKey> state)
             {
-                if (state.Sets.TryGetValue(key, out var entry))
+                if (state.SetTryGet(key, out var entry))
                 {
                     return entry.GetFirstBetween(fromScore, toScore);
                 }
@@ -123,7 +123,7 @@ namespace Hangfire.InMemory.State
         {
             public List<string> Execute(IMemoryState<TKey> state)
             {
-                if (state.Sets.TryGetValue(key, out var entry))
+                if (state.SetTryGet(key, out var entry))
                 {
                     return entry.GetViewBetween(fromScore, toScore, count);
                 }
@@ -138,7 +138,7 @@ namespace Hangfire.InMemory.State
             {
                 var result = new List<string>();
 
-                if (state.Sets.TryGetValue(key, out var entry))
+                if (state.SetTryGet(key, out var entry))
                 {
                     var counter = 0;
 
@@ -161,7 +161,7 @@ namespace Hangfire.InMemory.State
         {
             public bool Execute(IMemoryState<TKey> state)
             {
-                return state.Sets.TryGetValue(key, out var entry) && entry.Contains(value);
+                return state.SetTryGet(key, out var entry) && entry.Contains(value);
             }
         }
 
@@ -169,7 +169,7 @@ namespace Hangfire.InMemory.State
         {
             public int Execute(IMemoryState<TKey> state)
             {
-                return state.Sets.TryGetValue(key, out var entry) ? entry.Count : 0;
+                return state.SetTryGet(key, out var entry) ? entry.Count : 0;
             }
         }
 
@@ -182,7 +182,7 @@ namespace Hangfire.InMemory.State
                 foreach (var key in keys)
                 {
                     if (count >= limit) break;
-                    count += state.Sets.TryGetValue(key, out var entry) ? entry.Count : 0;
+                    count += state.SetTryGet(key, out var entry) ? entry.Count : 0;
                 }
 
                 return Math.Min(count, limit);
@@ -193,7 +193,7 @@ namespace Hangfire.InMemory.State
         {
             public MonotonicTime? Execute(IMemoryState<TKey> state)
             {
-                if (state.Sets.TryGetValue(key, out var entry) && entry.ExpireAt.HasValue)
+                if (state.SetTryGet(key, out var entry) && entry.ExpireAt.HasValue)
                 {
                     return entry.ExpireAt;
                 }

@@ -164,7 +164,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Sets.TryGetValue(key, out var entry))
+                if (state.SetTryGet(key, out var entry))
                 {
                     entry.Remove(value);
                     if (entry.Count == 0) state.SetDelete(entry);
@@ -176,7 +176,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Sets.TryGetValue(key, out var entry)) state.SetDelete(entry);
+                if (state.SetTryGet(key, out var entry)) state.SetDelete(entry);
             }
         }
 
@@ -184,7 +184,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Sets.TryGetValue(key, out var entry)) state.SetExpire(entry, now, expireIn, maxExpiration);
+                if (state.SetTryGet(key, out var entry)) state.SetExpire(entry, now, expireIn, maxExpiration);
             }
         }
 
@@ -192,7 +192,7 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                if (state.Sets.TryGetValue(key, out var entry)) state.SetExpire(entry, now: null, expireIn: null, maxExpiration: null);
+                if (state.SetTryGet(key, out var entry)) state.SetExpire(entry, now: null, expireIn: null, maxExpiration: null);
             }
         }
 

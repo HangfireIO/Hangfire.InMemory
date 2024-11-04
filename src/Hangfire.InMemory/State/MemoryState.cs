@@ -165,6 +165,11 @@ namespace Hangfire.InMemory.State
             EntryRemove(entry, Hashes, ExpiringHashesIndex);
         }
 
+        public bool SetTryGet(string key, out SetEntry entry)
+        {
+            return Sets.TryGetValue(key, out entry);
+        }
+
         public SetEntry SetGetOrAdd(string key)
         {
             if (!Sets.TryGetValue(key, out var entry))

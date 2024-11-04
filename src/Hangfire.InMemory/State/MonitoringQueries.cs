@@ -51,7 +51,7 @@ namespace Hangfire.InMemory.State
                 {
                     setCounts.Add(
                         set.Key,
-                        state.Sets.TryGetValue(set.Value, out var entry) ? entry.Count : 0);
+                        state.SetTryGet(set.Value, out var entry) ? entry.Count : 0);
                 }
 
                 return new Data
