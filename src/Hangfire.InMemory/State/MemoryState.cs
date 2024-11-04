@@ -24,12 +24,8 @@ namespace Hangfire.InMemory.State
     internal sealed class MemoryState<TKey> : IMemoryState<TKey>
         where TKey : IComparable<TKey>
     {
-        private readonly JobStateCreatedAtComparer<TKey> _jobEntryComparer;
-
         public MemoryState(StringComparer stringComparer, IComparer<TKey>? keyComparer)
         {
-            _jobEntryComparer = new JobStateCreatedAtComparer<TKey>(keyComparer);
-
             Locks = new ConcurrentDictionary<string, LockEntry<JobStorageConnection>>(stringComparer);
             Queues = new ConcurrentDictionary<string, QueueEntry<TKey>>(stringComparer);
 
@@ -66,7 +62,7 @@ namespace Hangfire.InMemory.State
 
         // State index uses case-insensitive comparisons, despite the current settings. SQL Server
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
-        public Dictionary<string, SortedSet<JobEntry<TKey>>> JobStateIndex { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, SortedSet<TKey>> JobStateIndex { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public SortedSet<JobEntry<TKey>> ExpiringJobsIndex { get; }
         public SortedSet<CounterEntry> ExpiringCountersIndex { get; }
@@ -84,7 +80,7 @@ namespace Hangfire.InMemory.State
             return Jobs.TryGetValue(key, out entry);
         }
 
-        public bool JobTryGetStateIndex(string name, out ISet<JobEntry<TKey>> indexEntry)
+        public bool JobTryGetStateIndex(string name, out ISet<TKey> indexEntry)
         {
             if (JobStateIndex.TryGetValue(name, out var entry))
             {
@@ -116,7 +112,7 @@ namespace Hangfire.InMemory.State
         {
             if (entry.State != null && JobStateIndex.TryGetValue(entry.State.Name, out var indexEntry))
             {
-                indexEntry.Remove(entry);
+                indexEntry.Remove(entry.Key);
                 if (indexEntry.Count == 0) JobStateIndex.Remove(entry.State.Name);
             }
 
@@ -124,10 +120,10 @@ namespace Hangfire.InMemory.State
 
             if (!JobStateIndex.TryGetValue(state.Name, out indexEntry))
             {
-                JobStateIndex.Add(state.Name, indexEntry = new SortedSet<JobEntry<TKey>>(_jobEntryComparer));
+                JobStateIndex.Add(state.Name, indexEntry = new SortedSet<TKey>());
             }
 
-            indexEntry.Add(entry);
+            indexEntry.Add(entry.Key);
         }
 
         public void JobExpire(JobEntry<TKey> entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
@@ -144,7 +140,7 @@ namespace Hangfire.InMemory.State
 
             if (entry.State?.Name != null && JobStateIndex.TryGetValue(entry.State.Name, out var stateIndex))
             {
-                stateIndex.Remove(entry);
+                stateIndex.Remove(entry.Key);
                 if (stateIndex.Count == 0) JobStateIndex.Remove(entry.State.Name);
             }
         }

@@ -13,15 +13,18 @@
 // You should have received a copy of the GNU Lesser General Public 
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
-using System;
+using System.Globalization;
+using System.Threading;
 
 namespace Hangfire.InMemory.Tests
 {
     internal sealed class StringKeyProvider : IKeyProvider<string>
     {
+        private long _nextId;
+
         public string GetUniqueKey()
         {
-            return Guid.NewGuid().ToString("D");
+            return Interlocked.Increment(ref _nextId).ToString(CultureInfo.InvariantCulture);
         }
 
         public bool TryParse(string input, out string key)

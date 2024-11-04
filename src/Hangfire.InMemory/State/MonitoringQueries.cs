@@ -231,7 +231,7 @@ namespace Hangfire.InMemory.State
                         if (index < from) { index++; continue; }
                         if (index >= from + count) break;
 
-                        result.Add(entry.Key);
+                        result.Add(entry);
                         index++;
                     }
                 }
