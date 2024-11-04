@@ -35,7 +35,7 @@ namespace Hangfire.InMemory.State
                 {
                     stateCounts.Add(
                         stateName,
-                        state.JobStateIndex.TryGetValue(stateName, out var indexEntry) ? indexEntry.Count : 0);
+                        state.JobTryGetStateIndex(stateName, out var indexEntry) ? indexEntry.Count : 0);
                 }
 
                 var counterCounts = new Dictionary<string, long>(counters.Count);
@@ -221,7 +221,7 @@ namespace Hangfire.InMemory.State
             {
                 var result = new List<TKey>();
 
-                if (state.JobStateIndex.TryGetValue(stateName, out var indexEntry))
+                if (state.JobTryGetStateIndex(stateName, out var indexEntry))
                 {
                     var index = 0;
                     var collection = reversed ? indexEntry.Reverse() : indexEntry;
@@ -244,7 +244,7 @@ namespace Hangfire.InMemory.State
         {
             public long Execute(IMemoryState<TKey> state)
             {
-                if (state.JobStateIndex.TryGetValue(stateName, out var indexEntry))
+                if (state.JobTryGetStateIndex(stateName, out var indexEntry))
                 {
                     return indexEntry.Count;
                 }

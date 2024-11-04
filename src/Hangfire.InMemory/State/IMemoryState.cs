@@ -30,11 +30,10 @@ namespace Hangfire.InMemory.State
 
         SortedDictionary<string, ServerEntry> Servers { get; }
 
-        Dictionary<string, SortedSet<JobEntry<TKey>>> JobStateIndex { get; }
-
         QueueEntry<TKey> QueueGetOrAdd(string name);
 
         bool JobTryGet(TKey key, out JobEntry<TKey> entry);
+        bool JobTryGetStateIndex(string name, out ISet<JobEntry<TKey>> indexEntry);
         void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn);
         void JobSetState(JobEntry<TKey> entry, StateRecord state);
         void JobExpire(JobEntry<TKey> entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration);

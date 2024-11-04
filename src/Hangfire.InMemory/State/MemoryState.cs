@@ -84,6 +84,18 @@ namespace Hangfire.InMemory.State
             return Jobs.TryGetValue(key, out entry);
         }
 
+        public bool JobTryGetStateIndex(string name, out ISet<JobEntry<TKey>> indexEntry)
+        {
+            if (JobStateIndex.TryGetValue(name, out var entry))
+            {
+                indexEntry = entry;
+                return true;
+            }
+
+            indexEntry = null!;
+            return false;
+        }
+
         public void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn)
         {
             Jobs[entry.Key] = entry;
