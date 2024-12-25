@@ -92,9 +92,14 @@ namespace Hangfire.InMemory.Entities
             return _list.Count;
         }
 
-        public IEnumerator<string> GetEnumerator()
+        public LinkedList<string>.Enumerator GetEnumerator()
         {
             return _list.GetEnumerator();
+        }
+
+        IEnumerator<string> IEnumerable<string>.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

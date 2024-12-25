@@ -123,9 +123,14 @@ namespace Hangfire.InMemory.Entities
             return _hash.ContainsKey(value);
         }
 
-        public IEnumerator<SortedSetItem> GetEnumerator()
+        public SortedSet<SortedSetItem>.Enumerator GetEnumerator()
         {
             return _value.GetEnumerator();
+        }
+
+        IEnumerator<SortedSetItem> IEnumerable<SortedSetItem>.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
