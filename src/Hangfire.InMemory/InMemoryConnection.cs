@@ -31,7 +31,7 @@ namespace Hangfire.InMemory
     {
         private readonly List<LockDisposable> _acquiredLocks = new();
 
-        public InMemoryConnection([NotNull] InMemoryStorageOptions options, [NotNull] DispatcherBase<TKey> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
+        public InMemoryConnection([NotNull] InMemoryStorageOptions options, [NotNull] DispatcherBase<TKey, InMemoryConnection<TKey>> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
@@ -39,7 +39,7 @@ namespace Hangfire.InMemory
         }
 
         public InMemoryStorageOptions Options { get; }
-        public DispatcherBase<TKey> Dispatcher { get; }
+        public DispatcherBase<TKey, InMemoryConnection<TKey>> Dispatcher { get; }
         public IKeyProvider<TKey> KeyProvider { get; }
 
         public override void Dispose()
@@ -445,10 +445,10 @@ namespace Hangfire.InMemory
         {
             private readonly InMemoryConnection<TKey> _reference;
             private readonly string _resource;
-            private readonly LockEntry<JobStorageConnection> _entry;
+            private readonly LockEntry<InMemoryConnection<TKey>> _entry;
             private bool _disposed;
 
-            public LockDisposable(InMemoryConnection<TKey> reference, string resource, LockEntry<JobStorageConnection> entry)
+            public LockDisposable(InMemoryConnection<TKey> reference, string resource, LockEntry<InMemoryConnection<TKey>> entry)
             {
                 _reference = reference ?? throw new ArgumentNullException(nameof(reference));
                 _resource = resource ?? throw new ArgumentNullException(nameof(resource));

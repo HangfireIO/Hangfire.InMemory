@@ -31,8 +31,8 @@ namespace Hangfire.InMemory
     /// </summary>
     public sealed class InMemoryStorage : JobStorage, IKeyProvider<Guid>, IKeyProvider<ulong>, IDisposable
     {
-        private readonly Dispatcher<Guid>? _guidDispatcher;
-        private readonly Dispatcher<ulong>? _longDispatcher;
+        private readonly Dispatcher<Guid, InMemoryConnection<Guid>>? _guidDispatcher;
+        private readonly Dispatcher<ulong, InMemoryConnection<ulong>>? _longDispatcher;
 
         private PaddedInt64 _nextId;
 
@@ -76,7 +76,7 @@ namespace Hangfire.InMemory
             switch (options.IdType)
             {
                 case InMemoryStorageIdType.Guid:
-                    _guidDispatcher = new Dispatcher<Guid>(
+                    _guidDispatcher = new Dispatcher<Guid, InMemoryConnection<Guid>>(
                         "Hangfire:InMemoryDispatcher",
                         MonotonicTime.GetCurrent,
                         new MemoryState<Guid>(Options.StringComparer, null))
@@ -85,7 +85,7 @@ namespace Hangfire.InMemory
                     };
                     break;
                 case InMemoryStorageIdType.Long:
-                    _longDispatcher = new Dispatcher<ulong>(
+                    _longDispatcher = new Dispatcher<ulong, InMemoryConnection<ulong>>(
                         "Hangfire:InMemoryDispatcher",
                         MonotonicTime.GetCurrent,
                         new MemoryState<ulong>(Options.StringComparer, null))

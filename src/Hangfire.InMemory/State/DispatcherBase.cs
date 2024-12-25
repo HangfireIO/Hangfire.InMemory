@@ -14,18 +14,21 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using Hangfire.InMemory.Entities;
-using Hangfire.Storage;
 
 namespace Hangfire.InMemory.State
 {
-    internal abstract class DispatcherBase<TKey>
+    internal abstract class DispatcherBase<TKey, TLockOwner>
         where TKey : IComparable<TKey>
+        where TLockOwner : class
     {
         private readonly Func<MonotonicTime> _timeResolver;
         private readonly IMemoryState<TKey> _state;
+
+        private readonly ConcurrentDictionary<string, LockEntry<TLockOwner>> _locks = new();
 
         protected DispatcherBase(Func<MonotonicTime> timeResolver, IMemoryState<TKey> state)
         {
@@ -34,6 +37,7 @@ namespace Hangfire.InMemory.State
         }
 
         protected IMemoryState<TKey> State => _state;
+        internal ConcurrentDictionary<string, LockEntry<TLockOwner>> Locks => _locks;
 
         public MonotonicTime GetMonotonicTime()
         {
@@ -55,7 +59,7 @@ namespace Hangfire.InMemory.State
             return entries;
         }
 
-        public bool TryAcquireLockEntry(JobStorageConnection owner, string resource, TimeSpan timeout, out LockEntry<JobStorageConnection>? entry)
+        public bool TryAcquireLockEntry(TLockOwner owner, string resource, TimeSpan timeout, out LockEntry<TLockOwner>? entry)
         {
             if (owner == null) throw new ArgumentNullException(nameof(owner));
             if (resource == null) throw new ArgumentNullException(nameof(resource));
@@ -64,7 +68,7 @@ namespace Hangfire.InMemory.State
 
             while (true)
             {
-                entry = _state.Locks.GetOrAdd(resource, static _ => new LockEntry<JobStorageConnection>());
+                entry = _locks.GetOrAdd(resource, static _ => new LockEntry<TLockOwner>());
                 if (entry.TryAcquire(owner, timeout, out var retry, out var cleanUp))
                 {
                     return true;
@@ -80,7 +84,7 @@ namespace Hangfire.InMemory.State
             return false;
         }
 
-        public void ReleaseLockEntry(JobStorageConnection owner, string resource, LockEntry<JobStorageConnection> entry)
+        public void ReleaseLockEntry(TLockOwner owner, string resource, LockEntry<TLockOwner> entry)
         {
             if (owner == null) throw new ArgumentNullException(nameof(owner));
             if (resource == null) throw new ArgumentNullException(nameof(resource));
@@ -91,9 +95,9 @@ namespace Hangfire.InMemory.State
             if (cleanUp) CleanUpLockEntry(resource, entry);
         }
 
-        private void CleanUpLockEntry(string resource, LockEntry<JobStorageConnection> entry)
+        private void CleanUpLockEntry(string resource, LockEntry<TLockOwner> entry)
         {
-            var hasRemoved = _state.Locks.TryRemoveWorkaround(resource, out var removed);
+            var hasRemoved = _locks.TryRemoveWorkaround(resource, out var removed);
 
             try
             {

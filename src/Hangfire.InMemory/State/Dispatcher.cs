@@ -20,8 +20,9 @@ using Hangfire.Logging;
 
 namespace Hangfire.InMemory.State
 {
-    internal sealed class Dispatcher<TKey> : DispatcherBase<TKey>, IDisposable
+    internal sealed class Dispatcher<TKey, TLockOwner> : DispatcherBase<TKey, TLockOwner>, IDisposable
         where TKey : IComparable<TKey>
+        where TLockOwner : class
     {
         private const uint DefaultEvictionIntervalMs = 5000U;
 
@@ -155,7 +156,7 @@ namespace Hangfire.InMemory.State
 
         private static void ThrowObjectDisposedException()
         {
-            throw new ObjectDisposedException(typeof(Dispatcher<TKey>).FullName);
+            throw new ObjectDisposedException(typeof(Dispatcher<TKey, TLockOwner>).FullName);
         }
     }
 }

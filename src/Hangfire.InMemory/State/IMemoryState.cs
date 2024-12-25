@@ -17,7 +17,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Hangfire.InMemory.Entities;
-using Hangfire.Storage;
 
 namespace Hangfire.InMemory.State
 {
@@ -25,7 +24,6 @@ namespace Hangfire.InMemory.State
     {
         StringComparer StringComparer { get; }
 
-        ConcurrentDictionary<string, LockEntry<JobStorageConnection>> Locks { get; }
         ConcurrentDictionary<string, QueueEntry<TKey>> Queues { get; }
 
         SortedDictionary<string, ServerEntry> Servers { get; }

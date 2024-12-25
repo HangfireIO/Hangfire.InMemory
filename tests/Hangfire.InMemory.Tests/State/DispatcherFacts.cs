@@ -38,7 +38,7 @@ namespace Hangfire.InMemory.Tests.State
         public void Ctor_ThrowsAnException_WhenThreadNameIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new Dispatcher<string>(null!, _timeResolver, _state));
+                () => new Dispatcher<string, InMemoryConnection<string>>(null!, _timeResolver, _state));
 
             Assert.Equal("threadName", exception.ParamName);
         }
@@ -73,9 +73,9 @@ namespace Hangfire.InMemory.Tests.State
             Assert.True(result);
         }
 
-        private Dispatcher<string> CreateDispatcher()
+        private Dispatcher<string, InMemoryConnection<string>> CreateDispatcher()
         {
-            return new Dispatcher<string>("DispatcherThread", _timeResolver, _state);
+            return new Dispatcher<string, InMemoryConnection<string>>("DispatcherThread", _timeResolver, _state);
         }
     }
 }

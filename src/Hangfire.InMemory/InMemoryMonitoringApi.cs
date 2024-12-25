@@ -51,10 +51,10 @@ namespace Hangfire.InMemory
             { "Retries", "retries" }
         };
 
-        private readonly DispatcherBase<TKey> _dispatcher;
+        private readonly DispatcherBase<TKey, InMemoryConnection<TKey>> _dispatcher;
         private readonly IKeyProvider<TKey> _keyProvider;
 
-        public InMemoryMonitoringApi([NotNull] DispatcherBase<TKey> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
+        public InMemoryMonitoringApi([NotNull] DispatcherBase<TKey, InMemoryConnection<TKey>> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _keyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));

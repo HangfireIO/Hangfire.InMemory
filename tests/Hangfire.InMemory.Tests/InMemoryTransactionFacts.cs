@@ -99,7 +99,7 @@ namespace Hangfire.InMemory.Tests
                 });
             }
 
-            Assert.Empty(_state.Locks);
+            Assert.Empty(_dispatcher.Locks);
         }
 
         [Fact]
@@ -113,15 +113,15 @@ namespace Hangfire.InMemory.Tests
                 transaction1.AcquireDistributedLock("resource1", TimeSpan.FromSeconds(1));
                 transaction2.AcquireDistributedLock("resource2", TimeSpan.FromSeconds(1));
 
-                Assert.Equal(2, _state.Locks.Count);
+                Assert.Equal(2, _dispatcher.Locks.Count);
 
                 transaction1.Commit();
                 transaction2.Commit();
 
-                Assert.Empty(_state.Locks);
+                Assert.Empty(_dispatcher.Locks);
             }
 
-            Assert.Empty(_state.Locks);
+            Assert.Empty(_dispatcher.Locks);
         }
 
         [Fact]
@@ -132,10 +132,10 @@ namespace Hangfire.InMemory.Tests
                 transaction.AcquireDistributedLock("resource", TimeSpan.FromSeconds(5));
                 transaction.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
 
-                Assert.Single(_state.Locks);
+                Assert.Single(_dispatcher.Locks);
             });
 
-            Assert.Empty(_state.Locks);
+            Assert.Empty(_dispatcher.Locks);
         }
 
         [Fact]
@@ -147,14 +147,14 @@ namespace Hangfire.InMemory.Tests
                 using (connection.AcquireDistributedLock("resource", TimeSpan.FromSeconds(5)))
                 {
                     transaction.AcquireDistributedLock("resource", TimeSpan.FromSeconds(1));
-                    Assert.Single(_state.Locks);
+                    Assert.Single(_dispatcher.Locks);
 
                     transaction.Commit();
-                    Assert.Single(_state.Locks);
+                    Assert.Single(_dispatcher.Locks);
                 }
             }
             
-            Assert.Empty(_state.Locks);
+            Assert.Empty(_dispatcher.Locks);
         }
 
         [Fact]
@@ -173,7 +173,7 @@ namespace Hangfire.InMemory.Tests
                 transaction2.Commit();
             }
 
-            Assert.Empty(_state.Locks);
+            Assert.Empty(_dispatcher.Locks);
         }
 
         [Fact]
@@ -192,7 +192,7 @@ namespace Hangfire.InMemory.Tests
                 transaction2.Commit();
             }
 
-            Assert.Empty(_state.Locks);
+            Assert.Empty(_dispatcher.Locks);
         }
 #endif
 
