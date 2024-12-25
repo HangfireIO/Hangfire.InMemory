@@ -272,6 +272,7 @@ namespace Hangfire.InMemory.State
                 {
                     var count = endingAt - startingFrom + 1;
                     var skip = startingFrom;
+
                     foreach (var item in entry)
                     {
                         if (skip-- > 0) continue;
