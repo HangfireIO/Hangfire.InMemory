@@ -93,16 +93,7 @@ namespace Hangfire.InMemory.State
 
         private void CleanUpLockEntry(string resource, LockEntry<JobStorageConnection> entry)
         {
-            var hasRemoved = _state.Locks.TryRemove(resource, out var removed);
-
-            // Workaround for issue https://github.com/dotnet/runtime/issues/107525, should be
-            // removed after fix + some time.
-            var spinWait = new SpinWait();
-            while (!hasRemoved && _state.Locks.ContainsKey(resource))
-            {
-                hasRemoved = _state.Locks.TryRemove(resource, out removed);
-                if (!hasRemoved) spinWait.SpinOnce();
-            }
+            var hasRemoved = _state.Locks.TryRemoveWorkaround(resource, out var removed);
 
             try
             {
