@@ -60,7 +60,7 @@ namespace Hangfire.InMemory.State
                     Counters = counterCounts,
                     Sets = setCounts,
                     Queues = state.Queues.Count,
-                    Servers = state.Servers.Count
+                    Servers = state.ServerGetIndex().Count
                 };
             }
 
@@ -258,18 +258,22 @@ namespace Hangfire.InMemory.State
             [SuppressMessage("Performance", "CA1822:Mark members as static")]
             public IReadOnlyList<Record> Execute(IMemoryState<TKey> state)
             {
-                var result = new List<Record>(state.Servers.Count);
+                var index = state.ServerGetIndex();
+                var result = new List<Record>(index.Count);
 
-                foreach (var entry in state.Servers)
+                foreach (var serverId in index)
                 {
-                    result.Add(new Record
+                    if (state.ServerTryGet(serverId, out var entry))
                     {
-                        Name = entry.Key,
-                        Queues = entry.Value.Context.Queues.ToArray(),
-                        WorkersCount = entry.Value.Context.WorkerCount,
-                        Heartbeat = entry.Value.HeartbeatAt,
-                        StartedAt = entry.Value.StartedAt
-                    });
+                        result.Add(new Record
+                        {
+                            Name = serverId,
+                            Queues = entry.Context.Queues.ToArray(),
+                            WorkersCount = entry.Context.WorkerCount,
+                            Heartbeat = entry.HeartbeatAt,
+                            StartedAt = entry.StartedAt
+                        });
+                    }
                 }
                 
                 return result.OrderBy(static x => x.Name, state.StringComparer).ToList().AsReadOnly();

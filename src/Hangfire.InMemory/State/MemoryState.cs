@@ -14,6 +14,7 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Hangfire.InMemory.Entities;
@@ -257,9 +258,26 @@ namespace Hangfire.InMemory.State
             EntryRemove(entry, Counters, ExpiringCountersIndex);
         }
 
-        public void ServerAdd(string serverId, ServerEntry entry)
+        public IReadOnlyCollection<string> ServerGetIndex()
         {
+#if NET451
+            return new KeyCollectionWrapper<string, ServerEntry>(Servers.Keys);
+#else
+            return Servers.Keys;
+#endif
+        }
+
+        public bool ServerTryGet(string serverId, out ServerEntry entry)
+        {
+            return Servers.TryGetValue(serverId, out entry);
+        }
+
+        public bool ServerTryAdd(string serverId, ServerEntry entry)
+        {
+            if (Servers.ContainsKey(serverId)) return false;
+
             Servers.Add(serverId, entry);
+            return true;
         }
 
         public bool ServerRemove(string serverId)
@@ -327,5 +345,28 @@ namespace Hangfire.InMemory.State
             entry.ExpireAt = null;
             return false;
         }
+
+#if NET451
+        private sealed class KeyCollectionWrapper<T, TValue>(SortedDictionary<T, TValue>.KeyCollection collection)
+            : IReadOnlyCollection<T>
+        {
+            public SortedDictionary<T, TValue>.KeyCollection.Enumerator GetEnumerator()
+            {
+                return collection.GetEnumerator();
+            }
+
+            IEnumerator<T> IEnumerable<T>.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            public int Count => collection.Count;
+        }
+#endif
     }
 }

@@ -289,16 +289,9 @@ namespace Hangfire.InMemory.State
         {
             public bool Execute(IMemoryState<TKey> state)
             {
-                if (!state.Servers.ContainsKey(serverId))
-                {
-                    state.ServerAdd(serverId, new ServerEntry(
-                        new ServerContext { Queues = context.Queues?.ToArray(), WorkerCount = context.WorkerCount },
-                        now));
-
-                    return true;
-                }
-
-                return false;
+                return state.ServerTryAdd(serverId, new ServerEntry(
+                    new ServerContext { Queues = context.Queues?.ToArray(), WorkerCount = context.WorkerCount },
+                    now));
             }
         }
 
@@ -306,7 +299,7 @@ namespace Hangfire.InMemory.State
         {
             public bool Execute(IMemoryState<TKey> state)
             {
-                if (state.Servers.TryGetValue(serverId, out var entry))
+                if (state.ServerTryGet(serverId, out var entry))
                 {
                     entry.HeartbeatAt = now;
                     return true;
@@ -329,13 +322,17 @@ namespace Hangfire.InMemory.State
             public int Execute(IMemoryState<TKey> state)
             {
                 var serversToRemove = new List<string>();
+                var index = state.ServerGetIndex();
 
-                foreach (var entry in state.Servers)
+                foreach (var serverId in index)
                 {
-                    if (now > entry.Value.HeartbeatAt.Add(timeout))
+                    if (state.ServerTryGet(serverId, out var entry))
                     {
-                        // Adding for removal first, to avoid breaking the iterator
-                        serversToRemove.Add(entry.Key);
+                        if (now > entry.HeartbeatAt.Add(timeout))
+                        {
+                            // Adding for removal first, to avoid breaking the iterator
+                            serversToRemove.Add(serverId);
+                        }
                     }
                 }
 
