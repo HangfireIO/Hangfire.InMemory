@@ -70,7 +70,7 @@ namespace Hangfire.InMemory.State
 
         public IReadOnlyCollection<string> QueueGetIndex()
         {
-            return new ReadOnlyCollectionWrapper<string>(Queues.Keys);
+            return new CollectionReadOnlyCollectionAdapter<string>(Queues.Keys);
         }
 
         public bool QueueTryGet(string name, out QueueEntry<TKey> entry)
@@ -88,11 +88,15 @@ namespace Hangfire.InMemory.State
             return Jobs.TryGetValue(key, out entry);
         }
 
-        public bool JobTryGetStateIndex(string name, out ISet<TKey> indexEntry)
+        public bool JobTryGetStateIndex(string name, out IReadOnlyCollection<TKey> indexEntry)
         {
             if (JobStateIndex.TryGetValue(name, out var entry))
             {
+#if NET451
+                indexEntry = new SortedSetReadOnlyCollectionAdapter<TKey>(entry);
+#else
                 indexEntry = entry;
+#endif
                 return true;
             }
 
@@ -271,7 +275,7 @@ namespace Hangfire.InMemory.State
         public IReadOnlyCollection<string> ServerGetIndex()
         {
 #if NET451
-            return new KeyCollectionWrapper<string, ServerEntry>(Servers.Keys);
+            return new SortedDictionaryReadOnlyCollectionAdapter<string, ServerEntry>(Servers.Keys);
 #else
             return Servers.Keys;
 #endif
@@ -356,7 +360,7 @@ namespace Hangfire.InMemory.State
             return false;
         }
 
-        private sealed class ReadOnlyCollectionWrapper<T>(ICollection<T> collection) : IReadOnlyCollection<T>
+        private sealed class CollectionReadOnlyCollectionAdapter<T>(ICollection<T> collection) : IReadOnlyCollection<T>
         {
             public IEnumerator<T> GetEnumerator()
             {
@@ -372,7 +376,27 @@ namespace Hangfire.InMemory.State
         }
 
 #if NET451
-        private sealed class KeyCollectionWrapper<T, TValue>(SortedDictionary<T, TValue>.KeyCollection collection)
+        private sealed class SortedSetReadOnlyCollectionAdapter<T>(SortedSet<T> set) : IReadOnlyCollection<T>
+        {
+            public SortedSet<T>.Enumerator GetEnumerator()
+            {
+                return set.GetEnumerator();
+            }
+
+            IEnumerator<T> IEnumerable<T>.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            public int Count => set.Count;
+        }
+
+        private sealed class SortedDictionaryReadOnlyCollectionAdapter<T, TValue>(SortedDictionary<T, TValue>.KeyCollection collection)
             : IReadOnlyCollection<T>
         {
             public SortedDictionary<T, TValue>.KeyCollection.Enumerator GetEnumerator()

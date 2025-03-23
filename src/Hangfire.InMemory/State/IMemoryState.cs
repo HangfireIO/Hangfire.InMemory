@@ -28,7 +28,7 @@ namespace Hangfire.InMemory.State
         QueueEntry<TKey> QueueGetOrAdd(string name);
 
         bool JobTryGet(TKey key, out JobEntry<TKey> entry);
-        bool JobTryGetStateIndex(string name, out ISet<TKey> indexEntry);
+        bool JobTryGetStateIndex(string name, out IReadOnlyCollection<TKey> indexEntry);
         void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn);
         void JobSetState(JobEntry<TKey> entry, StateRecord state);
         void JobExpire(JobEntry<TKey> entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration);
