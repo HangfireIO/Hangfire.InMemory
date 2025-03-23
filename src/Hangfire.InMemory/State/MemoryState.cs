@@ -68,6 +68,16 @@ namespace Hangfire.InMemory.State
         public SortedSet<ListEntry> ExpiringListsIndex { get; }
         public SortedSet<SetEntry> ExpiringSetsIndex { get; }
 
+        public IReadOnlyCollection<string> QueueGetIndex()
+        {
+            return new ReadOnlyCollectionWrapper<string>(Queues.Keys);
+        }
+
+        public bool QueueTryGet(string name, out QueueEntry<TKey> entry)
+        {
+            return Queues.TryGetValue(name, out entry);
+        }
+
         public QueueEntry<TKey> QueueGetOrAdd(string name)
         {
             return Queues.GetOrAdd(name, static _ => new QueueEntry<TKey>());
@@ -344,6 +354,21 @@ namespace Hangfire.InMemory.State
 
             entry.ExpireAt = null;
             return false;
+        }
+
+        private sealed class ReadOnlyCollectionWrapper<T>(ICollection<T> collection) : IReadOnlyCollection<T>
+        {
+            public IEnumerator<T> GetEnumerator()
+            {
+                return collection.GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            public int Count => collection.Count;
         }
 
 #if NET451

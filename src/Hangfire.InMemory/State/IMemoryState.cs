@@ -14,7 +14,6 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Hangfire.InMemory.Entities;
 
@@ -24,8 +23,8 @@ namespace Hangfire.InMemory.State
     {
         StringComparer StringComparer { get; }
 
-        ConcurrentDictionary<string, QueueEntry<TKey>> Queues { get; }
-
+        IReadOnlyCollection<string> QueueGetIndex();
+        bool QueueTryGet(string name, out QueueEntry<TKey> entry);
         QueueEntry<TKey> QueueGetOrAdd(string name);
 
         bool JobTryGet(TKey key, out JobEntry<TKey> entry);

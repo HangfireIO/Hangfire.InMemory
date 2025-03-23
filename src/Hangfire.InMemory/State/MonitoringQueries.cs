@@ -59,7 +59,7 @@ namespace Hangfire.InMemory.State
                     States = stateCounts,
                     Counters = counterCounts,
                     Sets = setCounts,
-                    Queues = state.Queues.Count,
+                    Queues = state.QueueGetIndex().Count,
                     Servers = state.ServerGetIndex().Count
                 };
             }
@@ -80,20 +80,24 @@ namespace Hangfire.InMemory.State
             public IReadOnlyList<QueueRecord> Execute(IMemoryState<TKey> state)
             {
                 var result = new List<QueueRecord>();
+                var queueIndex = state.QueueGetIndex();
 
-                foreach (var entry in state.Queues)
+                foreach (var queueName in queueIndex)
                 {
-                    var queueResult = new List<TKey>();
-                    var index = 0;
-                    const int count = 5;
-
-                    foreach (var message in entry.Value.Queue)
+                    if (state.QueueTryGet(queueName, out var entry))
                     {
-                        if (index++ >= count) break;
-                        queueResult.Add(message);
-                    }
+                        var queueResult = new List<TKey>();
+                        var index = 0;
+                        const int count = 5;
 
-                    result.Add(new QueueRecord(entry.Value.Queue.Count, entry.Key, queueResult.AsReadOnly()));
+                        foreach (var message in entry.Queue)
+                        {
+                            if (index++ >= count) break;
+                            queueResult.Add(message);
+                        }
+
+                        result.Add(new QueueRecord(entry.Queue.Count, queueName, queueResult.AsReadOnly()));
+                    }
                 }
 
                 return result.OrderBy(static x => x.Name, state.StringComparer).ToList().AsReadOnly();
@@ -111,7 +115,7 @@ namespace Hangfire.InMemory.State
         {
             public long Execute(IMemoryState<TKey> state)
             {
-                return state.Queues.TryGetValue(queueName, out var entry)
+                return state.QueueTryGet(queueName, out var entry)
                     ? entry.Queue.Count
                     : 0;
             }
@@ -123,7 +127,7 @@ namespace Hangfire.InMemory.State
             {
                 var result = new List<TKey>();
 
-                if (state.Queues.TryGetValue(queueName, out var entry))
+                if (state.QueueTryGet(queueName, out var entry))
                 {
                     var index = 0;
 
