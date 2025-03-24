@@ -208,10 +208,12 @@ namespace Hangfire.InMemory.State
         {
             public void Execute(IMemoryState<TKey> state)
             {
-                var entry = state.ListGetOrAdd(key);
-                if (entry.RemoveAll(value, state.StringComparer) == 0)
+                if (state.ListTryGet(key, out var entry))
                 {
-                    state.ListDelete(entry);
+                    if (entry.RemoveAll(value, state.StringComparer) == 0)
+                    {
+                        state.ListDelete(entry);
+                    }
                 }
             }
         }
