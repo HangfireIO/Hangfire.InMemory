@@ -18,9 +18,9 @@ using System.Collections.Concurrent;
 using System.Threading;
 using Hangfire.Logging;
 
-namespace Hangfire.InMemory.State
+namespace Hangfire.InMemory.State.Sequential
 {
-    internal sealed class Dispatcher<TKey, TLockOwner> : DispatcherBase<TKey, TLockOwner>, IDisposable
+    internal sealed class SequentialDispatcher<TKey, TLockOwner> : DispatcherBase<TKey, TLockOwner>, IDisposable
         where TKey : IComparable<TKey>
         where TLockOwner : class
     {
@@ -30,7 +30,7 @@ namespace Hangfire.InMemory.State
 
         // ConcurrentBag for writes give much better throughput, but less stable, since some items are processed
         // with a heavy delay when new ones are constantly arriving.
-        private readonly ConcurrentQueue<IDispatcherCallback<TKey>> _queries = new ConcurrentQueue<IDispatcherCallback<TKey>>();
+        private readonly ConcurrentQueue<ISequentialDispatcherCallback<TKey>> _queries = new ConcurrentQueue<ISequentialDispatcherCallback<TKey>>();
         private readonly Thread _thread;
         private readonly ILog _logger = LogProvider.GetLogger(typeof(InMemoryStorage));
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
@@ -38,7 +38,7 @@ namespace Hangfire.InMemory.State
 
         private PaddedInt64 _outstandingRequests;
 
-        public Dispatcher(string threadName, Func<MonotonicTime> timeResolver, MemoryState<TKey> state) : base(timeResolver, state)
+        public SequentialDispatcher(string threadName, Func<MonotonicTime> timeResolver, SequentialMemoryState<TKey> state) : base(timeResolver, state)
         {
             if (threadName == null) throw new ArgumentNullException(nameof(threadName));
 
@@ -67,7 +67,7 @@ namespace Hangfire.InMemory.State
         {
             if (_disposed) ThrowObjectDisposedException();
 
-            using (var callback = new DispatcherCallback<TKey, TCommand, T>(query, func))
+            using (var callback = new SequentialDispatcherCallback<TKey, TCommand, T>(query, func))
             {
                 _queries.Enqueue(callback);
 
@@ -156,7 +156,7 @@ namespace Hangfire.InMemory.State
 
         private static void ThrowObjectDisposedException()
         {
-            throw new ObjectDisposedException(typeof(Dispatcher<TKey, TLockOwner>).FullName);
+            throw new ObjectDisposedException(typeof(SequentialDispatcher<TKey, TLockOwner>).FullName);
         }
     }
 }

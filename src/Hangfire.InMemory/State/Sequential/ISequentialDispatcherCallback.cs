@@ -15,9 +15,9 @@
 
 using System;
 
-namespace Hangfire.InMemory.State
+namespace Hangfire.InMemory.State.Sequential
 {
-    internal interface IDispatcherCallback<TKey>
+    internal interface ISequentialDispatcherCallback<TKey>
         where TKey : IComparable<TKey>
     {
         void Execute(IMemoryState<TKey> state);

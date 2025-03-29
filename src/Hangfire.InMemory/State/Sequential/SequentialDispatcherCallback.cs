@@ -16,9 +16,9 @@
 using System;
 using System.Threading;
 
-namespace Hangfire.InMemory.State
+namespace Hangfire.InMemory.State.Sequential
 {
-    internal sealed class DispatcherCallback<TKey, TCommand, TResult> : IDispatcherCallback<TKey>, IDisposable
+    internal sealed class SequentialDispatcherCallback<TKey, TCommand, TResult> : ISequentialDispatcherCallback<TKey>, IDisposable
         where TKey : IComparable<TKey>
     {
         private readonly ManualResetEventSlim _ready = new ManualResetEventSlim(false);
@@ -28,7 +28,7 @@ namespace Hangfire.InMemory.State
         private TResult? _result;
         private Exception? _exception;
 
-        public DispatcherCallback(TCommand command, Func<TCommand, IMemoryState<TKey>, TResult> func)
+        public SequentialDispatcherCallback(TCommand command, Func<TCommand, IMemoryState<TKey>, TResult> func)
         {
             _command = command ?? throw new ArgumentNullException(nameof(command));
             _func = func ?? throw new ArgumentNullException(nameof(func));

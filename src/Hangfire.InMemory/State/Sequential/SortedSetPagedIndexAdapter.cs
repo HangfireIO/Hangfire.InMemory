@@ -15,7 +15,7 @@
 
 using System.Collections.Generic;
 
-namespace Hangfire.InMemory.State
+namespace Hangfire.InMemory.State.Sequential
 {
     internal sealed class SortedSetPagedIndexAdapter<T> : IPagedIndex<T>
     {

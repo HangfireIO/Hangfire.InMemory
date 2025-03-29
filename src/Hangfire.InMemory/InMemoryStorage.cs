@@ -21,6 +21,7 @@ using System.Globalization;
 using System.Threading;
 using Hangfire.Annotations;
 using Hangfire.InMemory.State;
+using Hangfire.InMemory.State.Sequential;
 using Hangfire.Storage;
 
 namespace Hangfire.InMemory
@@ -31,8 +32,8 @@ namespace Hangfire.InMemory
     /// </summary>
     public sealed class InMemoryStorage : JobStorage, IKeyProvider<Guid>, IKeyProvider<ulong>, IDisposable
     {
-        private readonly Dispatcher<Guid, InMemoryConnection<Guid>>? _guidDispatcher;
-        private readonly Dispatcher<ulong, InMemoryConnection<ulong>>? _longDispatcher;
+        private readonly SequentialDispatcher<Guid, InMemoryConnection<Guid>>? _guidDispatcher;
+        private readonly SequentialDispatcher<ulong, InMemoryConnection<ulong>>? _longDispatcher;
 
         private PaddedInt64 _nextId;
 
@@ -76,19 +77,19 @@ namespace Hangfire.InMemory
             switch (options.IdType)
             {
                 case InMemoryStorageIdType.Guid:
-                    _guidDispatcher = new Dispatcher<Guid, InMemoryConnection<Guid>>(
+                    _guidDispatcher = new SequentialDispatcher<Guid, InMemoryConnection<Guid>>(
                         "Hangfire:InMemoryDispatcher",
                         MonotonicTime.GetCurrent,
-                        new MemoryState<Guid>(Options.StringComparer, null))
+                        new SequentialMemoryState<Guid>(Options.StringComparer, null))
                     {
                         CommandTimeout = Options.CommandTimeout
                     };
                     break;
                 case InMemoryStorageIdType.Long:
-                    _longDispatcher = new Dispatcher<ulong, InMemoryConnection<ulong>>(
+                    _longDispatcher = new SequentialDispatcher<ulong, InMemoryConnection<ulong>>(
                         "Hangfire:InMemoryDispatcher",
                         MonotonicTime.GetCurrent,
-                        new MemoryState<ulong>(Options.StringComparer, null))
+                        new SequentialMemoryState<ulong>(Options.StringComparer, null))
                     {
                         CommandTimeout = Options.CommandTimeout
                     };

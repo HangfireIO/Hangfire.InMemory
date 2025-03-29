@@ -16,13 +16,14 @@
 using System;
 using System.Runtime.CompilerServices;
 using Hangfire.InMemory.State;
+using Hangfire.InMemory.State.Sequential;
 using Xunit;
 
 namespace Hangfire.InMemory.Tests.State
 {
     public class DispatcherFacts
     {
-        private readonly MemoryState<string> _state;
+        private readonly SequentialMemoryState<string> _state;
         private readonly MonotonicTime _now;
         private readonly Func<MonotonicTime> _timeResolver;
 
@@ -30,7 +31,7 @@ namespace Hangfire.InMemory.Tests.State
         {
             var options = new InMemoryStorageOptions();
             _now = MonotonicTime.GetCurrent();
-            _state = new MemoryState<string>(options.StringComparer, options.StringComparer);
+            _state = new SequentialMemoryState<string>(options.StringComparer, options.StringComparer);
             _timeResolver = () => _now;
         }
 
@@ -38,7 +39,7 @@ namespace Hangfire.InMemory.Tests.State
         public void Ctor_ThrowsAnException_WhenThreadNameIsNull()
         {
             var exception = Assert.Throws<ArgumentNullException>(
-                () => new Dispatcher<string, InMemoryConnection<string>>(null!, _timeResolver, _state));
+                () => new SequentialDispatcher<string, InMemoryConnection<string>>(null!, _timeResolver, _state));
 
             Assert.Equal("threadName", exception.ParamName);
         }
@@ -73,9 +74,9 @@ namespace Hangfire.InMemory.Tests.State
             Assert.True(result);
         }
 
-        private Dispatcher<string, InMemoryConnection<string>> CreateDispatcher()
+        private SequentialDispatcher<string, InMemoryConnection<string>> CreateDispatcher()
         {
-            return new Dispatcher<string, InMemoryConnection<string>>("DispatcherThread", _timeResolver, _state);
+            return new SequentialDispatcher<string, InMemoryConnection<string>>("DispatcherThread", _timeResolver, _state);
         }
     }
 }

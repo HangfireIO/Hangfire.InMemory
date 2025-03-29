@@ -18,12 +18,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Hangfire.InMemory.Entities;
 
-namespace Hangfire.InMemory.State
+namespace Hangfire.InMemory.State.Sequential
 {
-    internal sealed class MemoryState<TKey> : IMemoryState<TKey>
+    internal sealed class SequentialMemoryState<TKey> : IMemoryState<TKey>
         where TKey : IComparable<TKey>
     {
-        public MemoryState(StringComparer stringComparer, IComparer<TKey>? keyComparer)
+        public SequentialMemoryState(StringComparer stringComparer, IComparer<TKey>? keyComparer)
         {
             Queues = new ConcurrentDictionary<string, QueueEntry<TKey>>(stringComparer);
 
