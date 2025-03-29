@@ -57,6 +57,7 @@ namespace Hangfire.InMemory.State
         bool ServerTryGet(string serverId, out ServerEntry entry);
         bool ServerTryAdd(string serverId, ServerEntry entry);
         bool ServerRemove(string serverId);
+        int ServerRemoveInactive(TimeSpan timeout, MonotonicTime now);
 
         void EvictExpiredEntries(MonotonicTime now);
     }

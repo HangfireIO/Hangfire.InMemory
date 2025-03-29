@@ -323,27 +323,7 @@ namespace Hangfire.InMemory.State
         {
             public int Execute(IMemoryState<TKey> state)
             {
-                var serversToRemove = new List<string>();
-                var index = state.ServerGetIndex();
-
-                foreach (var serverId in index)
-                {
-                    if (state.ServerTryGet(serverId, out var entry))
-                    {
-                        if (now > entry.HeartbeatAt.Add(timeout))
-                        {
-                            // Adding for removal first, to avoid breaking the iterator
-                            serversToRemove.Add(serverId);
-                        }
-                    }
-                }
-
-                foreach (var serverId in serversToRemove)
-                {
-                    state.ServerRemove(serverId);
-                }
-
-                return serversToRemove.Count;
+                return state.ServerRemoveInactive(timeout, now);
             }
         }
     }

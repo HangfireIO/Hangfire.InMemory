@@ -299,6 +299,27 @@ namespace Hangfire.InMemory.State
             return Servers.Remove(serverId);
         }
 
+        public int ServerRemoveInactive(TimeSpan timeout, MonotonicTime now)
+        {
+            var serversToRemove = new List<string>();
+
+            foreach (var entry in Servers)
+            {
+                if (now > entry.Value.HeartbeatAt.Add(timeout))
+                {
+                    // Adding for removal first, to avoid breaking the iterator
+                    serversToRemove.Add(entry.Key);
+                }
+            }
+
+            foreach (var serverId in serversToRemove)
+            {
+                ServerRemove(serverId);
+            }
+
+            return serversToRemove.Count;
+        }
+
         public void EvictExpiredEntries(MonotonicTime now)
         {
             EvictFromIndex<TKey, JobEntry<TKey>>(now, ExpiringJobsIndex, JobDelete);
