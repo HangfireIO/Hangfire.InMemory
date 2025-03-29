@@ -35,7 +35,7 @@ namespace Hangfire.InMemory.State
                 {
                     stateCounts.Add(
                         stateName,
-                        state.JobTryGetStateIndex(stateName, out var indexEntry) ? indexEntry.Count : 0);
+                        state.JobTryGetStateIndex(stateName, out var indexEntry) ? indexEntry.GetCount() : 0);
                 }
 
                 var counterCounts = new Dictionary<string, long>(counters.Count);
@@ -59,8 +59,8 @@ namespace Hangfire.InMemory.State
                     States = stateCounts,
                     Counters = counterCounts,
                     Sets = setCounts,
-                    Queues = state.QueueGetIndex().Count,
-                    Servers = state.ServerGetIndex().Count
+                    Queues = (int)state.QueueGetIndex().GetCount(),
+                    Servers = (int)state.ServerGetIndex().GetCount()
                 };
             }
 
@@ -82,7 +82,7 @@ namespace Hangfire.InMemory.State
                 var result = new List<QueueRecord>();
                 var queueIndex = state.QueueGetIndex();
 
-                foreach (var queueName in queueIndex)
+                foreach (var queueName in queueIndex.GetPage(0, Int32.MaxValue, reverse: false))
                 {
                     if (state.QueueTryGet(queueName, out var entry))
                     {
@@ -221,26 +221,14 @@ namespace Hangfire.InMemory.State
 
         public readonly struct JobsGetByState(string stateName, int from, int count, bool reversed = false)
         {
-            public IReadOnlyList<TKey> Execute(IMemoryState<TKey> state)
+            public IReadOnlyCollection<TKey> Execute(IMemoryState<TKey> state)
             {
-                var result = new List<TKey>();
-
                 if (state.JobTryGetStateIndex(stateName, out var indexEntry))
                 {
-                    var index = 0;
-                    var collection = reversed ? indexEntry.Reverse() : indexEntry;
-
-                    foreach (var entry in collection)
-                    {
-                        if (index < from) { index++; continue; }
-                        if (index >= from + count) break;
-
-                        result.Add(entry);
-                        index++;
-                    }
+                    return indexEntry.GetPage(from, count, reversed);
                 }
 
-                return result.AsReadOnly();
+                return [];
             }
         }
 
@@ -248,24 +236,21 @@ namespace Hangfire.InMemory.State
         {
             public long Execute(IMemoryState<TKey> state)
             {
-                if (state.JobTryGetStateIndex(stateName, out var indexEntry))
-                {
-                    return indexEntry.Count;
-                }
-
-                return 0;
+                return state.JobTryGetStateIndex(stateName, out var indexEntry)
+                    ? indexEntry.GetCount()
+                    : 0;
             }
         }
 
         public readonly struct ServersGetAll
         {
             [SuppressMessage("Performance", "CA1822:Mark members as static")]
-            public IReadOnlyList<Record> Execute(IMemoryState<TKey> state)
+            public IReadOnlyCollection<Record> Execute(IMemoryState<TKey> state)
             {
                 var index = state.ServerGetIndex();
-                var result = new List<Record>(index.Count);
+                var result = new List<Record>((int)index.GetCount());
 
-                foreach (var serverId in index)
+                foreach (var serverId in index.GetPage(0, Int32.MaxValue, reverse: false))
                 {
                     if (state.ServerTryGet(serverId, out var entry))
                     {

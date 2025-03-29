@@ -14,7 +14,6 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
-using System.Collections.Generic;
 using Hangfire.InMemory.Entities;
 
 namespace Hangfire.InMemory.State
@@ -23,12 +22,12 @@ namespace Hangfire.InMemory.State
     {
         StringComparer StringComparer { get; }
 
-        IReadOnlyCollection<string> QueueGetIndex();
+        IPagedIndex<string> QueueGetIndex();
         bool QueueTryGet(string name, out QueueEntry<TKey> entry);
         QueueEntry<TKey> QueueGetOrAdd(string name);
 
         bool JobTryGet(TKey key, out JobEntry<TKey> entry);
-        bool JobTryGetStateIndex(string name, out IReadOnlyCollection<TKey> indexEntry);
+        bool JobTryGetStateIndex(string name, out IPagedIndex<TKey> indexEntry);
         void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn);
         void JobSetState(JobEntry<TKey> entry, StateRecord state);
         void JobExpire(JobEntry<TKey> entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration);
@@ -53,7 +52,7 @@ namespace Hangfire.InMemory.State
         void CounterExpire(CounterEntry entry, MonotonicTime? now, TimeSpan? expireIn);
         void CounterDelete(CounterEntry entry);
 
-        IReadOnlyCollection<string> ServerGetIndex();
+        IPagedIndex<string> ServerGetIndex();
         bool ServerTryGet(string serverId, out ServerEntry entry);
         bool ServerTryAdd(string serverId, ServerEntry entry);
         bool ServerRemove(string serverId);

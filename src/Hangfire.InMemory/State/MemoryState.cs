@@ -14,7 +14,6 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Hangfire.InMemory.Entities;
@@ -60,7 +59,7 @@ namespace Hangfire.InMemory.State
 
         // State index uses case-insensitive comparisons, despite the current settings. SQL Server
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
-        public Dictionary<string, SortedSet<TKey>> JobStateIndex { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, SortedSetPagedIndexAdapter<TKey>> JobStateIndex { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public SortedSet<JobEntry<TKey>> ExpiringJobsIndex { get; }
         public SortedSet<CounterEntry> ExpiringCountersIndex { get; }
@@ -68,9 +67,9 @@ namespace Hangfire.InMemory.State
         public SortedSet<ListEntry> ExpiringListsIndex { get; }
         public SortedSet<SetEntry> ExpiringSetsIndex { get; }
 
-        public IReadOnlyCollection<string> QueueGetIndex()
+        public IPagedIndex<string> QueueGetIndex()
         {
-            return new CollectionReadOnlyCollectionAdapter<string>(Queues.Keys);
+            return new CollectionPagedIndexAdapter<string>(Queues.Keys);
         }
 
         public bool QueueTryGet(string name, out QueueEntry<TKey> entry)
@@ -88,15 +87,11 @@ namespace Hangfire.InMemory.State
             return Jobs.TryGetValue(key, out entry);
         }
 
-        public bool JobTryGetStateIndex(string name, out IReadOnlyCollection<TKey> indexEntry)
+        public bool JobTryGetStateIndex(string name, out IPagedIndex<TKey> indexEntry)
         {
             if (JobStateIndex.TryGetValue(name, out var entry))
             {
-#if NET451
-                indexEntry = new SortedSetReadOnlyCollectionAdapter<TKey>(entry);
-#else
                 indexEntry = entry;
-#endif
                 return true;
             }
 
@@ -124,18 +119,18 @@ namespace Hangfire.InMemory.State
         {
             if (entry.State != null && JobStateIndex.TryGetValue(entry.State.Name, out var indexEntry))
             {
-                indexEntry.Remove(entry.Key);
-                if (indexEntry.Count == 0) JobStateIndex.Remove(entry.State.Name);
+                indexEntry.SortedSet.Remove(entry.Key);
+                if (indexEntry.SortedSet.Count == 0) JobStateIndex.Remove(entry.State.Name);
             }
 
             entry.State = state;
 
             if (!JobStateIndex.TryGetValue(state.Name, out indexEntry))
             {
-                JobStateIndex.Add(state.Name, indexEntry = new SortedSet<TKey>());
+                JobStateIndex.Add(state.Name, indexEntry = new SortedSetPagedIndexAdapter<TKey>());
             }
 
-            indexEntry.Add(entry.Key);
+            indexEntry.SortedSet.Add(entry.Key);
         }
 
         public void JobExpire(JobEntry<TKey> entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
@@ -152,8 +147,8 @@ namespace Hangfire.InMemory.State
 
             if (entry.State?.Name != null && JobStateIndex.TryGetValue(entry.State.Name, out var stateIndex))
             {
-                stateIndex.Remove(entry.Key);
-                if (stateIndex.Count == 0) JobStateIndex.Remove(entry.State.Name);
+                stateIndex.SortedSet.Remove(entry.Key);
+                if (stateIndex.SortedSet.Count == 0) JobStateIndex.Remove(entry.State.Name);
             }
         }
 
@@ -272,13 +267,9 @@ namespace Hangfire.InMemory.State
             EntryRemove(entry, Counters, ExpiringCountersIndex);
         }
 
-        public IReadOnlyCollection<string> ServerGetIndex()
+        public IPagedIndex<string> ServerGetIndex()
         {
-#if NET451
-            return new SortedDictionaryReadOnlyCollectionAdapter<string, ServerEntry>(Servers.Keys);
-#else
-            return Servers.Keys;
-#endif
+            return new CollectionPagedIndexAdapter<string>(Servers.Keys);
         }
 
         public bool ServerTryGet(string serverId, out ServerEntry entry)
@@ -380,63 +371,5 @@ namespace Hangfire.InMemory.State
             entry.ExpireAt = null;
             return false;
         }
-
-        private sealed class CollectionReadOnlyCollectionAdapter<T>(ICollection<T> collection) : IReadOnlyCollection<T>
-        {
-            public IEnumerator<T> GetEnumerator()
-            {
-                return collection.GetEnumerator();
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-
-            public int Count => collection.Count;
-        }
-
-#if NET451
-        private sealed class SortedSetReadOnlyCollectionAdapter<T>(SortedSet<T> set) : IReadOnlyCollection<T>
-        {
-            public SortedSet<T>.Enumerator GetEnumerator()
-            {
-                return set.GetEnumerator();
-            }
-
-            IEnumerator<T> IEnumerable<T>.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-
-            public int Count => set.Count;
-        }
-
-        private sealed class SortedDictionaryReadOnlyCollectionAdapter<T, TValue>(SortedDictionary<T, TValue>.KeyCollection collection)
-            : IReadOnlyCollection<T>
-        {
-            public SortedDictionary<T, TValue>.KeyCollection.Enumerator GetEnumerator()
-            {
-                return collection.GetEnumerator();
-            }
-
-            IEnumerator<T> IEnumerable<T>.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-
-            public int Count => collection.Count;
-        }
-#endif
     }
 }
