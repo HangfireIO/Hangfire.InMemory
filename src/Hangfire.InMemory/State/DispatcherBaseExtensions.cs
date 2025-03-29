@@ -17,7 +17,7 @@ using System;
 
 namespace Hangfire.InMemory.State
 {
-    internal static class DispatcherExtensions
+    internal static class DispatcherBaseExtensions
     {
         public static void QueryWriteAndWait<TKey, TLockOwner, TCommand>(this DispatcherBase<TKey, TLockOwner> dispatcher, TCommand query)
             where TKey : IComparable<TKey>
