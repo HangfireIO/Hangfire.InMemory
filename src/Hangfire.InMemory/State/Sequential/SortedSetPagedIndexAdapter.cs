@@ -17,15 +17,13 @@ using System.Collections.Generic;
 
 namespace Hangfire.InMemory.State.Sequential
 {
-    internal sealed class SortedSetPagedIndexAdapter<T> : IPagedIndex<T>
+    internal sealed class SortedSetPagedIndexAdapter<T>(SortedSet<T> sortedSet) : IPagedIndex<T>
     {
-        public SortedSet<T> SortedSet { get; } = new SortedSet<T>();
-
         public IReadOnlyCollection<T> GetPage(int from, int count, bool reverse)
         {
             var result = new List<T>();
             var index = 0;
-            var collection = reverse ? SortedSet.Reverse() : SortedSet;
+            var collection = reverse ? sortedSet.Reverse() : sortedSet;
 
             foreach (var entry in collection)
             {
@@ -41,7 +39,7 @@ namespace Hangfire.InMemory.State.Sequential
 
         long IPagedIndex<T>.GetCount()
         {
-            return SortedSet.Count;
+            return sortedSet.Count;
         }
     }
 }

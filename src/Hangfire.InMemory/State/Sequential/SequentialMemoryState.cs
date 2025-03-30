@@ -59,7 +59,7 @@ namespace Hangfire.InMemory.State.Sequential
 
         // State index uses case-insensitive comparisons, despite the current settings. SQL Server
         // uses case-insensitive by default, and Redis doesn't use state index that's based on user values.
-        public Dictionary<string, SortedSetPagedIndexAdapter<TKey>> JobStateIndex { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, SortedSet<TKey>> JobStateIndex { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public SortedSet<JobEntry<TKey>> ExpiringJobsIndex { get; }
         public SortedSet<CounterEntry> ExpiringCountersIndex { get; }
@@ -91,7 +91,7 @@ namespace Hangfire.InMemory.State.Sequential
         {
             if (JobStateIndex.TryGetValue(name, out var entry))
             {
-                indexEntry = entry;
+                indexEntry = new SortedSetPagedIndexAdapter<TKey>(entry);
                 return true;
             }
 
@@ -119,18 +119,18 @@ namespace Hangfire.InMemory.State.Sequential
         {
             if (entry.State != null && JobStateIndex.TryGetValue(entry.State.Name, out var indexEntry))
             {
-                indexEntry.SortedSet.Remove(entry.Key);
-                if (indexEntry.SortedSet.Count == 0) JobStateIndex.Remove(entry.State.Name);
+                indexEntry.Remove(entry.Key);
+                if (indexEntry.Count == 0) JobStateIndex.Remove(entry.State.Name);
             }
 
             entry.State = state;
 
             if (!JobStateIndex.TryGetValue(state.Name, out indexEntry))
             {
-                JobStateIndex.Add(state.Name, indexEntry = new SortedSetPagedIndexAdapter<TKey>());
+                JobStateIndex.Add(state.Name, indexEntry = new SortedSet<TKey>());
             }
 
-            indexEntry.SortedSet.Add(entry.Key);
+            indexEntry.Add(entry.Key);
         }
 
         public void JobExpire(JobEntry<TKey> entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration)
@@ -147,8 +147,8 @@ namespace Hangfire.InMemory.State.Sequential
 
             if (entry.State?.Name != null && JobStateIndex.TryGetValue(entry.State.Name, out var stateIndex))
             {
-                stateIndex.SortedSet.Remove(entry.Key);
-                if (stateIndex.SortedSet.Count == 0) JobStateIndex.Remove(entry.State.Name);
+                stateIndex.Remove(entry.Key);
+                if (stateIndex.Count == 0) JobStateIndex.Remove(entry.State.Name);
             }
         }
 
