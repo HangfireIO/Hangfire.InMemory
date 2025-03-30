@@ -17,7 +17,8 @@ namespace ConsoleSample
                 .UseIgnoredAssemblyVersionTypeResolver()
                 .UseInMemoryStorage(new InMemoryStorageOptions
                 {
-                    IdType = InMemoryStorageIdType.Long
+                    IdType = InMemoryStorageIdType.Long,
+                    MaxExpirationTime = TimeSpan.FromMinutes(1)
                 }));
 
             services.AddHangfireServer(options => options.Queues = new[] { "critical", "default" });

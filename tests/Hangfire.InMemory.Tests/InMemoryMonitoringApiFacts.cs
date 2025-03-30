@@ -19,6 +19,7 @@ using System.Linq;
 using System.Reflection;
 using Hangfire.Common;
 using Hangfire.InMemory.State;
+using Hangfire.InMemory.State.Concurrent;
 using Hangfire.InMemory.State.Sequential;
 using Hangfire.Server;
 using Hangfire.States;
@@ -34,7 +35,7 @@ namespace Hangfire.InMemory.Tests
     public class InMemoryMonitoringApiFacts
     {
         private readonly InMemoryStorageOptions _options;
-        private readonly SequentialMemoryState<string> _state;
+        private readonly ConcurrentMemoryState<string> _state;
         private readonly TestInMemoryDispatcher<string> _dispatcher;
         private readonly IKeyProvider<string> _keyProvider;
         private MonotonicTime _now;
@@ -42,7 +43,7 @@ namespace Hangfire.InMemory.Tests
         public InMemoryMonitoringApiFacts()
         {
             _options = new InMemoryStorageOptions();
-            _state = new SequentialMemoryState<string>(_options.StringComparer, _options.StringComparer);
+            _state = new ConcurrentMemoryState<string>(_options.StringComparer, _options.StringComparer);
             _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
             _keyProvider = new StringKeyProvider();
         }

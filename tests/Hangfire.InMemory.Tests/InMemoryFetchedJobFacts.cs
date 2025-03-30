@@ -16,6 +16,7 @@
 using System;
 using System.Linq;
 using Hangfire.InMemory.State;
+using Hangfire.InMemory.State.Concurrent;
 using Hangfire.InMemory.State.Sequential;
 using Hangfire.Storage;
 using Xunit;
@@ -27,14 +28,14 @@ namespace Hangfire.InMemory.Tests
 {
     public class InMemoryFetchedJobFacts
     {
-        private readonly SequentialMemoryState<string> _state;
+        private readonly ConcurrentMemoryState<string> _state;
         private readonly InMemoryConnection<string> _connection;
 
         public InMemoryFetchedJobFacts()
         {
             var now = MonotonicTime.GetCurrent();
             var options = new InMemoryStorageOptions();
-            _state = new SequentialMemoryState<string>(options.StringComparer, options.StringComparer);
+            _state = new ConcurrentMemoryState<string>(options.StringComparer, options.StringComparer);
 
             var dispatcher = new TestInMemoryDispatcher<string>(() => now, _state);
             var keyProvider = new StringKeyProvider();

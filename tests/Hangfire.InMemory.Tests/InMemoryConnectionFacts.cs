@@ -19,6 +19,7 @@ using System.Linq;
 using System.Threading;
 using Hangfire.Common;
 using Hangfire.InMemory.State;
+using Hangfire.InMemory.State.Concurrent;
 using Hangfire.InMemory.State.Sequential;
 using Hangfire.Server;
 using Hangfire.States;
@@ -33,7 +34,7 @@ namespace Hangfire.InMemory.Tests
 {
     public class InMemoryConnectionFacts
     {
-        private readonly SequentialMemoryState<string> _state;
+        private readonly ConcurrentMemoryState<string> _state;
         private readonly TestInMemoryDispatcher<string> _dispatcher;
         private readonly IKeyProvider<string> _keyProvider;
         private readonly Dictionary<string, string> _parameters;
@@ -45,7 +46,7 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions();
             _now = MonotonicTime.GetCurrent();
-            _state = new SequentialMemoryState<string>(_options.StringComparer, _options.StringComparer);
+            _state = new ConcurrentMemoryState<string>(_options.StringComparer, _options.StringComparer);
             _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
             _keyProvider = new StringKeyProvider();
             _parameters = new Dictionary<string, string>();
@@ -1752,7 +1753,7 @@ namespace Hangfire.InMemory.Tests
 
                 // Assert
                 Assert.Equal(2, result);
-                Assert.Equal(new [] { "server-1", "server-3" }, _state.Servers.Keys.ToArray());
+                Assert.Equal(new [] { "server-1", "server-3" }, _state.Servers.Keys.OrderBy(static x => x).ToArray());
             });
         }
 

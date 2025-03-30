@@ -112,11 +112,14 @@ namespace Hangfire.InMemory.State
             public void Execute(IMemoryState<TKey> state)
             {
                 var entry = state.CounterGetOrAdd(key);
-                entry.Value += value;
-
-                if (entry.Value == 0)
+                lock (entry)
                 {
-                    state.CounterDelete(entry);
+                    entry.Value += value;
+
+                    if (entry.Value == 0)
+                    {
+                        state.CounterDelete(entry);
+                    }
                 }
             }
         }

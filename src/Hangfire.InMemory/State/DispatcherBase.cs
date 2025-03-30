@@ -21,7 +21,7 @@ using Hangfire.InMemory.Entities;
 
 namespace Hangfire.InMemory.State
 {
-    internal abstract class DispatcherBase<TKey, TLockOwner>
+    internal class DispatcherBase<TKey, TLockOwner>
         where TKey : IComparable<TKey>
         where TLockOwner : class
     {
@@ -30,7 +30,7 @@ namespace Hangfire.InMemory.State
 
         private readonly ConcurrentDictionary<string, LockEntry<TLockOwner>> _locks = new();
 
-        protected DispatcherBase(Func<MonotonicTime> timeResolver, IMemoryState<TKey> state)
+        public DispatcherBase(Func<MonotonicTime> timeResolver, IMemoryState<TKey> state)
         {
             _timeResolver = timeResolver ?? throw new ArgumentNullException(nameof(timeResolver));
             _state = state ?? throw new ArgumentNullException(nameof(state));

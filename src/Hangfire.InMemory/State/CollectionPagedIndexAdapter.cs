@@ -18,7 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Hangfire.InMemory.State.Sequential
+namespace Hangfire.InMemory.State
 {
     internal sealed class CollectionPagedIndexAdapter<T>(ICollection<T> collection) : IPagedIndex<T>
     {

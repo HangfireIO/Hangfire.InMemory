@@ -21,6 +21,7 @@ using System.Globalization;
 using System.Threading;
 using Hangfire.Annotations;
 using Hangfire.InMemory.State;
+using Hangfire.InMemory.State.Concurrent;
 using Hangfire.InMemory.State.Sequential;
 using Hangfire.Storage;
 
@@ -32,8 +33,8 @@ namespace Hangfire.InMemory
     /// </summary>
     public sealed class InMemoryStorage : JobStorage, IKeyProvider<Guid>, IKeyProvider<ulong>, IDisposable
     {
-        private readonly SequentialDispatcher<Guid, InMemoryConnection<Guid>>? _guidDispatcher;
-        private readonly SequentialDispatcher<ulong, InMemoryConnection<ulong>>? _longDispatcher;
+        private readonly DispatcherBase<Guid, InMemoryConnection<Guid>>? _guidDispatcher;
+        private readonly DispatcherBase<ulong, InMemoryConnection<ulong>>? _longDispatcher;
 
         private PaddedInt64 _nextId;
 
@@ -77,22 +78,14 @@ namespace Hangfire.InMemory
             switch (options.IdType)
             {
                 case InMemoryStorageIdType.Guid:
-                    _guidDispatcher = new SequentialDispatcher<Guid, InMemoryConnection<Guid>>(
-                        "Hangfire:InMemoryDispatcher",
+                    _guidDispatcher = new DispatcherBase<Guid, InMemoryConnection<Guid>>(
                         MonotonicTime.GetCurrent,
-                        new SequentialMemoryState<Guid>(Options.StringComparer, null))
-                    {
-                        CommandTimeout = Options.CommandTimeout
-                    };
+                        new ConcurrentMemoryState<Guid>(Options.StringComparer, null));
                     break;
                 case InMemoryStorageIdType.Long:
-                    _longDispatcher = new SequentialDispatcher<ulong, InMemoryConnection<ulong>>(
-                        "Hangfire:InMemoryDispatcher",
+                    _longDispatcher = new DispatcherBase<ulong, InMemoryConnection<ulong>>(
                         MonotonicTime.GetCurrent,
-                        new SequentialMemoryState<ulong>(Options.StringComparer, null))
-                    {
-                        CommandTimeout = Options.CommandTimeout
-                    };
+                        new ConcurrentMemoryState<ulong>(Options.StringComparer, null));
                     break;
                 default:
                     throw new NotSupportedException(
@@ -103,8 +96,8 @@ namespace Hangfire.InMemory
         /// <inheritdoc />
         public void Dispose()
         {
-            _guidDispatcher?.Dispose();
-            _longDispatcher?.Dispose();
+            /*_guidDispatcher?.Dispose();
+            _longDispatcher?.Dispose();*/
         }
 
         /// <summary>

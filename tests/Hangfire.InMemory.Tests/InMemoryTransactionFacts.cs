@@ -20,6 +20,7 @@ using System.Threading;
 using Hangfire.Common;
 using Hangfire.InMemory.Entities;
 using Hangfire.InMemory.State;
+using Hangfire.InMemory.State.Concurrent;
 using Hangfire.InMemory.State.Sequential;
 using Hangfire.States;
 using Hangfire.Storage;
@@ -40,7 +41,7 @@ namespace Hangfire.InMemory.Tests
     public class InMemoryTransactionFacts
     {
         private readonly InMemoryStorageOptions _options;
-        private readonly SequentialMemoryState<string> _state;
+        private readonly ConcurrentMemoryState<string> _state;
         private readonly TestInMemoryDispatcher<string> _dispatcher;
         private readonly IKeyProvider<string> _keyProvider;
         private readonly MonotonicTime _now;
@@ -51,7 +52,7 @@ namespace Hangfire.InMemory.Tests
         {
             _options = new InMemoryStorageOptions { StringComparer = StringComparer.Ordinal };
             _now = MonotonicTime.GetCurrent();
-            _state = new SequentialMemoryState<string>(_options.StringComparer, _options.StringComparer);
+            _state = new ConcurrentMemoryState<string>(_options.StringComparer, _options.StringComparer);
             _dispatcher = new TestInMemoryDispatcher<string>(() => _now, _state);
             _keyProvider = new StringKeyProvider();
             _parameters = new Dictionary<string, string>();
@@ -597,7 +598,7 @@ namespace Hangfire.InMemory.Tests
             Commit(x => x.SetJobState("myjob", state.Object));
 
             // Assert
-            Assert.Same(entry.Key, _state.JobStateIndex["SomeState"].GetPage(0, 1024, reverse: false).Single());
+            Assert.Same(entry.Key, _state.JobStateIndex["SomeState"].Single());
         }
 
         [Fact]
