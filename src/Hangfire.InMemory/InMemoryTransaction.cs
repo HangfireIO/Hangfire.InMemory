@@ -70,7 +70,7 @@ namespace Hangfire.InMemory
 #endif
 
 #if !HANGFIRE_170
-        public override string CreateJob([NotNull] Job job, [NotNull] IDictionary<string, string> parameters, DateTime createdAt, TimeSpan expireIn)
+        public override string CreateJob([NotNull] Job job, [NotNull] IDictionary<string, string?> parameters, DateTime createdAt, TimeSpan expireIn)
         {
             if (job == null) throw new ArgumentNullException(nameof(job));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
@@ -88,7 +88,7 @@ namespace Hangfire.InMemory
         public override void SetJobParameter(
             [NotNull] string jobId,
             [NotNull] string name,
-            [CanBeNull] string value)
+            [CanBeNull] string? value)
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
             if (name == null) throw new ArgumentNullException(nameof(name));

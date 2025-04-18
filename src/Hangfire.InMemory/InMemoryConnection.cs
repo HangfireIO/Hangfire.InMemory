@@ -71,7 +71,7 @@ namespace Hangfire.InMemory
 
         public override string CreateExpiredJob(
             [NotNull] Job job,
-            [NotNull] IDictionary<string, string> parameters,
+            [NotNull] IDictionary<string, string?> parameters,
             DateTime createdAt,
             TimeSpan expireIn)
         {
@@ -158,7 +158,7 @@ namespace Hangfire.InMemory
             }
         }
 
-        public override void SetJobParameter([NotNull] string id, [NotNull] string name, [CanBeNull] string value)
+        public override void SetJobParameter([NotNull] string id, [NotNull] string name, [CanBeNull] string? value)
         {
             if (id == null) throw new ArgumentNullException(nameof(id));
             if (name == null) throw new ArgumentNullException(nameof(name));
