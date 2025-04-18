@@ -66,7 +66,7 @@ namespace Hangfire.InMemory.State
         }
 
         public sealed class JobAddState(
-            TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
+            TKey key, string name, string? reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
         {
             public void Execute(MemoryState<TKey> state)
             {
@@ -80,7 +80,7 @@ namespace Hangfire.InMemory.State
         }
 
         public sealed class JobSetState(
-            TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
+            TKey key, string name, string? reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
         {
             public void Execute(MemoryState<TKey> state)
             {
