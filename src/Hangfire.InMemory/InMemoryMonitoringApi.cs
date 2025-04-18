@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using Hangfire.Annotations;
 using Hangfire.Common;
 using Hangfire.InMemory.State;
 using Hangfire.States;
@@ -54,7 +53,7 @@ namespace Hangfire.InMemory
         private readonly DispatcherBase<TKey> _dispatcher;
         private readonly IKeyProvider<TKey> _keyProvider;
 
-        public InMemoryMonitoringApi([NotNull] DispatcherBase<TKey> dispatcher, [NotNull] IKeyProvider<TKey> keyProvider)
+        public InMemoryMonitoringApi(DispatcherBase<TKey> dispatcher, IKeyProvider<TKey> keyProvider)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _keyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));
@@ -107,7 +106,7 @@ namespace Hangfire.InMemory
             }).ToList();
         }
 
-        public override JobDetailsDto? JobDetails([NotNull] string jobId)
+        public override JobDetailsDto? JobDetails(string jobId)
         {
             if (jobId == null) throw new ArgumentNullException(nameof(jobId));
 
@@ -165,7 +164,7 @@ namespace Hangfire.InMemory
             };
         }
 
-        public override JobList<EnqueuedJobDto> EnqueuedJobs([NotNull] string queue, int from, int perPage)
+        public override JobList<EnqueuedJobDto> EnqueuedJobs(string queue, int from, int perPage)
         {
             if (queue == null) throw new ArgumentNullException(nameof(queue));
 
@@ -190,7 +189,7 @@ namespace Hangfire.InMemory
                 })));
         }
 
-        public override JobList<FetchedJobDto> FetchedJobs([NotNull] string queue, int from, int perPage)
+        public override JobList<FetchedJobDto> FetchedJobs(string queue, int from, int perPage)
         {
             if (queue == null) throw new ArgumentNullException(nameof(queue));
             return new JobList<FetchedJobDto>([]);
@@ -380,13 +379,13 @@ namespace Hangfire.InMemory
             return GetCountByStateName(ScheduledState.StateName);
         }
 
-        public override long EnqueuedCount([NotNull] string queue)
+        public override long EnqueuedCount(string queue)
         {
             if (queue == null) throw new ArgumentNullException(nameof(queue));
             return _dispatcher.QueryReadAndWait(new MonitoringQueries<TKey>.QueueGetCount(queue), static (q, s) => q.Execute(s));
         }
 
-        public override long FetchedCount([NotNull] string queue)
+        public override long FetchedCount(string queue)
         {
             if (queue == null) throw new ArgumentNullException(nameof(queue));
             return 0;

@@ -14,7 +14,6 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
-using Hangfire.Annotations;
 using Hangfire.InMemory.State;
 using Hangfire.Storage;
 
@@ -26,9 +25,9 @@ namespace Hangfire.InMemory
         private readonly InMemoryConnection<TKey> _connection;
 
         public InMemoryFetchedJob(
-            [NotNull] InMemoryConnection<TKey> connection,
-            [NotNull] string queueName,
-            [NotNull] string jobId)
+            InMemoryConnection<TKey> connection,
+            string queueName,
+            string jobId)
         {
             _connection = connection ?? throw new ArgumentNullException(nameof(connection));
 

@@ -26,6 +26,7 @@ namespace Hangfire
     /// Provides extension methods for global configuration to use <see cref="InMemoryStorage"/>.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [SuppressMessage("ReSharper", "RedundantNullnessAttributeWithNullableReferenceTypes", Justification = "Should be used for public classes")]
     public static class GlobalConfigurationExtensions
     {
         /// <summary>
