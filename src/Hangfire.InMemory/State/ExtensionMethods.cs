@@ -110,7 +110,7 @@ namespace System.Diagnostics.CodeAnalysis
     internal sealed class SetsRequiredMembersAttribute : Attribute {}
 #endif
 
-#if !NET7_0_OR_GREATER
+#if !NET6_0_OR_GREATER
     [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
     internal sealed class MaybeNullWhenAttribute : Attribute
     {
