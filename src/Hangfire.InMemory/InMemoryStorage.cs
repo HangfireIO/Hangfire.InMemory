@@ -18,8 +18,6 @@ using System.Diagnostics.CodeAnalysis;
 #if !HANGFIRE_170
 using System.Collections.Generic;
 #endif
-using System.Globalization;
-using System.Threading;
 using Hangfire.Annotations;
 using Hangfire.InMemory.State;
 using Hangfire.Storage;
@@ -31,12 +29,9 @@ namespace Hangfire.InMemory
     /// related to background processing in a process' memory.
     /// </summary>
     [SuppressMessage("ReSharper", "RedundantNullnessAttributeWithNullableReferenceTypes", Justification = "Should be used for public classes")]
-    public sealed class InMemoryStorage : JobStorage, IKeyProvider<Guid>, IKeyProvider<ulong>, IDisposable
+    public sealed class InMemoryStorage : JobStorage, IDisposable
     {
-        private readonly Dispatcher<Guid, InMemoryConnection<Guid>>? _guidDispatcher;
-        private readonly Dispatcher<ulong, InMemoryConnection<ulong>>? _longDispatcher;
-
-        private PaddedInt64 _nextId;
+        private readonly IStorageProvider _provider;
 
 #if !HANGFIRE_170
         // These options don't relate to the defined storage comparison options
@@ -73,39 +68,16 @@ namespace Hangfire.InMemory
         /// <exception cref="ArgumentNullException">Thrown when the <paramref name="options"/> argument is null.</exception>
         public InMemoryStorage([NotNull] InMemoryStorageOptions options)
         {
-            Options = options ?? throw new ArgumentNullException(nameof(options));
+            if (options == null) throw new ArgumentNullException(nameof(options));
 
-            switch (options.IdType)
-            {
-                case InMemoryStorageIdType.Guid:
-                    _guidDispatcher = new Dispatcher<Guid, InMemoryConnection<Guid>>(
-                        "Hangfire:InMemoryDispatcher",
-                        MonotonicTime.GetCurrent,
-                        new MemoryState<Guid>(Options.StringComparer, null))
-                    {
-                        CommandTimeout = Options.CommandTimeout
-                    };
-                    break;
-                case InMemoryStorageIdType.Long:
-                    _longDispatcher = new Dispatcher<ulong, InMemoryConnection<ulong>>(
-                        "Hangfire:InMemoryDispatcher",
-                        MonotonicTime.GetCurrent,
-                        new MemoryState<ulong>(Options.StringComparer, null))
-                    {
-                        CommandTimeout = Options.CommandTimeout
-                    };
-                    break;
-                default:
-                    throw new NotSupportedException(
-                        $"The given 'Options.IdType' value is not supported: {options.IdType:G}");
-            }
+            _provider = CreateStorageProvider(options);
+            Options = options;
         }
 
         /// <inheritdoc />
         public void Dispose()
         {
-            _guidDispatcher?.Dispose();
-            _longDispatcher?.Dispose();
+            _provider.Dispose();
         }
 
         /// <summary>
@@ -133,33 +105,13 @@ namespace Hangfire.InMemory
         /// <inheritdoc />
         public override IMonitoringApi GetMonitoringApi()
         {
-            if (_guidDispatcher != null)
-            {
-                return new InMemoryMonitoringApi<Guid>(_guidDispatcher, this);
-            }
-
-            if (_longDispatcher != null)
-            {
-                return new InMemoryMonitoringApi<ulong>(_longDispatcher, this);
-            }
-
-            throw new InvalidOperationException("Can not determine the dispatcher.");
+            return _provider.GetMonitoringApi();
         }
 
         /// <inheritdoc />
         public override IStorageConnection GetConnection()
         {
-            if (_guidDispatcher != null)
-            {
-                return new InMemoryConnection<Guid>(Options, _guidDispatcher, this);
-            }
-
-            if (_longDispatcher != null)
-            {
-                return new InMemoryConnection<ulong>(Options, _longDispatcher, this);
-            }
-
-            throw new InvalidOperationException("Can not determine the dispatcher.");
+            return _provider.GetConnection();
         }
 
         /// <inheritdoc />
@@ -168,34 +120,27 @@ namespace Hangfire.InMemory
             return "In-Memory Storage";
         }
 
-        Guid IKeyProvider<Guid>.GetUniqueKey()
+        private static IStorageProvider CreateStorageProvider(InMemoryStorageOptions options)
         {
-            return Guid.NewGuid();
-        }
-
-        bool IKeyProvider<Guid>.TryParse(string input, out Guid key)
-        {
-            return Guid.TryParse(input, out key);
-        }
-
-        string IKeyProvider<Guid>.ToString(Guid key)
-        {
-            return key.ToString("D");
-        }
-
-        ulong IKeyProvider<ulong>.GetUniqueKey()
-        {
-            return (ulong)Interlocked.Increment(ref _nextId.Value);
-        }
-
-        bool IKeyProvider<ulong>.TryParse(string input, out ulong key)
-        {
-            return ulong.TryParse(input, NumberStyles.Integer, CultureInfo.InvariantCulture, out key);
-        }
-
-        string IKeyProvider<ulong>.ToString(ulong key)
-        {
-            return key.ToString(CultureInfo.InvariantCulture);
+            return options.IdType switch
+            {
+                InMemoryStorageIdType.Guid => new GuidStorageProvider(
+                    new Dispatcher<Guid, InMemoryConnection<Guid>>("Hangfire:InMemoryDispatcher",
+                        MonotonicTime.GetCurrent, new MemoryState<Guid>(options.StringComparer, null))
+                    {
+                        CommandTimeout = options.CommandTimeout
+                    },
+                    options),
+                InMemoryStorageIdType.Long => new LongStorageProvider(
+                    new Dispatcher<ulong, InMemoryConnection<ulong>>("Hangfire:InMemoryDispatcher",
+                        MonotonicTime.GetCurrent, new MemoryState<ulong>(options.StringComparer, null))
+                    {
+                        CommandTimeout = options.CommandTimeout
+                    },
+                    options),
+                _ => throw new NotSupportedException(
+                    $"The given '{nameof(InMemoryStorageOptions)}.{nameof(InMemoryStorageOptions.IdType)}' value is not supported: {options.IdType:G}")
+            };
         }
     }
 }

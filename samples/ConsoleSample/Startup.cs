@@ -15,10 +15,7 @@ namespace ConsoleSample
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseIgnoredAssemblyVersionTypeResolver()
-                .UseInMemoryStorage(new InMemoryStorageOptions
-                {
-                    IdType = InMemoryStorageIdType.Long
-                }));
+                .UseInMemoryStorage());
 
             services.AddHangfireServer(options => options.Queues = new[] { "critical", "default" });
 
