@@ -14,6 +14,7 @@
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 #if !HANGFIRE_170
 using System.Collections.Generic;
 #endif
@@ -29,6 +30,7 @@ namespace Hangfire.InMemory
     /// A class that represents an in-memory job storage that stores all data
     /// related to background processing in a process' memory.
     /// </summary>
+    [SuppressMessage("ReSharper", "RedundantNullnessAttributeWithNullableReferenceTypes", Justification = "Should be used for public classes")]
     public sealed class InMemoryStorage : JobStorage, IKeyProvider<Guid>, IKeyProvider<ulong>, IDisposable
     {
         private readonly Dispatcher<Guid, InMemoryConnection<Guid>>? _guidDispatcher;

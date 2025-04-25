@@ -168,7 +168,7 @@ namespace Hangfire.InMemory.State
             public sealed class Data
             {
                 public required InvocationData InvocationData { get; init; }
-                public required KeyValuePair<string, string>[] Parameters { get; init; }
+                public required KeyValuePair<string, string?>[] Parameters { get; init; }
                 public required StateRecord[] History { get; init; }
                 public required MonotonicTime CreatedAt { get; init; }
                 public required MonotonicTime? ExpireAt { get; init; }

@@ -46,7 +46,7 @@ namespace Hangfire.InMemory.State
                 public required InvocationData InvocationData { get; init; }
                 public required string? State { get; init; }
                 public required MonotonicTime CreatedAt { get; init; }
-                public required KeyValuePair<string, string>[] Parameters { get; init; }
+                public required KeyValuePair<string, string?>[] Parameters { get; init; }
                 public required StringComparer StringComparer { get; init; }
             }
         }

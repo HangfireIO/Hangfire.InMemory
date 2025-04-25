@@ -24,7 +24,7 @@ namespace Hangfire.InMemory.State
 {
     internal static class Commands<TKey> where TKey : IComparable<TKey>
     {
-        public sealed class JobCreate(TKey key, InvocationData data, KeyValuePair<string, string>[] parameters, MonotonicTime now, TimeSpan expireIn) : ICommand<TKey>
+        public sealed class JobCreate(TKey key, InvocationData data, KeyValuePair<string, string?>[] parameters, MonotonicTime now, TimeSpan expireIn) : ICommand<TKey>
         {
             public void Execute(IMemoryState<TKey> state)
             {
@@ -32,7 +32,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public sealed class JobSetParameter(TKey key, string name, string value) : ICommand<TKey>
+        public sealed class JobSetParameter(TKey key, string name, string? value) : ICommand<TKey>
         {
             public void Execute(IMemoryState<TKey> state)
             {
@@ -66,7 +66,7 @@ namespace Hangfire.InMemory.State
         }
 
         public sealed class JobAddState(
-            TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
+            TKey key, string name, string? reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
         {
             public void Execute(IMemoryState<TKey> state)
             {
@@ -80,7 +80,7 @@ namespace Hangfire.InMemory.State
         }
 
         public sealed class JobSetState(
-            TKey key, string name, string reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
+            TKey key, string name, string? reason, KeyValuePair<string, string>[] data, MonotonicTime now, int maxHistory) : ICommand<TKey>
         {
             public void Execute(IMemoryState<TKey> state)
             {

@@ -23,12 +23,12 @@ namespace Hangfire.InMemory.Entities
     internal sealed class JobEntry<T> : IExpirableEntry<T>
     {
         private StateRecord[] _history = [];
-        private KeyValuePair<string, string>[] _parameters;
+        private KeyValuePair<string, string?>[] _parameters;
 
         public JobEntry(
             T key,
             InvocationData data,
-            KeyValuePair<string, string>[] parameters,
+            KeyValuePair<string, string?>[] parameters,
             MonotonicTime createdAt)
         {
             Key = key;
@@ -59,9 +59,9 @@ namespace Hangfire.InMemory.Entities
             return null;
         }
 
-        public void SetParameter(string name, string value, StringComparer comparer)
+        public void SetParameter(string name, string? value, StringComparer comparer)
         {
-            var parameter = new KeyValuePair<string, string>(name, value);
+            var parameter = new KeyValuePair<string, string?>(name, value);
             
             for (var i = 0; i < _parameters.Length; i++)
             {
@@ -76,7 +76,7 @@ namespace Hangfire.InMemory.Entities
             _parameters[_parameters.Length - 1] = parameter;
         }
 
-        public KeyValuePair<string, string>[] GetParameters()
+        public KeyValuePair<string, string?>[] GetParameters()
         {
             return _parameters;
         }
