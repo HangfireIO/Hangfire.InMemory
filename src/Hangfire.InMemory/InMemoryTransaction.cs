@@ -402,7 +402,7 @@ namespace Hangfire.InMemory
             {
                 foreach (var queue in _enqueued)
                 {
-                    state.QueueGetOrAdd(queue).SignalOneWaitNode();
+                    state.QueueGetOrAdd(queue).SignalOneWaitEvent();
                 }
             }
 

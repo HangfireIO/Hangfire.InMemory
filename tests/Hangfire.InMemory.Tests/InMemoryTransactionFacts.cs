@@ -714,18 +714,17 @@ namespace Hangfire.InMemory.Tests
         [Fact]
         public void AddToQueue_SignalsTheGivenQueue_AfterCommittingChanges()
         {
-            using (var semaphore = new AutoResetEvent(false))
-            {
-                // Arrange
-                var entry = _state.QueueGetOrAdd("myqueue");
-                entry.WaitHead.Next = new QueueWaitNode(semaphore);
+            using var waitEvent = new AutoResetEvent(false);
 
-                // Act
-                Commit(x => x.AddToQueue("myqueue", "jobid"));
+            // Arrange
+            var entry = _state.QueueGetOrAdd("myqueue");
+            entry.AddWaitEvent(waitEvent);
 
-                // Assert
-                Assert.Null(entry.WaitHead.Next);
-            }
+            // Act
+            Commit(x => x.AddToQueue("myqueue", "jobid"));
+
+            // Assert
+            Assert.True(entry.NoWaiters);
         }
 
 #if !HANGFIRE_170

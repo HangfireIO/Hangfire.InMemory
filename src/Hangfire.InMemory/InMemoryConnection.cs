@@ -96,7 +96,7 @@ namespace Hangfire.InMemory
             {
                 if (entry.Value.Queue.TryDequeue(out var jobId))
                 {
-                    entry.Value.SignalOneWaitNode();
+                    entry.Value.SignalOneWaitEvent();
                     return new InMemoryFetchedJob<TKey>(this, entry.Key, KeyProvider.ToString(jobId));
                 }
             }
@@ -124,7 +124,7 @@ namespace Hangfire.InMemory
                     {
                         if (entry.Value.Queue.TryDequeue(out var jobId))
                         {
-                            entry.Value.SignalOneWaitNode();
+                            entry.Value.SignalOneWaitEvent();
                             return new InMemoryFetchedJob<TKey>(this, entry.Key, KeyProvider.ToString(jobId));
                         }
                     }
@@ -133,7 +133,7 @@ namespace Hangfire.InMemory
                     {
                         if (!waitAdded[i])
                         {
-                            entries[i].Value.AddWaitNode(new QueueWaitNode((AutoResetEvent)readyEvents[i]));
+                            entries[i].Value.AddWaitEvent((AutoResetEvent)readyEvents[i]);
                             waitAdded[i] = true;
                         }
                     }

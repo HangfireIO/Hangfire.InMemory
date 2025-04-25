@@ -19,24 +19,26 @@ using System.Threading;
 
 namespace Hangfire.InMemory.Entities
 {
-    internal sealed class QueueEntry<TKey>
-        where TKey : IComparable<TKey>
+    internal sealed class QueueEntry<TKey> where TKey : IComparable<TKey>
     {
-        private static readonly QueueWaitNode Tombstone = new QueueWaitNode(null);
+        private static readonly WaitNode Tombstone = new WaitNode(null);
 
+        private readonly WaitNode _waitHead = new WaitNode(null);
         public ConcurrentQueue<TKey> Queue { get; } = new ConcurrentQueue<TKey>();
-        public QueueWaitNode WaitHead { get; } = new QueueWaitNode(null);
-        
-        public void AddWaitNode(QueueWaitNode node)
-        {
-            if (node == null) throw new ArgumentNullException(nameof(node));
 
-            var headNext = node.Next = null;
+        internal bool NoWaiters => _waitHead.Next == null;
+
+        public void AddWaitEvent(AutoResetEvent waitEvent)
+        {
+            if (waitEvent == null) throw new ArgumentNullException(nameof(waitEvent));
+
+            var node = new WaitNode(waitEvent);
+            var headNext = node.Next;
             var spinWait = new SpinWait();
 
             while (true)
             {
-                var newNext = Interlocked.CompareExchange(ref WaitHead.Next, node, headNext);
+                var newNext = Interlocked.CompareExchange(ref _waitHead.Next, node, headNext);
                 if (newNext == headNext) break;
 
                 headNext = node.Next = newNext;
@@ -44,29 +46,29 @@ namespace Hangfire.InMemory.Entities
             }
         }
 
-        public void SignalOneWaitNode()
+        public void SignalOneWaitEvent()
         {
-            if (Volatile.Read(ref WaitHead.Next) == null) return;
-            SignalOneWaitNodeSlow();
+            if (Volatile.Read(ref _waitHead.Next) == null) return;
+            SignalOneWaitEventSlow();
         }
 
-        private void SignalOneWaitNodeSlow()
+        private void SignalOneWaitEventSlow()
         {
             while (true)
             {
-                var node = Interlocked.Exchange(ref WaitHead.Next, null);
+                var node = Interlocked.Exchange(ref _waitHead.Next, null);
                 if (node == null) return;
 
                 var tailNode = Interlocked.Exchange(ref node.Next, Tombstone);
                 if (tailNode != null)
                 {
-                    var waitHead = WaitHead;
+                    var waitHead = _waitHead;
                     do
                     {
                         waitHead = Interlocked.CompareExchange(ref waitHead.Next, tailNode, null);
                         if (ReferenceEquals(waitHead, Tombstone))
                         {
-                            waitHead = WaitHead;
+                            waitHead = _waitHead;
                         }
                     } while (waitHead != null);
                 }
@@ -86,6 +88,12 @@ namespace Hangfire.InMemory.Entities
                     // Benign race condition, nothing to signal in this case.
                 }
             }
+        }
+
+        private sealed class WaitNode(AutoResetEvent? value)
+        {
+            public readonly AutoResetEvent? Value = value;
+            public WaitNode? Next;
         }
     }
 }

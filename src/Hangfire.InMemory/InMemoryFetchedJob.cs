@@ -49,7 +49,7 @@ namespace Hangfire.InMemory
                 new Commands<TKey>.QueueEnqueue(QueueName, key),
                 static (c, s) => c.Execute(s));
 
-            entry.SignalOneWaitNode();
+            entry.SignalOneWaitEvent();
         }
 
         void IDisposable.Dispose()
