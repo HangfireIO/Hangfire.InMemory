@@ -26,22 +26,19 @@ namespace Hangfire.InMemory.State
         where TLockOwner : class
     {
         private readonly Func<MonotonicTime> _timeResolver;
-        private readonly IMemoryState<TKey> _state;
-
-        private readonly ConcurrentDictionary<string, LockEntry<TLockOwner>> _locks = new();
 
         protected DispatcherBase(Func<MonotonicTime> timeResolver, IMemoryState<TKey> state)
         {
             _timeResolver = timeResolver ?? throw new ArgumentNullException(nameof(timeResolver));
-            _state = state ?? throw new ArgumentNullException(nameof(state));
+            State = state ?? throw new ArgumentNullException(nameof(state));
         }
 
-        protected IMemoryState<TKey> State => _state;
-        internal ConcurrentDictionary<string, LockEntry<TLockOwner>> Locks => _locks;
+        protected IMemoryState<TKey> State { get; }
+        internal ConcurrentDictionary<string, LockEntry<TLockOwner>> Locks { get; } = new();
 
         public virtual T QueryWriteAndWait<TCommand, T>(TCommand query, Func<TCommand, IMemoryState<TKey>, T> func)
         {
-            return func(query, _state);
+            return func(query, State);
         }
 
         public virtual T QueryReadAndWait<TCommand, T>(TCommand query, Func<TCommand, IMemoryState<TKey>, T> func)
@@ -63,7 +60,7 @@ namespace Hangfire.InMemory.State
             {
                 entries[index++] = new KeyValuePair<string, QueueEntry<TKey>>(
                     queueName,
-                    _state.QueueGetOrAdd(queueName));
+                    State.QueueGetOrAdd(queueName));
             }
 
             return entries;
@@ -78,7 +75,7 @@ namespace Hangfire.InMemory.State
 
             while (true)
             {
-                entry = _locks.GetOrAdd(resource, static _ => new LockEntry<TLockOwner>());
+                entry = Locks.GetOrAdd(resource, static _ => new LockEntry<TLockOwner>());
                 if (entry.TryAcquire(owner, timeout, out var retry, out var cleanUp))
                 {
                     return true;
@@ -129,7 +126,7 @@ namespace Hangfire.InMemory.State
 
         protected void EvictExpiredEntries()
         {
-            _state.EvictExpiredEntries(GetMonotonicTime());
+            State.EvictExpiredEntries(GetMonotonicTime());
         }
     }
 }
