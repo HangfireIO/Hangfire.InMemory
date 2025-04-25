@@ -9,6 +9,7 @@ Task Test -Depends Compile -Description "Run unit and integration tests." {
 Task Collect -Depends Test -Description "Copy all artifacts to the build folder." {
     Collect-Assembly "Hangfire.InMemory" "net451"
     Collect-Assembly "Hangfire.InMemory" "netstandard2.0"
+    Collect-Assembly "Hangfire.InMemory" "net6.0"
     Collect-File "LICENSE_ROYALTYFREE"
     Collect-File "LICENSE_STANDARD"
     Collect-File "COPYING.LESSER"

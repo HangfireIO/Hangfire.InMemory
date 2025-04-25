@@ -141,6 +141,7 @@ namespace Hangfire.InMemory
             // Getting data here, out of the dispatcher thread, to avoid killing it.
             var name = state.Name;
             var reason = state.Reason;
+            // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
             var data = state.SerializeData()?.ToArray() ?? [];
             var now = _connection.Dispatcher.GetMonotonicTime();
 
@@ -162,6 +163,7 @@ namespace Hangfire.InMemory
             // Getting data here, out of the dispatcher thread, to avoid killing it.
             var name = state.Name;
             var reason = state.Reason;
+            // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
             var data = state.SerializeData()?.ToArray() ?? [];
             var now = _connection.Dispatcher.GetMonotonicTime();
 

@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyProduct("Hangfire")]
 [assembly: AssemblyCompany("Hangfire OÜ")]
-[assembly: AssemblyCopyright("Copyright © 2020-2024 Hangfire OÜ")]
+[assembly: AssemblyCopyright("Copyright © 2020-2025 Hangfire OÜ")]
 [assembly: AssemblyCulture("")]
 
 [assembly: ComVisible(false)]

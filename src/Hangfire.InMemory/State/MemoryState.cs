@@ -17,6 +17,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Hangfire.InMemory.Entities;
 
 namespace Hangfire.InMemory.State
@@ -73,7 +74,7 @@ namespace Hangfire.InMemory.State
             return new CollectionReadOnlyCollectionAdapter<string>(Queues.Keys);
         }
 
-        public bool QueueTryGet(string name, out QueueEntry<TKey> entry)
+        public bool QueueTryGet(string name, [MaybeNullWhen(false)] out QueueEntry<TKey> entry)
         {
             return Queues.TryGetValue(name, out entry);
         }
@@ -83,7 +84,7 @@ namespace Hangfire.InMemory.State
             return Queues.GetOrAdd(name, static _ => new QueueEntry<TKey>());
         }
 
-        public bool JobTryGet(TKey key, out JobEntry<TKey> entry)
+        public bool JobTryGet(TKey key, [MaybeNullWhen(false)] out JobEntry<TKey> entry)
         {
             return Jobs.TryGetValue(key, out entry);
         }
@@ -157,7 +158,7 @@ namespace Hangfire.InMemory.State
             }
         }
 
-        public bool HashTryGet(string key, out HashEntry entry)
+        public bool HashTryGet(string key, [MaybeNullWhen(false)] out HashEntry entry)
         {
             return Hashes.TryGetValue(key, out entry);
         }
@@ -185,7 +186,7 @@ namespace Hangfire.InMemory.State
             EntryRemove(entry, Hashes, ExpiringHashesIndex);
         }
 
-        public bool SetTryGet(string key, out SetEntry entry)
+        public bool SetTryGet(string key, [MaybeNullWhen(false)] out SetEntry entry)
         {
             return Sets.TryGetValue(key, out entry);
         }
@@ -213,7 +214,7 @@ namespace Hangfire.InMemory.State
             EntryRemove(entry, Sets, ExpiringSetsIndex);
         }
 
-        public bool ListTryGet(string key, out ListEntry entry)
+        public bool ListTryGet(string key, [MaybeNullWhen(false)] out ListEntry entry)
         {
             return Lists.TryGetValue(key, out entry);
         }
@@ -241,7 +242,7 @@ namespace Hangfire.InMemory.State
             EntryRemove(entry, Lists, ExpiringListsIndex);
         }
 
-        public bool CounterTryGet(string key, out CounterEntry entry)
+        public bool CounterTryGet(string key, [MaybeNullWhen(false)] out CounterEntry entry)
         {
             return Counters.TryGetValue(key, out entry);
         }
@@ -281,7 +282,7 @@ namespace Hangfire.InMemory.State
 #endif
         }
 
-        public bool ServerTryGet(string serverId, out ServerEntry entry)
+        public bool ServerTryGet(string serverId, [MaybeNullWhen(false)] out ServerEntry entry)
         {
             return Servers.TryGetValue(serverId, out entry);
         }
@@ -311,9 +312,9 @@ namespace Hangfire.InMemory.State
         private static void EvictFromIndex<TEntryKey, TEntry>(MonotonicTime now, SortedSet<TEntry> index, Action<TEntry> action)
             where TEntry : IExpirableEntry<TEntryKey>
         {
-            TEntry entry;
+            TEntry? entry;
 
-            while (index.Count > 0 && (entry = index.Min).ExpireAt.HasValue && now >= entry.ExpireAt)
+            while (index.Count > 0 && (entry = index.Min)?.ExpireAt != null && now >= entry.ExpireAt)
             {
                 action(entry);
             }

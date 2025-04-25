@@ -15,7 +15,6 @@
 
 using System;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using Hangfire.Annotations;
 using Hangfire.InMemory;
 
@@ -26,7 +25,7 @@ namespace Hangfire
     /// Provides extension methods for global configuration to use <see cref="InMemoryStorage"/>.
     /// </summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [SuppressMessage("ReSharper", "RedundantNullnessAttributeWithNullableReferenceTypes", Justification = "Should be used for public classes")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("ReSharper", "RedundantNullnessAttributeWithNullableReferenceTypes", Justification = "Should be used for public classes")]
     public static class GlobalConfigurationExtensions
     {
         /// <summary>
@@ -35,7 +34,7 @@ namespace Hangfire
         /// <param name="configuration">The global configuration on which to set the in-memory storage.</param>
         /// <returns>An instance of <see cref="IGlobalConfiguration{InMemoryStorage}"/> for chaining further configuration.</returns>
         /// <exception cref="ArgumentNullException">Thrown when the <paramref name="configuration"/> argument is null.</exception>
-        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Created in a static scope")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Created in a static scope")]
         public static IGlobalConfiguration<InMemoryStorage> UseInMemoryStorage(
             [NotNull] this IGlobalConfiguration configuration)
         {
@@ -50,7 +49,7 @@ namespace Hangfire
         /// <param name="options">Options for the in-memory storage.</param>
         /// <returns>An instance of <see cref="IGlobalConfiguration{InMemoryStorage}"/> for chaining further configuration.</returns>
         /// <exception cref="ArgumentNullException">Thrown when the <paramref name="configuration"/> or <paramref name="options"/> argument is null.</exception>
-        [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Created in a static scope")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Created in a static scope")]
         public static IGlobalConfiguration<InMemoryStorage> UseInMemoryStorage(
             [NotNull] this IGlobalConfiguration configuration,
             [NotNull] InMemoryStorageOptions options)

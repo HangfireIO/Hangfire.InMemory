@@ -42,7 +42,14 @@ namespace Hangfire.InMemory.Entities
         {
             unchecked
             {
-                return ((Value != null ? Value.GetHashCode() : 0) * 397) ^ Score.GetHashCode();
+                return ((Value != null
+                    ? 
+#if NET6_0_OR_GREATER
+                        string.GetHashCode(Value, StringComparison.CurrentCulture)
+#else
+                        Value.GetHashCode()
+#endif
+                    : 0) * 397) ^ Score.GetHashCode();
             }
         }
 
