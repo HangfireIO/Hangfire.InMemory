@@ -81,7 +81,7 @@ namespace Hangfire.InMemory.Tests
             storage.Dispose();
 
             sw.Stop();
-            Assert.True(sw.ElapsedMilliseconds < 1_000);
+            Assert.True(sw.ElapsedMilliseconds < 1_000, $"Took: {sw.ElapsedMilliseconds}ms");
         }
 
         [Fact]
