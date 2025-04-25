@@ -107,7 +107,7 @@ namespace Hangfire.InMemory.State
 
         private void CleanUpLockEntry(string resource, LockEntry<TLockOwner> entry)
         {
-            var hasRemoved = _locks.TryRemoveWorkaround(resource, out var removed);
+            var hasRemoved = Locks.TryRemove(resource, out var removed);
 
             try
             {
