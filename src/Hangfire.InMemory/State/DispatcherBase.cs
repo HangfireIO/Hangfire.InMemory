@@ -39,6 +39,16 @@ namespace Hangfire.InMemory.State
         protected IMemoryState<TKey> State => _state;
         internal ConcurrentDictionary<string, LockEntry<TLockOwner>> Locks => _locks;
 
+        public virtual T QueryWriteAndWait<TCommand, T>(TCommand query, Func<TCommand, IMemoryState<TKey>, T> func)
+        {
+            return func(query, _state);
+        }
+
+        public virtual T QueryReadAndWait<TCommand, T>(TCommand query, Func<TCommand, IMemoryState<TKey>, T> func)
+        {
+            return QueryWriteAndWait(query, func);
+        }
+
         public MonotonicTime GetMonotonicTime()
         {
             return _timeResolver();
@@ -115,16 +125,6 @@ namespace Hangfire.InMemory.State
             {
                 removed?.Dispose();
             }
-        }
-
-        public virtual T QueryWriteAndWait<TCommand, T>(TCommand query, Func<TCommand, IMemoryState<TKey>, T> func)
-        {
-            return func(query, _state);
-        }
-
-        public virtual T QueryReadAndWait<TCommand, T>(TCommand query, Func<TCommand, IMemoryState<TKey>, T> func)
-        {
-            return QueryWriteAndWait(query, func);
         }
 
         protected void EvictExpiredEntries()
