@@ -117,7 +117,7 @@ namespace Hangfire.InMemory.State
             // initialized for reasons I can't even realize with an in-memory storage.
             if (EntryExpire<TKey, JobEntry<TKey>>(entry, ExpiringJobsIndex, entry.CreatedAt, expireIn, maxExpiration: null))
             {
-                JobDelete(entry);
+                JobRemove(entry);
             }
         }
 
@@ -143,18 +143,7 @@ namespace Hangfire.InMemory.State
         {
             if (EntryExpire<TKey, JobEntry<TKey>>(entry, ExpiringJobsIndex, now, expireIn, maxExpiration))
             {
-                JobDelete(entry);
-            }
-        }
-
-        public void JobDelete(JobEntry<TKey> entry)
-        {
-            EntryRemove(entry, Jobs, ExpiringJobsIndex);
-
-            if (entry.State?.Name != null && JobStateIndex.TryGetValue(entry.State.Name, out var stateIndex))
-            {
-                stateIndex.Remove(entry.Key);
-                if (stateIndex.Count == 0) JobStateIndex.Remove(entry.State.Name);
+                JobRemove(entry);
             }
         }
 
@@ -289,10 +278,14 @@ namespace Hangfire.InMemory.State
 
         public bool ServerTryAdd(string serverId, ServerEntry entry)
         {
+#if NET6_0_OR_GREATER
+            return Servers.TryAdd(serverId, entry);
+#else
             if (Servers.ContainsKey(serverId)) return false;
 
             Servers.Add(serverId, entry);
             return true;
+#endif
         }
 
         public bool ServerRemove(string serverId)
@@ -302,7 +295,7 @@ namespace Hangfire.InMemory.State
 
         public void EvictExpiredEntries(MonotonicTime now)
         {
-            EvictFromIndex<TKey, JobEntry<TKey>>(now, ExpiringJobsIndex, JobDelete);
+            EvictFromIndex<TKey, JobEntry<TKey>>(now, ExpiringJobsIndex, JobRemove);
             EvictFromIndex<string, HashEntry>(now, ExpiringHashesIndex, HashDelete);
             EvictFromIndex<string, ListEntry>(now, ExpiringListsIndex, ListDelete);
             EvictFromIndex<string, SetEntry>(now, ExpiringSetsIndex, SetDelete);
@@ -317,6 +310,17 @@ namespace Hangfire.InMemory.State
             while (index.Count > 0 && (entry = index.Min)?.ExpireAt != null && now >= entry.ExpireAt)
             {
                 action(entry);
+            }
+        }
+
+        private void JobRemove(JobEntry<TKey> entry)
+        {
+            EntryRemove(entry, Jobs, ExpiringJobsIndex);
+
+            if (entry.State?.Name != null && JobStateIndex.TryGetValue(entry.State.Name, out var stateIndex))
+            {
+                stateIndex.Remove(entry.Key);
+                if (stateIndex.Count == 0) JobStateIndex.Remove(entry.State.Name);
             }
         }
 
