@@ -65,7 +65,7 @@ namespace Hangfire.InMemory
                 throw new DistributedLockTimeoutException(resource);
             }
 
-            return new LockDisposable(this, resource, entry!);
+            return new LockDisposable(this, resource, entry);
         }
 
         public override string CreateExpiredJob(
