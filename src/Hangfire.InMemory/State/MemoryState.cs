@@ -89,7 +89,7 @@ namespace Hangfire.InMemory.State
             return Jobs.TryGetValue(key, out entry);
         }
 
-        public bool JobTryGetStateIndex(string name, out IReadOnlyCollection<TKey> indexEntry)
+        public bool JobTryGetStateIndex(string name, [MaybeNullWhen(false)] out IReadOnlyCollection<TKey> indexEntry)
         {
             if (JobStateIndex.TryGetValue(name, out var entry))
             {
@@ -101,7 +101,7 @@ namespace Hangfire.InMemory.State
                 return true;
             }
 
-            indexEntry = null!;
+            indexEntry = null;
             return false;
         }
 
