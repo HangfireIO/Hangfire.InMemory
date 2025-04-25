@@ -35,7 +35,7 @@ namespace Hangfire.InMemory
         /// Gets or sets the maximum expiration time for all the entries. When set, this
         /// value overrides any expiration time set in the other places of Hangfire. The
         /// main rationale for this is to control the amount of consumed RAM, since we are
-        /// more limited in this case, especially when comparing to disk-based storages.
+        /// more limited in this case, especially when compared to disk-based storages.
         /// </summary>
         public TimeSpan? MaxExpirationTime { get; set; } = TimeSpan.FromHours(3);
 
