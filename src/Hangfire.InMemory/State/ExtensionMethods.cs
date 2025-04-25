@@ -109,4 +109,14 @@ namespace System.Diagnostics.CodeAnalysis
     [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
     internal sealed class SetsRequiredMembersAttribute : Attribute {}
 #endif
+
+#if !NET7_0_OR_GREATER
+    [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
+    internal sealed class MaybeNullWhenAttribute : Attribute
+    {
+        public MaybeNullWhenAttribute(bool returnValue) => ReturnValue = returnValue;
+
+        public bool ReturnValue { get; }
+    }
+#endif
 }

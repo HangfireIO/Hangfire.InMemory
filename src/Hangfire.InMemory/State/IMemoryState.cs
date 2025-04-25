@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Hangfire.InMemory.Entities;
 
 namespace Hangfire.InMemory.State
@@ -24,37 +25,37 @@ namespace Hangfire.InMemory.State
         StringComparer StringComparer { get; }
 
         IReadOnlyCollection<string> QueueGetIndex();
-        bool QueueTryGet(string name, out QueueEntry<TKey> entry);
+        bool QueueTryGet(string name, [MaybeNullWhen(false)] out QueueEntry<TKey> entry);
         QueueEntry<TKey> QueueGetOrAdd(string name);
 
-        bool JobTryGet(TKey key, out JobEntry<TKey> entry);
-        bool JobTryGetStateIndex(string name, out IReadOnlyCollection<TKey> indexEntry);
+        bool JobTryGet(TKey key, [MaybeNullWhen(false)] out JobEntry<TKey> entry);
+        bool JobTryGetStateIndex(string name, [MaybeNullWhen(false)] out IReadOnlyCollection<TKey> indexEntry);
         void JobCreate(JobEntry<TKey> entry, TimeSpan? expireIn);
         void JobSetState(JobEntry<TKey> entry, StateRecord state);
         void JobExpire(JobEntry<TKey> entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration);
 
-        bool HashTryGet(string key, out HashEntry entry);
+        bool HashTryGet(string key, [MaybeNullWhen(false)] out HashEntry entry);
         HashEntry HashGetOrAdd(string key);
         void HashExpire(HashEntry entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration);
         void HashDelete(HashEntry entry);
 
-        bool SetTryGet(string key, out SetEntry entry);
+        bool SetTryGet(string key, [MaybeNullWhen(false)] out SetEntry entry);
         SetEntry SetGetOrAdd(string key);
         void SetExpire(SetEntry entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration);
         void SetDelete(SetEntry entry);
 
-        bool ListTryGet(string key, out ListEntry entry);
+        bool ListTryGet(string key, [MaybeNullWhen(false)] out ListEntry entry);
         ListEntry ListGetOrAdd(string key);
         void ListExpire(ListEntry entry, MonotonicTime? now, TimeSpan? expireIn, TimeSpan? maxExpiration);
         void ListDelete(ListEntry entry);
 
-        bool CounterTryGet(string key, out CounterEntry entry);
+        bool CounterTryGet(string key, [MaybeNullWhen(false)] out CounterEntry entry);
         CounterEntry CounterGetOrAdd(string key);
         void CounterExpire(CounterEntry entry, MonotonicTime? now, TimeSpan? expireIn);
         void CounterDelete(CounterEntry entry);
 
         IReadOnlyCollection<string> ServerGetIndex();
-        bool ServerTryGet(string serverId, out ServerEntry entry);
+        bool ServerTryGet(string serverId, [MaybeNullWhen(false)] out ServerEntry entry);
         bool ServerTryAdd(string serverId, ServerEntry entry);
         bool ServerRemove(string serverId);
 

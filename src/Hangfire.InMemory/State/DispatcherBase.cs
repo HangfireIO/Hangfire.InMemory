@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Hangfire.InMemory.Entities;
 
@@ -66,7 +67,7 @@ namespace Hangfire.InMemory.State
             return entries;
         }
 
-        public bool TryAcquireLockEntry(TLockOwner owner, string resource, TimeSpan timeout, out LockEntry<TLockOwner>? entry)
+        public bool TryAcquireLockEntry(TLockOwner owner, string resource, TimeSpan timeout, [MaybeNullWhen(false)] out LockEntry<TLockOwner> entry)
         {
             if (owner == null) throw new ArgumentNullException(nameof(owner));
             if (resource == null) throw new ArgumentNullException(nameof(resource));

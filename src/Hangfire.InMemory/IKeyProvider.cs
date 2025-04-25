@@ -13,12 +13,14 @@
 // You should have received a copy of the GNU Lesser General Public 
 // License along with Hangfire. If not, see <http://www.gnu.org/licenses/>.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Hangfire.InMemory
 {
     internal interface IKeyProvider<T>
     {
         T GetUniqueKey();
-        bool TryParse(string input, out T key);
+        bool TryParse(string input, [MaybeNullWhen(false)] out T key);
         string ToString(T key);
     }
 }
