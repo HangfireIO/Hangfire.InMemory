@@ -1322,8 +1322,7 @@
       "hangfire.inmemory": {
         "type": "Project",
         "dependencies": {
-          "Hangfire.Core": "[1.8.0, )",
-          "Microsoft.NETFramework.ReferenceAssemblies": "[1.0.3, )"
+          "Hangfire.Core": "[1.8.0, )"
         }
       }
     },
