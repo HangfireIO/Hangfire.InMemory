@@ -1,0 +1,29 @@
+#nullable enable
+Hangfire.GlobalConfigurationExtensions
+Hangfire.InMemory.InMemoryStorage
+Hangfire.InMemory.InMemoryStorage.Dispose() -> void
+Hangfire.InMemory.InMemoryStorage.InMemoryStorage() -> void
+Hangfire.InMemory.InMemoryStorage.InMemoryStorage(Hangfire.InMemory.InMemoryStorageOptions! options) -> void
+Hangfire.InMemory.InMemoryStorage.Options.get -> Hangfire.InMemory.InMemoryStorageOptions!
+Hangfire.InMemory.InMemoryStorageIdType
+Hangfire.InMemory.InMemoryStorageIdType.Guid = 1 -> Hangfire.InMemory.InMemoryStorageIdType
+Hangfire.InMemory.InMemoryStorageIdType.Long = 0 -> Hangfire.InMemory.InMemoryStorageIdType
+Hangfire.InMemory.InMemoryStorageOptions
+Hangfire.InMemory.InMemoryStorageOptions.CommandTimeout.get -> System.TimeSpan
+Hangfire.InMemory.InMemoryStorageOptions.CommandTimeout.set -> void
+Hangfire.InMemory.InMemoryStorageOptions.IdType.get -> Hangfire.InMemory.InMemoryStorageIdType
+Hangfire.InMemory.InMemoryStorageOptions.IdType.set -> void
+Hangfire.InMemory.InMemoryStorageOptions.InMemoryStorageOptions() -> void
+Hangfire.InMemory.InMemoryStorageOptions.MaxExpirationTime.get -> System.TimeSpan?
+Hangfire.InMemory.InMemoryStorageOptions.MaxExpirationTime.set -> void
+Hangfire.InMemory.InMemoryStorageOptions.MaxStateHistoryLength.get -> int
+Hangfire.InMemory.InMemoryStorageOptions.MaxStateHistoryLength.set -> void
+Hangfire.InMemory.InMemoryStorageOptions.StringComparer.get -> System.StringComparer!
+Hangfire.InMemory.InMemoryStorageOptions.StringComparer.set -> void
+override Hangfire.InMemory.InMemoryStorage.GetConnection() -> Hangfire.Storage.IStorageConnection!
+override Hangfire.InMemory.InMemoryStorage.GetMonitoringApi() -> Hangfire.Storage.IMonitoringApi!
+override Hangfire.InMemory.InMemoryStorage.HasFeature(string! featureId) -> bool
+override Hangfire.InMemory.InMemoryStorage.LinearizableReads.get -> bool
+override Hangfire.InMemory.InMemoryStorage.ToString() -> string!
+static Hangfire.GlobalConfigurationExtensions.UseInMemoryStorage(this Hangfire.IGlobalConfiguration! configuration) -> Hangfire.IGlobalConfiguration<Hangfire.InMemory.InMemoryStorage!>!
+static Hangfire.GlobalConfigurationExtensions.UseInMemoryStorage(this Hangfire.IGlobalConfiguration! configuration, Hangfire.InMemory.InMemoryStorageOptions! options) -> Hangfire.IGlobalConfiguration<Hangfire.InMemory.InMemoryStorage!>!
