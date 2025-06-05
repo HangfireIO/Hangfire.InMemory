@@ -75,21 +75,23 @@ namespace Hangfire.InMemory
             {
                 Length = entry.Length,
                 Name = entry.Name,
-                FirstJobs = new JobList<EnqueuedJobDto>(entry.First.Select(key =>
-                    new KeyValuePair<string, EnqueuedJobDto>(
+                FirstJobs = new JobList<EnqueuedJobDto?>(entry.First.Select(key =>
+                    new KeyValuePair<string, EnqueuedJobDto?>(
                         _keyProvider.ToString(key),
-                        new EnqueuedJobDto
-                        {
-                            InEnqueuedState = TryGetJobRecord(jobs, key, EnqueuedState.StateName, out var job),
-                            Job = job.Job,
-                            State = job.StateName,
+                        TryGetJobRecord(jobs, key, EnqueuedState.StateName, out var record, out var inTargetState)
+                            ? new EnqueuedJobDto
+                            {
+                                InEnqueuedState = inTargetState,
+                                Job = record.Job,
+                                State = record.StateName,
 #if !HANGFIRE_170
-                            InvocationData = job.InvocationData,
-                            LoadException = job.LoadException,
-                            StateData = job.StateData,
+                                InvocationData = record.InvocationData,
+                                LoadException = record.LoadException,
+                                StateData = record.StateData,
 #endif
-                            EnqueuedAt = job.StateCreatedAt
-                        })))
+                                EnqueuedAt = record.StateCreatedAt
+                            }
+                            : null)))
             }).ToList();
         }
 
@@ -164,7 +166,7 @@ namespace Hangfire.InMemory
             };
         }
 
-        public override JobList<EnqueuedJobDto> EnqueuedJobs(string queue, int from, int perPage)
+        public override JobList<EnqueuedJobDto?> EnqueuedJobs(string queue, int from, int perPage)
         {
             if (queue == null) throw new ArgumentNullException(nameof(queue));
 
@@ -173,20 +175,22 @@ namespace Hangfire.InMemory
 
             var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries<TKey>.JobsGetByKey(enqueued), static (q, s) => q.Execute(s));
 
-            return new JobList<EnqueuedJobDto>(enqueued.Select(key => new KeyValuePair<string, EnqueuedJobDto>(
+            return new JobList<EnqueuedJobDto?>(enqueued.Select(key => new KeyValuePair<string, EnqueuedJobDto?>(
                 _keyProvider.ToString(key),
-                new EnqueuedJobDto
-                {
-                    InEnqueuedState = TryGetJobRecord(jobs, key, EnqueuedState.StateName, out var job),
-                    Job =  job.Job,
-                    State = job.StateName,
+                TryGetJobRecord(jobs, key, EnqueuedState.StateName, out var record, out var inTargetState)
+                    ? new EnqueuedJobDto
+                    {
+                        InEnqueuedState = inTargetState,
+                        Job =  record.Job,
+                        State = record.StateName,
 #if !HANGFIRE_170
-                    InvocationData = job.InvocationData,
-                    LoadException = job.LoadException,
-                    StateData = job.StateData,
+                        InvocationData = record.InvocationData,
+                        LoadException = record.LoadException,
+                        StateData = record.StateData,
 #endif
-                    EnqueuedAt = job.StateCreatedAt
-                })));
+                        EnqueuedAt = record.StateCreatedAt
+                    }
+                    : null)));
         }
 
         public override JobList<FetchedJobDto> FetchedJobs(string queue, int from, int perPage)
@@ -195,7 +199,7 @@ namespace Hangfire.InMemory
             return new JobList<FetchedJobDto>([]);
         }
 
-        public override JobList<ProcessingJobDto> ProcessingJobs(int from, int count)
+        public override JobList<ProcessingJobDto?> ProcessingJobs(int from, int count)
         {
             var processing = _dispatcher.QueryReadAndWait(
                 new MonitoringQueries<TKey>.JobsGetByState(ProcessingState.StateName, from, count),
@@ -203,25 +207,27 @@ namespace Hangfire.InMemory
 
             var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries<TKey>.JobsGetByKey(processing), static (q, s) => q.Execute(s));
 
-            return new JobList<ProcessingJobDto>(processing.Select(key => new KeyValuePair<string, ProcessingJobDto>(
+            return new JobList<ProcessingJobDto?>(processing.Select(key => new KeyValuePair<string, ProcessingJobDto?>(
                 _keyProvider.ToString(key),
-                new ProcessingJobDto
-                {
-                    InProcessingState = TryGetJobRecord(jobs, key, ProcessingState.StateName, out var job),
-                    Job = job.Job,
+                TryGetJobRecord(jobs, key, ProcessingState.StateName, out var record, out var inTargetState)
+                    ? new ProcessingJobDto
+                    {
+                        InProcessingState = inTargetState,
+                        Job = record.Job,
 #if !HANGFIRE_170
-                    InvocationData = job.InvocationData,
-                    LoadException = job.LoadException,
-                    StateData = job.StateData,
+                        InvocationData = record.InvocationData,
+                        LoadException = record.LoadException,
+                        StateData = record.StateData,
 #endif
-                    StartedAt = job.StateCreatedAt,
-                    ServerId = job.StateData?.TryGetValue("ServerId", out var serverId) ?? false
-                        ? serverId
-                        : null
-                })));
+                        StartedAt = record.StateCreatedAt,
+                        ServerId = record.StateData?.TryGetValue("ServerId", out var serverId) ?? false
+                            ? serverId
+                            : null
+                    }
+                    : null)));
         }
 
-        public override JobList<ScheduledJobDto> ScheduledJobs(int from, int count)
+        public override JobList<ScheduledJobDto?> ScheduledJobs(int from, int count)
         {
             var scheduled = _dispatcher.QueryReadAndWait(
                 new MonitoringQueries<TKey>.JobsGetByState(ScheduledState.StateName, from, count),
@@ -229,25 +235,27 @@ namespace Hangfire.InMemory
 
             var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries<TKey>.JobsGetByKey(scheduled), static (q, s) => q.Execute(s));
 
-            return new JobList<ScheduledJobDto>(scheduled.Select(key => new KeyValuePair<string, ScheduledJobDto>(
+            return new JobList<ScheduledJobDto?>(scheduled.Select(key => new KeyValuePair<string, ScheduledJobDto?>(
                 _keyProvider.ToString(key),
-                new ScheduledJobDto
-                {
-                    InScheduledState = TryGetJobRecord(jobs, key, ScheduledState.StateName, out var job),
-                    Job = job.Job,
+                TryGetJobRecord(jobs, key, ScheduledState.StateName, out var record, out var inTargetState)
+                    ? new ScheduledJobDto
+                    {
+                        InScheduledState = inTargetState,
+                        Job = record.Job,
 #if !HANGFIRE_170
-                    InvocationData = job.InvocationData,
-                    LoadException = job.LoadException,
-                    StateData = job.StateData,
+                        InvocationData = record.InvocationData,
+                        LoadException = record.LoadException,
+                        StateData = record.StateData,
 #endif
-                    ScheduledAt = job.StateCreatedAt,
-                    EnqueueAt = (job.StateData?.TryGetValue("EnqueueAt", out var enqueueAt) ?? false
-                        ? JobHelper.DeserializeNullableDateTime(enqueueAt)
-                        : null) ?? DateTime.MinValue
-                })));
+                        ScheduledAt = record.StateCreatedAt,
+                        EnqueueAt = (record.StateData?.TryGetValue("EnqueueAt", out var enqueueAt) ?? false
+                            ? JobHelper.DeserializeNullableDateTime(enqueueAt)
+                            : null) ?? DateTime.MinValue
+                    }
+                    : null)));
         }
 
-        public override JobList<SucceededJobDto> SucceededJobs(int from, int count)
+        public override JobList<SucceededJobDto?> SucceededJobs(int from, int count)
         {
             var succeeded = _dispatcher.QueryReadAndWait(
                 new MonitoringQueries<TKey>.JobsGetByState(SucceededState.StateName, from, count, reversed: true),
@@ -255,29 +263,31 @@ namespace Hangfire.InMemory
 
             var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries<TKey>.JobsGetByKey(succeeded), static (q, s) => q.Execute(s));
 
-            return new JobList<SucceededJobDto>(succeeded.Select(key => new KeyValuePair<string, SucceededJobDto>(
+            return new JobList<SucceededJobDto?>(succeeded.Select(key => new KeyValuePair<string, SucceededJobDto?>(
                 _keyProvider.ToString(key),
-                new SucceededJobDto
-                {
-                    InSucceededState = TryGetJobRecord(jobs, key, SucceededState.StateName, out var job),
-                    Job = job.Job,
+                TryGetJobRecord(jobs, key, SucceededState.StateName, out var record, out var inTargetState)
+                ? new SucceededJobDto
+                    {
+                        InSucceededState = inTargetState,
+                        Job = record.Job,
 #if !HANGFIRE_170
-                    InvocationData = job.InvocationData,
-                    LoadException = job.LoadException,
-                    StateData = job.StateData,
+                        InvocationData = record.InvocationData,
+                        LoadException = record.LoadException,
+                        StateData = record.StateData,
 #endif
-                    SucceededAt = job.StateCreatedAt,
-                    Result = job.StateData?.TryGetValue("Result", out var result) ?? false
-                        ? result
-                        : null,
-                    TotalDuration = (job.StateData?.TryGetValue("PerformanceDuration", out var duration) ?? false) && 
-                                    (job.StateData?.TryGetValue("Latency", out var latency) ?? false) 
-                        ? long.Parse(duration, CultureInfo.InvariantCulture) + long.Parse(latency, CultureInfo.InvariantCulture)
-                        : null
-                })));
+                        SucceededAt = record.StateCreatedAt,
+                        Result = record.StateData?.TryGetValue("Result", out var result) ?? false
+                            ? result
+                            : null,
+                        TotalDuration = (record.StateData?.TryGetValue("PerformanceDuration", out var duration) ?? false) && 
+                                        (record.StateData?.TryGetValue("Latency", out var latency) ?? false) 
+                            ? long.Parse(duration, CultureInfo.InvariantCulture) + long.Parse(latency, CultureInfo.InvariantCulture)
+                            : null
+                    }
+                    : null)));
         }
 
-        public override JobList<FailedJobDto> FailedJobs(int from, int count)
+        public override JobList<FailedJobDto?> FailedJobs(int from, int count)
         {
             var failed = _dispatcher.QueryReadAndWait(
                 new MonitoringQueries<TKey>.JobsGetByState(FailedState.StateName, from, count, reversed: true),
@@ -285,32 +295,34 @@ namespace Hangfire.InMemory
 
             var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries<TKey>.JobsGetByKey(failed), static (q, s) => q.Execute(s));
 
-            return new JobList<FailedJobDto>(failed.Select(key => new KeyValuePair<string, FailedJobDto>(
+            return new JobList<FailedJobDto?>(failed.Select(key => new KeyValuePair<string, FailedJobDto?>(
                 _keyProvider.ToString(key),
-                new FailedJobDto
-                {
-                    InFailedState = TryGetJobRecord(jobs, key, FailedState.StateName, out var job),
-                    Job = job.Job,
+                TryGetJobRecord(jobs, key, FailedState.StateName, out var job, out var inTargetState)
+                    ? new FailedJobDto
+                    {
+                        InFailedState = inTargetState,
+                        Job = job.Job,
 #if !HANGFIRE_170
-                    InvocationData = job.InvocationData,
-                    LoadException = job.LoadException,
-                    StateData = job.StateData,
+                        InvocationData = job.InvocationData,
+                        LoadException = job.LoadException,
+                        StateData = job.StateData,
 #endif
-                    Reason = job.StateReason,
-                    FailedAt = job.StateCreatedAt,
-                    ExceptionDetails = job.StateData?.TryGetValue("ExceptionDetails", out var details) ?? false 
-                        ? details
-                        : null,
-                    ExceptionType = job.StateData?.TryGetValue("ExceptionType", out var type) ?? false
-                        ? type
-                        : null,
-                    ExceptionMessage = job.StateData?.TryGetValue("ExceptionMessage", out var message) ?? false
-                        ? message
-                        : null,
-                })));
+                        Reason = job.StateReason,
+                        FailedAt = job.StateCreatedAt,
+                        ExceptionDetails = job.StateData?.TryGetValue("ExceptionDetails", out var details) ?? false 
+                            ? details
+                            : null,
+                        ExceptionType = job.StateData?.TryGetValue("ExceptionType", out var type) ?? false
+                            ? type
+                            : null,
+                        ExceptionMessage = job.StateData?.TryGetValue("ExceptionMessage", out var message) ?? false
+                            ? message
+                            : null,
+                    }
+                    : null)));
         }
 
-        public override JobList<DeletedJobDto> DeletedJobs(int from, int count)
+        public override JobList<DeletedJobDto?> DeletedJobs(int from, int count)
         {
             var deleted = _dispatcher.QueryReadAndWait(
                 new MonitoringQueries<TKey>.JobsGetByState(DeletedState.StateName, from, count, reversed: true),
@@ -318,23 +330,25 @@ namespace Hangfire.InMemory
 
             var jobs = _dispatcher.QueryReadAndWait(new MonitoringQueries<TKey>.JobsGetByKey(deleted), static (q, s) => q.Execute(s));
 
-            return new JobList<DeletedJobDto>(deleted.Select(key => new KeyValuePair<string, DeletedJobDto>(
+            return new JobList<DeletedJobDto?>(deleted.Select(key => new KeyValuePair<string, DeletedJobDto?>(
                 _keyProvider.ToString(key),
-                new DeletedJobDto
-                {
-                    InDeletedState = TryGetJobRecord(jobs, key, DeletedState.StateName, out var job),
-                    Job = job.Job,
+                TryGetJobRecord(jobs, key, DeletedState.StateName, out var record, out var inTargetState)
+                    ? new DeletedJobDto
+                    {
+                        InDeletedState = inTargetState,
+                        Job = record.Job,
 #if !HANGFIRE_170
-                    InvocationData = job.InvocationData,
-                    LoadException = job.LoadException,
-                    StateData = job.StateData,
+                        InvocationData = record.InvocationData,
+                        LoadException = record.LoadException,
+                        StateData = record.StateData,
 #endif
-                    DeletedAt = job.StateCreatedAt
-                })));
+                        DeletedAt = record.StateCreatedAt
+                    }
+                    : null)));
         }
 
 #if !HANGFIRE_170
-        public override JobList<AwaitingJobDto> AwaitingJobs(int from, int count)
+        public override JobList<AwaitingJobDto?> AwaitingJobs(int from, int count)
         {
             var awaiting = _dispatcher.QueryReadAndWait(
                 new MonitoringQueries<TKey>.JobsGetByState(AwaitingState.StateName, from, count),
@@ -355,22 +369,24 @@ namespace Hangfire.InMemory
 
             var parentJobs = _dispatcher.QueryReadAndWait(new MonitoringQueries<TKey>.JobsGetByKey(parentKeys), static (q, s) => q.Execute(s));
 
-            return new JobList<AwaitingJobDto>(awaiting.Select(key => new KeyValuePair<string, AwaitingJobDto>(
+            return new JobList<AwaitingJobDto?>(awaiting.Select(key => new KeyValuePair<string, AwaitingJobDto?>(
                 _keyProvider.ToString(key),
-                new AwaitingJobDto
-                {
-                    InAwaitingState = TryGetJobRecord(jobs, key, AwaitingState.StateName, out var job),
-                    InvocationData = job.InvocationData,
-                    Job = job.Job,
-                    LoadException = job.LoadException,
-                    StateData = job.StateData,
-                    AwaitingAt = job.StateCreatedAt,
-                    ParentStateName = (job.StateData?.TryGetValue("ParentId", out var parentId) ?? false) &&
-                                      _keyProvider.TryParse(parentId, out var parentKey) &&
-                                      parentJobs.TryGetValue(parentKey, out var parent)
-                                      ? parent?.StateName
-                                      : null
-                })));
+                TryGetJobRecord(jobs, key, AwaitingState.StateName, out var record, out var inTargetState)
+                    ? new AwaitingJobDto
+                    {
+                        InAwaitingState = inTargetState,
+                        InvocationData = record.InvocationData,
+                        Job = record.Job,
+                        LoadException = record.LoadException,
+                        StateData = record.StateData,
+                        AwaitingAt = record.StateCreatedAt,
+                        ParentStateName = (record.StateData?.TryGetValue("ParentId", out var parentId) ?? false) &&
+                                          _keyProvider.TryParse(parentId, out var parentKey) &&
+                                          parentJobs.TryGetValue(parentKey, out var parent)
+                                          ? parent?.StateName
+                                          : null
+                    }
+                    : null)));
         }
 #endif
 
@@ -467,30 +483,33 @@ namespace Hangfire.InMemory
             IReadOnlyDictionary<TKey, MonitoringQueries<TKey>.JobsGetByKey.Record?> jobs,
             TKey key,
             string targetState,
-            out JobRecord jobRecord)
+            [MaybeNullWhen(returnValue: false)] out JobRecord jobRecord,
+            out bool inTargetState)
         {
-            InvocationData? data = null;
-            Job? job = null;
-            JobLoadException? loadException = null;
-            string? stateName = null;
+            inTargetState = false;
 
             if (jobs.TryGetValue(key, out var record) && record != null)
             {
-                data = record.InvocationData;
-                job = record.InvocationData.TryGetJob(out loadException);
-                stateName = record.StateName;
+                var invocationData = record.InvocationData;
+                var job = record.InvocationData.TryGetJob(out var loadException);
+
+                string? stateReason = null;
+                Dictionary<string, string>? stateData = null;
+                DateTime? stateCreatedAt = null;
 
                 if (targetState.Equals(record.StateName, StringComparison.OrdinalIgnoreCase))
                 {
-                    var stateData = record.StateData?.ToDictionary(static x => x.Key, static x => x.Value, record.StringComparer);
-                    var stateCreatedAt = record.StateCreatedAt?.ToUtcDateTime();
-
-                    jobRecord = new JobRecord(data, job, loadException, stateName, record.StateReason, stateData, stateCreatedAt);
-                    return true;
+                    stateReason = record.StateReason;
+                    stateData = record.StateData?.ToDictionary(static x => x.Key, static x => x.Value, record.StringComparer);
+                    stateCreatedAt = record.StateCreatedAt?.ToUtcDateTime();
+                    inTargetState = true;
                 }
+
+                jobRecord = new JobRecord(invocationData, job, loadException, record.StateName, stateReason, stateData, stateCreatedAt);
+                return true;
             }
 
-            jobRecord = new JobRecord(data, job, loadException, stateName, null, null, null);
+            jobRecord = null;
             return false;
         }
 

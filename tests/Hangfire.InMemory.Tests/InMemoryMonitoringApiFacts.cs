@@ -25,6 +25,7 @@ using Hangfire.Storage;
 using Moq;
 using Xunit;
 
+// ReSharper disable UnusedVariable
 // ReSharper disable AssignNullToNotNullAttribute
 // ReSharper disable PossibleNullReferenceException
 
@@ -139,17 +140,14 @@ namespace Hangfire.InMemory.Tests
             var someJob = result.Single().FirstJobs.Single();
 
             Assert.Equal("some-job", someJob.Key);
-            Assert.Null(someJob.Value.Job);
-            Assert.False(someJob.Value.InEnqueuedState);
-            Assert.Null(someJob.Value.State);
-            Assert.Null(someJob.Value.EnqueuedAt);
+            Assert.Null(someJob.Value);
         }
 
         [Fact]
         public void Queues_IsAbleToHandle_BackgroundJobEntry_WithNullState()
         {
             // Arrange
-            var jobId = SimpleEnqueueJob("test", state: null);
+            var jobId = SimpleEnqueueJob("test", noState: true);
             var monitoring = CreateMonitoringApi();
 
             // Act
@@ -189,6 +187,7 @@ namespace Hangfire.InMemory.Tests
             // Arrange
             var state = new Mock<IState>();
             state.SetupGet(x => x.Name).Returns("EnQUEued");
+            state.Setup(x => x.SerializeData()).Returns(new Dictionary<string, string>());
 
             var jobId = SimpleEnqueueJob("default", state: state.Object);
             var monitoring = CreateMonitoringApi();
@@ -566,17 +565,14 @@ namespace Hangfire.InMemory.Tests
             var someJob = result.Single();
 
             Assert.Equal("some-job", someJob.Key);
-            Assert.Null(someJob.Value.Job);
-            Assert.False(someJob.Value.InEnqueuedState);
-            Assert.Null(someJob.Value.State);
-            Assert.Null(someJob.Value.EnqueuedAt);
+            Assert.Null(someJob.Value);
         }
 
         [Fact]
         public void EnqueuedJobs_IsAbleToHandle_BackgroundJobEntry_WithNullState()
         {
             // Arrange
-            var jobId = SimpleEnqueueJob("test", state: null);
+            var jobId = SimpleEnqueueJob("test", noState: true);
             var monitoring = CreateMonitoringApi();
 
             // Act
@@ -589,6 +585,23 @@ namespace Hangfire.InMemory.Tests
             Assert.False(someJob.Value.InEnqueuedState);
             Assert.Null(someJob.Value.State);
             Assert.Null(someJob.Value.EnqueuedAt);
+        }
+
+        [Fact]
+        public void EnqueuedJobs_IsAbleToHandle_MultipleEntriesWithTheSameJobId()
+        {
+            // Arrange
+            var jobId = SimpleEnqueueJob("default");
+            var sameId = SimpleEnqueueJob("default", jobId: jobId);
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var enqueued = monitoring.EnqueuedJobs("default", 0, 10).ToArray();
+
+            // Assert
+            Assert.Equal(2, enqueued.Length);
+            Assert.All(enqueued, x => Assert.Equal(jobId, x.Key));
+            Assert.All(enqueued, x => Assert.Equal("Enqueued", x.Value.State));
         }
 
         [Fact]
@@ -616,6 +629,7 @@ namespace Hangfire.InMemory.Tests
             // Arrange
             var state = new Mock<IState>();
             state.SetupGet(x => x.Name).Returns("EnQUEued");
+            state.Setup(x => x.SerializeData()).Returns(new Dictionary<string, string>());
 
             var jobId = SimpleEnqueueJob("default", state: state.Object);
             var monitoring = CreateMonitoringApi();
@@ -943,6 +957,23 @@ namespace Hangfire.InMemory.Tests
         }
 
         [Fact]
+        public void SucceededJobs_IsAbleToHandle_ExpiredJobEntry()
+        {
+            // Arrange
+            var jobId1 = SimpleSucceededJob(expireIn: TimeSpan.FromHours(-1));
+            _state.EvictExpiredEntries(_now);
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var someJob = monitoring.SucceededJobs(0, 10).SingleOrDefault();
+
+            // Assert
+            Assert.True(someJob.Key == null || someJob.Key == jobId1, someJob.Key);
+            Assert.Null(someJob.Value);
+        }
+
+        [Fact]
         public void FailedJobs_ReturnsEmptyCollection_WhenThereAreNoFailedJobs()
         {
             var monitoring = CreateMonitoringApi();
@@ -1095,6 +1126,23 @@ namespace Hangfire.InMemory.Tests
             Assert.Equal(jobId3, result[1].Key);
         }
 
+        [Fact]
+        public void DeletedJobs_IsAbleToHandle_ExpiredJobEntry()
+        {
+            // Arrange
+            var jobId1 = SimpleDeletedJob(expireIn: TimeSpan.FromHours(-1));
+            _state.EvictExpiredEntries(_now);
+
+            var monitoring = CreateMonitoringApi();
+
+            // Act
+            var someJob = monitoring.DeletedJobs(0, 10).SingleOrDefault();
+
+            // Assert
+            Assert.True(someJob.Key == null || someJob.Key == jobId1, someJob.Key);
+            Assert.Null(someJob.Value);
+        }
+
 #if !HANGFIRE_170
         [Fact]
         public void AwaitingJobs_ReturnsEmptyCollection_WhenThereAreNoAwaitingJobs()
@@ -1149,10 +1197,10 @@ namespace Hangfire.InMemory.Tests
             // Assert
             var awaiting = result.ToArray();
 
-            Assert.Equal(jobId1, awaiting[0].Key);
-            Assert.Equal(jobId2, awaiting[1].Key);
-            Assert.Equal("Processing", awaiting[0].Value.ParentStateName);
-            Assert.Equal("Processing", awaiting[1].Value.ParentStateName);
+            Assert.Equal(2, awaiting.Length);
+            Assert.Contains(jobId1, awaiting.Select(x => x.Key));
+            Assert.Contains(jobId2, awaiting.Select(x => x.Key));
+            Assert.All(awaiting, x => Assert.Equal("Processing", x.Value.ParentStateName));
         }
 
         [Fact]
@@ -1559,19 +1607,20 @@ namespace Hangfire.InMemory.Tests
             });
         }
 
-        private string SimpleEnqueueJob(string queue, string jobId = null, IState state = null, Job job = null)
+        private string SimpleEnqueueJob(string queue, string jobId = null, IState state = null, Job job = null, bool noState = false)
         {
-            return SimpleJob(jobId, job, state, (transaction, assignedJobId, _) =>
+            return SimpleJob(jobId, job, !noState ? state ?? new EnqueuedState() : null, transactionAction: (transaction, assignedJobId, _) =>
             {
                 transaction.AddToQueue(queue, assignedJobId);
             });
         }
 
-        private string SimpleSucceededJob(object result = null, long latency = 0, long duration = 0, Job job = null)
+        private string SimpleSucceededJob(object result = null, long latency = 0, long duration = 0, Job job = null, TimeSpan? expireIn = null)
         {
             return SimpleJob(
                 job: job,
-                state: new SucceededState(result, latency, duration));
+                state: new SucceededState(result, latency, duration),
+                expireIn: expireIn);
         }
 
         private string SimpleFailedJob(Exception exception = null, Job job = null)
@@ -1581,7 +1630,7 @@ namespace Hangfire.InMemory.Tests
                 state: new FailedState(exception ?? new InvalidOperationException()));
         }
 
-        private string SimpleDeletedJob(Exception exception = null, Job job = null)
+        private string SimpleDeletedJob(Exception exception = null, Job job = null, TimeSpan? expireIn = null)
         {
             return SimpleJob(
                 job: job,
@@ -1589,7 +1638,8 @@ namespace Hangfire.InMemory.Tests
 #if !HANGFIRE_170
                     new ExceptionInfo(exception ?? new InvalidOperationException())
 #endif
-                ));
+                ),
+                expireIn: expireIn);
         }
 
         private string SimpleAwaitingJob(string parentId, Job job = null)
@@ -1599,7 +1649,7 @@ namespace Hangfire.InMemory.Tests
                 state: new AwaitingState(parentId));
         }
 
-        private string SimpleJob(string jobId = null, Job job = null, IState state = null, Action<IWriteOnlyTransaction, string, Job> transactionAction = null)
+        private string SimpleJob(string jobId = null, Job job = null, IState state = null, TimeSpan? expireIn = null, Action<IWriteOnlyTransaction, string, Job> transactionAction = null)
         {
             var createdId = UseConnection(connection =>
             {
@@ -1614,6 +1664,7 @@ namespace Hangfire.InMemory.Tests
                 {
                     if (state != null) transaction.SetJobState(jobId, state);
                     transactionAction?.Invoke(transaction, jobId, job);
+                    if (expireIn != null) transaction.ExpireJob(jobId, expireIn.Value);
                     transaction.Commit();
                 }
 
