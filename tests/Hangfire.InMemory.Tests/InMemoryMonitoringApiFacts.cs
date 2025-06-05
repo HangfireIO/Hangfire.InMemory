@@ -130,7 +130,7 @@ namespace Hangfire.InMemory.Tests
         public void Queues_IsAbleToHandle_JobIdWithoutCorrespondingBackgroundJobEntry()
         {
             // Arrange
-            SimpleEnqueueJob("default", jobId: "some-job");
+            SimpleEnqueueJob("default", jobId: "some-job", noState: true);
             var monitoring = CreateMonitoringApi();
 
             // Act
@@ -555,7 +555,7 @@ namespace Hangfire.InMemory.Tests
         public void EnqueuedJobs_IsAbleToHandle_JobIdWithoutCorrespondingBackgroundJobEntry()
         {
             // Arrange
-            SimpleEnqueueJob("default", jobId: "some-job");
+            SimpleEnqueueJob("default", jobId: "some-job", noState: true);
             var monitoring = CreateMonitoringApi();
 
             // Act
