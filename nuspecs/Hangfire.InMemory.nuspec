@@ -12,7 +12,7 @@
     <icon>icon.png</icon>
     <readme>README.md</readme>
     <description>In-memory job storage for Hangfire with an efficient implementation.</description>
-    <copyright>Copyright © 2020-2024 Hangfire OÜ</copyright>
+    <copyright>Copyright © 2020-2026 Hangfire OÜ</copyright>
     <tags>Hangfire Storage In-Memory</tags>
     <releaseNotes>https://github.com/HangfireIO/Hangfire.InMemory/releases
 1.0.0
