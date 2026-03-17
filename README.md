@@ -79,3 +79,7 @@ GlobalConfiguration.Configuration.UseInMemoryStorage(new InMemoryStorageOptions
     MaxStateHistoryLength = 10 // default value
 });
 ```
+
+## License
+
+Copyright &copy; 2020 Hangfire OÜ. Please see the [`LICENSE`](https://github.com/HangfireIO/Hangfire.InMemory/blob/main/LICENSE.md) file for details.
